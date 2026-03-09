@@ -24,7 +24,6 @@ def main():
     out_csv = results / "master_summary_table.csv"
     merged.to_csv(out_csv, index=False)
 
-    # Figure 1: eta mean comparison across domains
     plt.figure(figsize=(8, 4.5))
     plt.bar(merged["domain"], merged["eta_mean"])
     plt.ylabel("eta_mean")
@@ -34,7 +33,6 @@ def main():
     plt.savefig(fig1, dpi=200)
     plt.close()
 
-    # Figure 2: real vs null eta gap
     plt.figure(figsize=(8, 4.5))
     plt.bar(merged["domain"], merged["real_vs_null_eta_mean_gap"])
     plt.ylabel("real_vs_null_eta_mean_gap")
