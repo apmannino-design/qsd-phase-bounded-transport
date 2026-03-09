@@ -22,9 +22,9 @@ domain  eta_real  eta_null_mean  eta_percentile  eta_p_value
 ## 3. Spectral Null Summary (IAAFT)
 
 domain  eta_real  eta_null_mean  eta_percentile  eta_p_value
-  GOES  0.536351       0.544282             0.0          1.0
-    Kp  0.915949       0.822627             1.0          0.0
-  LIGO  0.549949       0.549267             0.9          0.1
+  GOES  0.536351       0.543948            0.00         1.00
+    Kp  0.915949       0.819905            1.00         0.00
+  LIGO  0.549949       0.549461            0.82         0.18
 
 ## 4. Master Summary Table
 
