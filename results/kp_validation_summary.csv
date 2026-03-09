@@ -1,0 +1,2 @@
+n_samples,kp_min,kp_max,delta_e_mean,eta_mean,hazard_mean,min_survival,n_events
+358,0.0,2.0,0.1426825363838374,0.9159489019059452,0.13094046513124885,0.30422320859406005,0
