@@ -1,4 +1,6 @@
-all: pipeline report
+.PHONY: all pipeline report paper clean help
+
+all: pipeline report paper
 
 pipeline:
 	python3 code/qsd_pipeline.py
@@ -13,14 +15,19 @@ pipeline:
 report:
 	python3 code/build_report.py
 
+paper:
+	pandoc reports/qsd_report.md -o reports/qsd_report.pdf
+	@echo "PDF report generated."
+
 clean:
 	rm -rf results/*
 	rm -rf reports/*
-	echo "Cleaned generated outputs."
+	@echo "Cleaned generated outputs."
 
 help:
 	@echo "Available commands:"
-	@echo "make all       - run full pipeline and build report"
+	@echo "make all       - run full pipeline and build report + PDF"
 	@echo "make pipeline  - run analysis only"
-	@echo "make report    - generate report only"
+	@echo "make report    - generate markdown report only"
+	@echo "make paper     - generate PDF report only"
 	@echo "make clean     - remove generated outputs"
