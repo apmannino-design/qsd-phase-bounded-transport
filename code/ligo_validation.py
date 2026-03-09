@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from pathlib import Path
 
 from ligo_loader import load_ligo_data
@@ -28,6 +29,9 @@ def main():
 
     df = load_ligo_data()
 
+    # Convert GPS-like float seconds into UTC datetimes for compatibility
+    df["time_tag"] = pd.to_datetime(df["time"], unit="s", utc=True)
+
     df["delta_e"] = robust_delta_e(df["strain"].values)
 
     delta_e_crit = 0.2248
@@ -35,20 +39,20 @@ def main():
     df["eta"] = 1.0 / (1.0 + np.exp(k * (df["delta_e"] - delta_e_crit)))
 
     hazard = compute_hazard_survival(
-        time_tag=df["time"],
+        time_tag=df["time_tag"],
         eta=df["eta"],
         delta_e=df["delta_e"]
     )
 
     events = detect_trilock_events(
-        time_tag=df["time"],
+        time_tag=df["time_tag"],
         eta=df["eta"],
         delta_e=df["delta_e"],
         hazard_signal=hazard["hazard_signal"],
         survival=hazard["survival"]
     )
 
-    df_out = df.merge(hazard, left_on="time", right_on="time_tag", how="left")
+    df_out = df.merge(hazard, on="time_tag", how="left")
 
     out_ts = results / "ligo_qsd_timeseries.csv"
     out_ev = results / "ligo_event_table.csv"
