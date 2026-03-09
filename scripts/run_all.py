@@ -10,6 +10,7 @@ def main():
     run("python3 code/validation_suite.py")
     run("python3 code/domain_comparison.py")
     run("python3 code/ligo_validation.py")
+    run("python3 code/surrogate_validation.py")
     print("\nPipeline complete.")
 
 if __name__ == "__main__":
