@@ -1,0 +1,1 @@
+Newest QSD findings May 18-19 2026: IBM Fez validation (Layer 3/4 success, Builder Codex +0.023 gain), Module 23-24 expansions, Unified Vision v1.0, FINAL archives. See Google Drive for full docs. AE=0
