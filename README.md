@@ -1,3 +1,4 @@
+<!-- CDN purge May 23 2026 -->
 # Quantum Stabilization Dynamics (QSD)
 
 **A Unified Framework from Field-Theoretic Foundations to Input-to-State Stability**
