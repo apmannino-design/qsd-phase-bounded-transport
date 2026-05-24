@@ -1,0 +1,1 @@
+The full code here would be the provided script
