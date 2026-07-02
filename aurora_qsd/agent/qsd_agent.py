@@ -11,6 +11,7 @@ import numpy as np
 
 from aurora_qsd.core.constants import THETA_STAR, THETA_STAR_DEG, DEFAULT_K_GAIN, DEFAULT_RHO
 from aurora_qsd.core.tridelta import decompose_covariance, TriDelta
+from aurora_qsd.quantum.basin_sweep import run_basin_sweep
 from aurora_qsd.core.aurora import check_aurora_condition
 from aurora_qsd.core.iss import iss_bound, iss_trajectory
 from aurora_qsd.core.phase_potential import phase_potential, phase_force, basin_boundary_deg
@@ -125,6 +126,32 @@ class QSDAuroraAgent:
             ],
         )
 
+    def run_basin_sweep(
+        self,
+        shots: int = 4096,
+        depth: int = 12,
+        noise: str = "native",
+    ) -> AgentResponse:
+        """Empirical basin sweep on 3-qubit ZZZ cells (ibm_fez protocol)."""
+        result = run_basin_sweep(shots=shots, depth=depth, noise=noise)
+        return AgentResponse(
+            intent="basin",
+            message=result.summary(),
+            data={
+                "optimal_theta_deg": result.optimal_theta_deg,
+                "optimal_zzz": result.optimal_zzz,
+                "baseline_zzz": result.baseline_zzz,
+                "negative_control_zzz": result.negative_control_zzz,
+                "gain_vs_baseline": result.gain_vs_baseline,
+                "gain_vs_neg_control": result.gain_vs_neg_control,
+            },
+            recommendations=[
+                f"Lock source angle to {result.optimal_theta_deg:.2f}° (basin peak)",
+                f"Expected ZZZ gain vs negative control: {result.gain_vs_neg_control:+.4f}",
+                "Use sunscreen reset every 8 layers at this angle for deep circuits",
+            ],
+        )
+
     def optimize_theta(
         self,
         sweep_deg: tuple[float, float] = (-5.0, 5.0),
@@ -218,6 +245,8 @@ class QSDAuroraAgent:
         return QSD_KNOWLEDGE
 
     def _classify_intent(self, text: str) -> str:
+        if any(p in text for p in INTENT_PATTERNS.get("basin", [])):
+            return "basin"
         for intent, patterns in INTENT_PATTERNS.items():
             if any(p in text for p in patterns):
                 return intent
@@ -240,7 +269,16 @@ class QSDAuroraAgent:
             recommendations=["Pass counts dict or 3×3 covariance matrix in context"],
         )
 
+    def _handle_basin(self, text: str, context: dict) -> AgentResponse:
+        return self.run_basin_sweep(
+            shots=int(context.get("shots", 2048)),
+            depth=int(context.get("depth", 12)),
+            noise=context.get("noise", "native"),
+        )
+
     def _handle_optimize(self, text: str, context: dict) -> AgentResponse:
+        if "basin" in text or context.get("use_basin"):
+            return self.run_basin_sweep()
         return self.optimize_theta()
 
     def _handle_circuit(self, text: str, context: dict) -> AgentResponse:

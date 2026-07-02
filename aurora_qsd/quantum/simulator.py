@@ -5,14 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 import numpy as np
-from qiskit import transpile
 from qiskit_aer import AerSimulator
-from qiskit_aer.noise import (
-    NoiseModel,
-    amplitude_damping_error,
-    depolarizing_error,
-    phase_damping_error,
-)
 
 from aurora_qsd.core.constants import (
     DEFAULT_K_GAIN,
@@ -24,50 +17,30 @@ from aurora_qsd.quantum.circuit_builder import (
     build_baseline,
     build_deep_qsd_circuit,
     build_with_relock,
-    zzz_score,
 )
+from aurora_qsd.quantum.fez_cells import (
+    build_zzz_baseline_circuit,
+    build_zzz_cell_circuit,
+    zzz_correlator,
+)
+from aurora_qsd.quantum.noise_models import build_simulator
+from aurora_qsd.quantum.runner import run_circuit
+from aurora_qsd.quantum.sunscreen import build_sunscreen_circuit
 
 
-def build_apocalyptic_noise_model() -> NoiseModel:
-    """
-    FakeFez + stacked decoherence (reference implementation noise stack).
-
-    T1=25%, T2=35%, 1Q depol=20%, 2Q depol=40%.
-    """
-    try:
-        from qiskit_ibm_runtime.fake_provider import FakeFez
-
-        nm = NoiseModel.from_backend(FakeFez())
-    except ImportError:
-        nm = NoiseModel()
-
-    t1 = amplitude_damping_error(0.25)
-    t2 = phase_damping_error(0.35)
-    dp1 = depolarizing_error(0.20, 1)
-    dp2 = depolarizing_error(0.40, 2)
-    sq = dp1.compose(t1).compose(t2)
-    gates_1q = ["u1", "u2", "u3", "ry", "rx", "rz", "h", "x"]
-    nm.add_all_qubit_quantum_error(sq, gates_1q)
-    nm.add_all_qubit_quantum_error(dp2, ["cx", "ecr"])
-    return nm
-
-
+# Backward-compatible aliases
 def build_ideal_simulator() -> AerSimulator:
-    return AerSimulator()
+    return build_simulator("ideal")
 
 
 def build_noisy_simulator() -> AerSimulator:
-    return AerSimulator(noise_model=build_apocalyptic_noise_model())
+    return build_simulator("native")
 
 
-def run_circuit(
-    qc,
-    sim: AerSimulator | None = None,
-    shots: int = DEFAULT_SHOTS,
-) -> dict[str, int]:
-    sim = sim or build_ideal_simulator()
-    compiled = transpile(qc, sim, optimization_level=0)
-    return sim.run(compiled, shots=shots).result().get_counts()
+def build_apocalyptic_noise_model():
+    from aurora_qsd.quantum.noise_models import build_apocalypse_noise_model
+
+    return build_apocalypse_noise_model()
 
 
 @dataclass
@@ -89,6 +62,7 @@ class StressTestResult:
     best_gain: float = 0.0
     iss_final_closed_deg: float = 0.0
     iss_mean_gain: float = 0.0
+    basin: object | None = None
     verdict: str = ""
 
     def summary(self) -> str:
@@ -96,60 +70,56 @@ class StressTestResult:
             f"Baseline ZZZ:     {self.baseline_zzz:.4f} ± {self.baseline_std:.4f}",
             f"QSD @ θ* ({THETA_STAR_HW_DEG}°): {self.qsd_at_star_zzz:.4f}  "
             f"(gain {self.qsd_at_star_zzz - self.baseline_zzz:+.4f})",
-            f"QSD re-lock /7:   {self.relock_zzz:.4f}  "
+            f"QSD sunscreen /8: {self.relock_zzz:.4f}  "
             f"(gain {self.relock_zzz - self.baseline_zzz:+.4f})",
             f"θ sweep passes:   {self.sweep_passes}/17",
             f"Best angle:       {self.best_theta_deg:.2f}° (gain {self.best_gain:+.4f})",
             f"ISS closed-loop:    θ → {self.iss_final_closed_deg:.2f}°",
-            f"VERDICT:          {self.verdict}",
         ]
+        if self.basin:
+            lines.append(f"Basin optimum:    {self.basin.optimal_theta_deg:.2f}° (ZZZ {self.basin.optimal_zzz:+.4f})")
+        lines.append(f"VERDICT:          {self.verdict}")
         return "\n".join(lines)
 
 
 def run_stress_test(
     shots: int = DEFAULT_SHOTS,
     layers: int = 12,
-    noisy: bool = True,
+    noise: str = "native",
     seed: int | None = 42,
+    use_3q: bool = True,
 ) -> StressTestResult:
-    """
-    Full 3-stage stress test matching code/qsd_reference_implementation.py.
-
-    Stage 1: Baseline score
-    Stage 2: θ sweep ±8° around θ*
-    Stage 3: ISS closed-loop convergence
-    """
+    """Hardware-faithful 3-stage stress test with optional 3-qubit ZZZ cells."""
     if seed is not None:
         np.random.seed(seed)
 
-    sim = build_noisy_simulator() if noisy else build_ideal_simulator()
+    sim = build_simulator(noise)
     result = StressTestResult(baseline_zzz=0.0, baseline_std=0.0, qsd_at_star_zzz=0.0, relock_zzz=0.0)
 
-    # Stage 1: baseline
-    b_scores = [zzz_score(run_circuit(build_baseline(layers), sim, shots)) for _ in range(3)]
+    if use_3q:
+        b_circ = lambda d: build_zzz_baseline_circuit(d)
+        q_circ = lambda t, d: build_zzz_cell_circuit(theta=t, depth=d)
+        s_circ = lambda t, d: build_sunscreen_circuit(theta=t, total_layers=d, reset_interval=8)
+        zzz_fn = lambda c: zzz_correlator(c, n_qubits=3)
+    else:
+        b_circ = build_baseline
+        q_circ = lambda t, d: build_deep_qsd_circuit(t, d)
+        s_circ = lambda t, d: build_with_relock(theta=t, total_layers=d, relock_interval=7)
+        from aurora_qsd.quantum.circuit_builder import zzz_score as zzz_fn
+
+    b_scores = [zzz_fn(run_circuit(b_circ(layers), sim, shots)) for _ in range(3)]
     result.baseline_zzz = float(np.mean(b_scores))
     result.baseline_std = float(np.std(b_scores))
 
-    # QSD at θ* and re-lock
-    qsd_scores = [
-        zzz_score(run_circuit(build_deep_qsd_circuit(THETA_STAR_HW, layers), sim, shots))
-        for _ in range(3)
-    ]
+    qsd_scores = [zzz_fn(run_circuit(q_circ(THETA_STAR_HW, layers), sim, shots)) for _ in range(3)]
     result.qsd_at_star_zzz = float(np.mean(qsd_scores))
 
-    rl_scores = [
-        zzz_score(run_circuit(build_with_relock(total_layers=layers, relock_interval=7), sim, shots))
-        for _ in range(3)
-    ]
+    rl_scores = [zzz_fn(run_circuit(s_circ(THETA_STAR_HW, layers), sim, shots)) for _ in range(3)]
     result.relock_zzz = float(np.mean(rl_scores))
 
-    # Stage 2: sweep
     for d in np.linspace(-8, 8, 17):
         theta = THETA_STAR_HW + np.radians(d)
-        ss = [
-            zzz_score(run_circuit(build_deep_qsd_circuit(theta, layers), sim, shots))
-            for _ in range(2)
-        ]
+        ss = [zzz_fn(run_circuit(q_circ(theta, layers), sim, shots)) for _ in range(2)]
         s = float(np.mean(ss))
         g = s - result.baseline_zzz
         result.sweep.append(SweepPoint(theta_deg=float(np.degrees(theta)), zzz=s, gain=g))
@@ -159,19 +129,20 @@ def run_stress_test(
             result.best_gain = g
             result.best_theta_deg = float(np.degrees(theta))
 
-    # Stage 3: ISS convergence
-    theta_open = 45.0 * (np.pi / 180)
-    theta_closed = 45.0 * (np.pi / 180)
+    theta_open = np.radians(45.0)
+    theta_closed = np.radians(45.0)
     gains = []
     for _ in range(10):
         theta_open += np.random.normal(0, np.radians(4.5))
         theta_closed -= DEFAULT_K_GAIN * (theta_closed - THETA_STAR_HW)
-        co = zzz_score(run_circuit(build_deep_qsd_circuit(theta_open, layers), sim, shots))
-        cc = zzz_score(run_circuit(build_deep_qsd_circuit(theta_closed, layers), sim, shots))
+        co = zzz_fn(run_circuit(q_circ(theta_open, layers), sim, shots))
+        cc = zzz_fn(run_circuit(q_circ(theta_closed, layers), sim, shots))
         gains.append(cc - co)
 
     result.iss_final_closed_deg = float(np.degrees(theta_closed))
     result.iss_mean_gain = float(np.mean(gains))
+    result.basin = __import__(
+        "aurora_qsd.quantum.basin_sweep", fromlist=["run_basin_sweep"]
+    ).run_basin_sweep(shots=shots, depth=layers, noise=noise, seed=seed)
     result.verdict = "COHERENCE RECOVERED" if result.sweep_passes >= 8 else "UNABLE TO RECOVER"
-
     return result

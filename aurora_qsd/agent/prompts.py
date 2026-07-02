@@ -36,6 +36,7 @@ indefinitely without error correction.
 
 INTENT_PATTERNS = {
     "analyze": ["analyze", "analysis", "check", "evaluate", "measure", "diagnose"],
+    "basin": ["basin", "basin sweep", "find peak", "empirical angle"],
     "optimize": ["optimize", "tune", "adjust", "calibrate", "improve", "sweep"],
     "circuit": ["circuit", "build", "construct", "generate", "design"],
     "relock": ["relock", "re-prepare", "reprepare", "sunscreen", "refresh", "reset"],
