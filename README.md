@@ -20,9 +20,52 @@
 
 **Structure:**
 - Python reference implementation
+- **Aurora-QSD AI** (`aurora_qsd/`) — intelligent agent applying QSD + Aurora to quantum computing
 - Notebooks and analysis scripts
 - Data and circuit files for IBM validation
 - This README and paper PDFs
+
+## Aurora-QSD AI
+
+An AI agent that applies QSD stabilization dynamics and the Aurora principle to quantum computing:
+
+```bash
+# Run full demonstration
+python3 -m aurora_qsd.cli demo
+
+# Check Aurora condition (Γ_lock > Γ_loss)
+python3 -m aurora_qsd.cli aurora
+
+# Plan re-preparation for deep circuits
+python3 -m aurora_qsd.cli relock --depth 1241
+
+# Analyze measurement counts
+python3 -m aurora_qsd.cli analyze --counts '{"00":15000,"11":13000,"01":2000,"10":2000}'
+
+# Natural-language queries
+python3 -m aurora_qsd.cli query explain the Aurora principle for quantum circuits
+```
+
+**Python API:**
+
+```python
+from aurora_qsd import QSDAuroraAgent
+
+agent = QSDAuroraAgent()
+agent.query("optimize partition angle for ibm_fez")
+agent.analyze_counts({"00": 15000, "11": 13000, "01": 2000, "10": 2000})
+agent.plan_relock(depth=1241)
+```
+
+**Capabilities:**
+- TriDelta covariance decomposition and partition angle analysis
+- Aurora condition checking (phase-match faster than dissipate)
+- ISS convergence prediction and closed-loop control simulation
+- Re-preparation interval advisor (validated on ibm_fez depth 1241)
+- QSD circuit construction with periodic re-lock
+- Natural-language query routing with structured recommendations
+
+See `examples/aurora_qsd_quantum_example.py` for full integration.
 
 For collaboration, outreach (e.g., SpaceX, academics), or questions on QSD/Aurora framework, contact via X @apmannino or email.
 

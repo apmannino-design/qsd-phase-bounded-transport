@@ -2,3 +2,8 @@ numpy
 pandas
 matplotlib
 requests
+pytest
+
+# Optional quantum computing backends (install with: pip install qiskit qiskit-aer)
+# qiskit>=1.0
+# qiskit-aer>=0.13
