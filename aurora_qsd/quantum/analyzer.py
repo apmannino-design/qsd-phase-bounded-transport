@@ -11,7 +11,7 @@ from aurora_qsd.core.tridelta import TriDelta, decompose_covariance
 from aurora_qsd.core.aurora import check_aurora_condition
 from aurora_qsd.core.iss import iss_bound
 from aurora_qsd.core.phase_potential import phase_potential, is_zero_dissipation
-from aurora_qsd.quantum.circuit_builder import parity_score
+from aurora_qsd.quantum.circuit_builder import zzz_score
 
 
 @dataclass
@@ -67,7 +67,7 @@ class QuantumQSDAnalyzer:
     def from_counts(self, counts: dict[str, int]) -> AnalysisReport:
         """Build covariance from bitstring counts and run QSD analysis."""
         sigma = self._counts_to_covariance(counts)
-        return self.from_covariance(sigma, parity=parity_score(counts))
+        return self.from_covariance(sigma, parity=zzz_score(counts))
 
     def from_covariance(self, sigma: np.ndarray, parity: float | None = None) -> AnalysisReport:
         """Analyze a covariance matrix directly."""

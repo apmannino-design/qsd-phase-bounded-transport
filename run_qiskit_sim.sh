@@ -22,19 +22,19 @@ SHOTS="${SHOTS:-8192}"
 LAYERS="${LAYERS:-12}"
 
 echo "=============================================="
-echo " [1/3] Ideal simulator (noiseless)"
-echo "=============================================="
-python3 examples/qiskit_sim_test.py --shots "$SHOTS" --layers "$LAYERS"
-
-echo ""
-echo "=============================================="
-echo " [2/3] Noisy simulator (FakeFez + decoherence)"
+echo " [1/3] Noisy simulator (hardware-faithful)"
 echo "=============================================="
 python3 examples/qiskit_sim_test.py --noise --sweep --depth-scale --shots "$SHOTS" --layers "$LAYERS"
 
 echo ""
 echo "=============================================="
-echo " [3/3] Agent demo + example"
+echo " [2/3] Full 3-stage stress test"
+echo "=============================================="
+python3 examples/qiskit_sim_test.py --stress --shots "$SHOTS" --layers "$LAYERS"
+
+echo ""
+echo "=============================================="
+echo " [3/3] Agent + example"
 echo "=============================================="
 python3 -m aurora_qsd.cli aurora
 echo ""

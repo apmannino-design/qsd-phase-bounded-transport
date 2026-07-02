@@ -1,53 +1,44 @@
 """
 Example: Aurora-QSD AI applied to quantum circuit simulation.
 
-Requires: pip install qiskit qiskit-aer
+Requires: pip install qiskit qiskit-aer qiskit-ibm-runtime
 """
 
-from aurora_qsd import QSDAuroraAgent, THETA_STAR_DEG
-from aurora_qsd.quantum.circuit_builder import build_qsd_cell, build_with_relock, parity_score
+from aurora_qsd import QSDAuroraAgent
+from aurora_qsd.core.constants import THETA_STAR_HW_DEG
+from aurora_qsd.quantum.circuit_builder import build_deep_qsd_circuit, build_with_relock, zzz_score
+from aurora_qsd.quantum.simulator import build_noisy_simulator, run_circuit, run_stress_test
 
 
 def main():
     agent = QSDAuroraAgent()
 
-    print(f"=== Aurora-QSD AI Quantum Example (θ* = {THETA_STAR_DEG:.2f}°) ===\n")
+    print(f"=== Aurora-QSD AI Quantum Example (θ*_hw = {THETA_STAR_HW_DEG}°) ===\n")
 
-    # 1. Plan re-preparation for deep circuit
     plan = agent.plan_relock(depth=1241)
     print(plan.message)
     print()
 
-    # 2. Build and simulate QSD circuit (if qiskit available)
-    try:
-        from qiskit import transpile
-        from qiskit_aer import AerSimulator
+    sim = build_noisy_simulator()
+    shots = 8192
 
-        sim = AerSimulator()
-        shots = 8192
+    counts = run_circuit(build_deep_qsd_circuit(layers=12), sim, shots)
+    analysis = agent.analyze_counts(counts)
+    print(f"QSD cell ZZZ: {zzz_score(counts):.4f}")
+    print(analysis.message)
+    print()
 
-        # Standard QSD cell
-        qc = build_qsd_cell()
-        result = sim.run(transpile(qc, sim), shots=shots).result()
-        counts = result.get_counts()
-        analysis = agent.analyze_counts(counts)
-        print(analysis.message)
-        print()
+    counts_deep = run_circuit(build_with_relock(total_layers=35, relock_interval=7), sim, shots)
+    print(f"Deep circuit (35L, re-lock /7) ZZZ: {zzz_score(counts_deep):.4f}")
+    print()
 
-        # Deep circuit with Aurora re-lock
-        qc_deep = build_with_relock(total_layers=35, relock_interval=7)
-        result_deep = sim.run(transpile(qc_deep, sim), shots=shots).result()
-        counts_deep = result_deep.get_counts()
-        score = parity_score(counts_deep)
-        print(f"Deep circuit (35 layers, re-lock every 7): parity = {score:.4f}")
+    print("--- Stress Test (3 stages) ---")
+    result = run_stress_test(shots=4096, layers=12, noisy=True)
+    print(result.summary())
 
-    except ImportError:
-        print("(Install qiskit + qiskit-aer to run circuit simulation)")
-
-    # 3. Natural-language query
     print("\n--- Agent Query ---")
     resp = agent.query("explain how Aurora principle sustains coherence at depth 1241")
-    print(resp.message)
+    print(resp.message[:400] + "...")
 
 
 if __name__ == "__main__":
