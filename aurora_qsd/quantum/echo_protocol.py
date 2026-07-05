@@ -17,7 +17,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-from aurora_qsd.quantum.fez_cells import _trilock_init
+from aurora_qsd.quantum.fez_cells import _trilock_init, append_sunscreen_reset
 
 try:
     from qiskit import QuantumCircuit
@@ -27,6 +27,7 @@ except ImportError:
 THETA_STAR_WILLOW = float(np.pi / 8.0)
 THETA_STAR_WILLOW_DEG = 22.5
 STATES = ("0", "1", "+", "-", "+i", "-i")
+PULSE_VARIANTS = ("phase", "sunscreen", "hybrid", "relock")
 
 
 def _require_qiskit() -> None:
@@ -89,16 +90,42 @@ def _inverse_prepare_state(qc: "QuantumCircuit", q: int, state: str) -> None:
         raise ValueError(state)
 
 
+def _qsd_sunscreen_layer(theta: float = THETA_STAR_WILLOW) -> "QuantumCircuit":
+    """Entangling TriLock sunscreen layer (fez-style, heavier pulse)."""
+    _require_qiskit()
+    qc = QuantumCircuit(3, name="qsd_sunscreen")
+    append_sunscreen_reset(qc, (0, 1, 2), theta)
+    return qc
+
+
+def _qsd_pulse_layer(theta: float, variant: str = "phase") -> "QuantumCircuit":
+    if variant == "phase":
+        return _qsd_echo_layer(theta)
+    if variant == "sunscreen":
+        return _qsd_sunscreen_layer(theta)
+    if variant == "hybrid":
+        _require_qiskit()
+        qc = QuantumCircuit(3, name="qsd_hybrid")
+        for q in (0, 1, 2):
+            qc.x(q)
+        qc.compose(_qsd_echo_layer(theta), qubits=[0, 1, 2], inplace=True)
+        return qc
+    if variant == "relock":
+        return _qsd_echo_layer(theta)
+    raise ValueError(f"unknown pulse variant: {variant}")
+
+
 def _append_echo_forward(
     qc: "QuantumCircuit",
     line: tuple[int, int, int],
     mode: str,
     theta: float,
     phi: float,
+    pulse_variant: str = "phase",
 ) -> None:
     q0, q1, q2 = line
     if mode == "qsd":
-        qc.compose(_qsd_echo_layer(theta), qubits=[q0, q1, q2], inplace=True)
+        qc.compose(_qsd_pulse_layer(theta, pulse_variant), qubits=[q0, q1, q2], inplace=True)
     elif mode == "x":
         qc.x(q0)
         qc.x(q1)
@@ -119,10 +146,11 @@ def _append_echo_inverse(
     mode: str,
     theta: float,
     phi: float,
+    pulse_variant: str = "phase",
 ) -> None:
     q0, q1, q2 = line
     if mode == "qsd":
-        qc.compose(_qsd_echo_layer(theta).inverse(), qubits=[q0, q1, q2], inplace=True)
+        qc.compose(_qsd_pulse_layer(theta, pulse_variant).inverse(), qubits=[q0, q1, q2], inplace=True)
     elif mode == "x":
         qc.x(q0)
         qc.x(q1)
@@ -143,6 +171,7 @@ def build_echo_circuit(
     phi: float = 0.0,
     line: tuple[int, int, int] = (0, 1, 2),
     target: int = 1,
+    pulse_variant: str = "phase",
 ) -> "QuantumCircuit":
     """Echo circuit: |0⟩ on line, |ψ⟩ on middle qubit, survival via inverse-prep + Z."""
     _require_qiskit()
@@ -150,11 +179,19 @@ def build_echo_circuit(
     _prepare_state(qc, target, state)
 
     if mode != "none":
-        _append_echo_forward(qc, line, mode, theta, phi)
+        _append_echo_forward(qc, line, mode, theta, phi, pulse_variant)
+
     if tau_ns > 0:
-        qc.delay(int(tau_ns), list(line), unit="ns")
+        if pulse_variant == "relock" and mode == "qsd":
+            half = int(tau_ns / 2)
+            qc.delay(half, list(line), unit="ns")
+            qc.compose(_qsd_echo_layer(theta), qubits=list(line), inplace=True)
+            qc.delay(int(tau_ns) - half, list(line), unit="ns")
+        else:
+            qc.delay(int(tau_ns), list(line), unit="ns")
+
     if mode != "none":
-        _append_echo_inverse(qc, line, mode, theta, phi)
+        _append_echo_inverse(qc, line, mode, theta, phi, pulse_variant)
 
     _inverse_prepare_state(qc, target, state)
     qc.measure(target, 0)
@@ -236,13 +273,40 @@ def _run_echo_shots(
     tau_ns: float,
     theta: float,
     phi: float,
+    pulse_variant: str = "phase",
 ) -> dict[str, int]:
     from qiskit import transpile
 
-    qc = build_echo_circuit(state=state, mode=mode, tau_ns=tau_ns, theta=theta, phi=phi)
+    qc = build_echo_circuit(
+        state=state,
+        mode=mode,
+        tau_ns=tau_ns,
+        theta=theta,
+        phi=phi,
+        pulse_variant=pulse_variant,
+    )
     tc = transpile(qc, sim, optimization_level=0)
     result = sim.run(tc, shots=shots).result()
     return result.get_counts()
+
+
+def pooled_echo_fidelity(
+    sim,
+    mode: str = "qsd",
+    shots: int = 1000,
+    tau_ns: float = 1000.0,
+    theta: float = THETA_STAR_WILLOW,
+    phi: float = 0.0,
+    pulse_variant: str = "phase",
+    states: tuple[str, ...] = STATES,
+) -> float:
+    """Mean survival fidelity pooled over input states."""
+    succ = tot = 0
+    for state in states:
+        counts = _run_echo_shots(sim, state, mode, shots, tau_ns, theta, phi, pulse_variant)
+        succ += _count_survival(counts)
+        tot += shots
+    return succ / tot if tot else 0.0
 
 
 def run_willow_echo_benchmark(

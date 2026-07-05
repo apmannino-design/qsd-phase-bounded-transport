@@ -27,3 +27,13 @@ def test_willow_benchmark_schema() -> None:
     for mode in d["pooled"]:
         assert 0.5 < d["pooled"][mode]["F"] < 1.0
     assert d["verdict"] in {"NULL", "MARGINAL", "QSD_ECHO_WIN"}
+
+
+def test_echo_sweep_runs() -> None:
+    from aurora_qsd.quantum.echo_sweep import run_willow_echo_sweep
+
+    result = run_willow_echo_sweep(shots=256, span_deg=10.0, n_theta=5, taus_ns=(500, 1000))
+    assert result.theta_sweep
+    assert result.tau_sweep
+    assert len(result.pulse_sweep) == 4
+    assert result.recommendation
