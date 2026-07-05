@@ -37,3 +37,27 @@ def test_echo_sweep_runs() -> None:
     assert result.tau_sweep
     assert len(result.pulse_sweep) == 4
     assert result.recommendation
+
+
+def test_cirq_echo_noiseless() -> None:
+    cirq = pytest.importorskip("cirq")
+    from aurora_qsd.quantum.echo_cirq import build_echo_circuit
+
+    qubits = [cirq.LineQubit(i) for i in range(3)]
+    target = qubits[1]
+    for state in ("0", "+", "1"):
+        circuit = build_echo_circuit(state=state, mode="x", tau_ns=0, t2_ns=2000)
+        sim = cirq.Simulator()
+        result = sim.run(circuit, repetitions=200)
+        assert (result.data["m"] == 0).mean() == 1.0
+
+
+def test_cirq_benchmark_schema() -> None:
+    pytest.importorskip("cirq")
+    from aurora_qsd.quantum.echo_cirq import run_willow_echo_benchmark
+
+    result = run_willow_echo_benchmark(shots=256, tau_ns=1000, n_random=2, seed=0, t2_ns=2000)
+    d = result.to_dict()
+    assert d["processor"] == "willow_pink_cirq"
+    assert set(d["per_state"]) == {"echo_qsd", "echo_x", "echo_random", "no_echo"}
+    assert d["verdict"] in {"NULL", "MARGINAL", "QSD_ECHO_WIN"}
