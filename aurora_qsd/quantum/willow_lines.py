@@ -70,3 +70,50 @@ def get_line(name: str = "interior") -> WillowLine:
 def validate_on_device(line: WillowLine, device) -> bool:
     qset = device.metadata.qubit_set
     return all(q in qset for q in line.qubits())
+
+
+def extract_disjoint_3q_lines(device) -> list[WillowLine]:
+    """
+    Greedy packing of non-overlapping 3-qubit lines on a Willow grid device.
+
+    Returns up to ~32 lines (96 qubits) on willow_pink.
+    """
+    _require_cirq()
+    qs = sorted(device.metadata.qubit_set, key=lambda q: (q.row, q.col))
+    adj: dict = {q: set() for q in qs}
+    for a, b in device.metadata.qubit_pairs:
+        adj[a].add(b)
+        adj[b].add(a)
+
+    candidates: set[tuple] = set()
+    for a in qs:
+        for b in adj[a]:
+            for c in adj[b]:
+                if c == a:
+                    continue
+                if a.row == b.row == c.row:
+                    trio = tuple(sorted([a, b, c], key=lambda q: q.col))
+                    candidates.add(trio)
+                elif a.col == b.col == c.col:
+                    trio = tuple(sorted([a, b, c], key=lambda q: q.row))
+                    candidates.add(trio)
+
+    used: set = set()
+    lines: list[WillowLine] = []
+    for trio in sorted(candidates, key=lambda t: (t[0].row, t[0].col)):
+        if any(q in used for q in trio):
+            continue
+        used.update(trio)
+        coords = tuple((q.row, q.col) for q in trio)
+        lines.append(
+            WillowLine(
+                name=f"cell_{len(lines)}",
+                coords=coords,  # type: ignore[arg-type]
+                description=f"Disjoint 3Q line {len(lines)}",
+            )
+        )
+    return lines
+
+
+def line_from_coords(coords: tuple[tuple[int, int], tuple[int, int], tuple[int, int]], name: str = "custom") -> WillowLine:
+    return WillowLine(name=name, coords=coords, description="Custom 3Q line")

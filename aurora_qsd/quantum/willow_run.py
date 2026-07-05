@@ -349,3 +349,151 @@ def run_willow_correct(
         out.notes = "No clear QSD advantage on interior line with native willow_pink noise."
 
     return out
+
+
+@dataclass
+class WillowMaxResult:
+    processor: str = "willow_pink"
+    theta_star_deg: float = THETA_STAR_WILLOW_HW_DEG
+    depth_layers: int = 1241
+    relock_interval: int = 3
+    shots: int = 200
+    n_cells: int = 0
+    n_qubits: int = 0
+    interior: dict = field(default_factory=dict)
+    cells: list = field(default_factory=list)
+    aggregate: dict = field(default_factory=dict)
+    verdict: str = "NULL"
+    notes: str = ""
+
+    def to_dict(self) -> dict:
+        return {
+            "processor": self.processor,
+            "theta_star_deg": self.theta_star_deg,
+            "depth_layers": self.depth_layers,
+            "relock_interval": self.relock_interval,
+            "shots": self.shots,
+            "n_cells": self.n_cells,
+            "n_qubits": self.n_qubits,
+            "interior": self.interior,
+            "cells": self.cells,
+            "aggregate": self.aggregate,
+            "verdict": self.verdict,
+            "notes": self.notes,
+        }
+
+
+def _depth_head_to_head(
+    sampler,
+    line: WillowLine,
+    shots: int,
+    theta_star: float,
+    theta_neg: float,
+    depth_layers: int,
+    relock_interval: int,
+) -> dict:
+    out = {}
+    for label, th in [("qsd_theta_star", theta_star), ("negative_theta", theta_neg)]:
+        c = build_depth_sunscreen_circuit(
+            line,
+            theta=th,
+            layers=depth_layers,
+            relock_interval=relock_interval,
+        )
+        result = sampler.run(c, repetitions=shots)
+        zzz = _zzz_from_result(result, shots)
+        out[label] = {"zzz": zzz, "n": shots, "theta_deg": float(np.degrees(th))}
+    gap = out["qsd_theta_star"]["zzz"] - out["negative_theta"]["zzz"]
+    out["gap"] = float(gap)
+    out["abs_gap"] = float(abs(gap))
+    return out
+
+
+def run_willow_max(
+    shots: int = 200,
+    theta_star_deg: float = THETA_STAR_WILLOW_HW_DEG,
+    depth_layers: int = 1241,
+    relock_interval: int = 3,
+    negative_offset_deg: float = 70.0,
+    max_cells: int | None = None,
+    include_interior: bool = True,
+) -> WillowMaxResult:
+    """
+    Maximum Willow QSD campaign:
+      - depth default 1241 layers (fez-validated)
+      - up to 32 disjoint 3Q cells (96 qubits) on willow_pink
+    """
+    _require_cirq()
+    from cirq_google import engine
+
+    from aurora_qsd.quantum.willow_lines import extract_disjoint_3q_lines
+
+    proc = engine.create_default_noisy_quantum_virtual_machine("willow_pink").get_processor("willow_pink")
+    sampler = proc.get_sampler()
+    device = proc.get_device()
+    theta_star = float(np.radians(theta_star_deg))
+    theta_neg = negative_control_angle(theta_star, offset_deg=negative_offset_deg)
+
+    cells = extract_disjoint_3q_lines(device)
+    if max_cells is not None:
+        cells = cells[:max_cells]
+
+    out = WillowMaxResult(
+        shots=shots,
+        theta_star_deg=theta_star_deg,
+        depth_layers=depth_layers,
+        relock_interval=relock_interval,
+        n_cells=len(cells),
+        n_qubits=max(len(cells) * 3, 3 if include_interior else 0),
+    )
+
+    if include_interior:
+        interior = get_line("interior")
+        print(f"[willow_max] interior {interior.labels()} depth={depth_layers}L", flush=True)
+        out.interior = {
+            "line": interior.labels(),
+            **_depth_head_to_head(
+                sampler, interior, shots, theta_star, theta_neg, depth_layers, relock_interval
+            ),
+        }
+
+    gaps = []
+    for i, line in enumerate(cells):
+        print(f"[willow_max] cell {i + 1}/{len(cells)} {line.labels()} depth={depth_layers}L", flush=True)
+        row = _depth_head_to_head(
+            sampler, line, shots, theta_star, theta_neg, depth_layers, relock_interval
+        )
+        row["cell_id"] = i
+        row["line"] = line.labels()
+        out.cells.append(row)
+        gaps.append(row["abs_gap"])
+
+    if gaps:
+        out.aggregate = {
+            "zzz_theta_star_median": float(np.median([c["qsd_theta_star"]["zzz"] for c in out.cells])),
+            "zzz_negative_median": float(np.median([c["negative_theta"]["zzz"] for c in out.cells])),
+            "abs_gap_median": float(np.median(gaps)),
+            "abs_gap_mean": float(np.mean(gaps)),
+            "abs_gap_min": float(np.min(gaps)),
+            "cells_winning": int(sum(1 for g in gaps if g >= 0.05)),
+            "n_cells": len(gaps),
+        }
+
+    ref_gap = out.interior.get("abs_gap", out.aggregate.get("abs_gap_median", 0.0))
+    if ref_gap >= 0.05 and out.aggregate.get("cells_winning", 0) >= max(1, len(cells) // 2):
+        out.verdict = "MAX_WIN"
+        out.notes = (
+            f"Max campaign: {out.n_qubits} qubits, {depth_layers}L @ θ*={theta_star_deg:.2f}° — "
+            f"median |ΔZZZ|={out.aggregate.get('abs_gap_median', ref_gap):.3f}, "
+            f"{out.aggregate.get('cells_winning', 0)}/{len(cells)} cells win."
+        )
+    elif ref_gap >= 0.05:
+        out.verdict = "DEPTH_WIN"
+        out.notes = (
+            f"Depth {depth_layers}L @ θ*={theta_star_deg:.2f}°: interior |ΔZZZ|={ref_gap:.3f}."
+        )
+    else:
+        out.verdict = "NULL"
+        out.notes = "Max campaign: no clear QSD advantage at this depth/noise."
+
+    return out
