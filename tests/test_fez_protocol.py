@@ -40,4 +40,4 @@ def test_basin_sweep_ideal():
 def test_agent_basin_intent():
     agent = QSDAuroraAgent()
     resp = agent.run_basin_sweep(shots=512, depth=4, noise="ideal")
-    assert resp.intent == "optimize"
+    assert resp.intent == "basin"

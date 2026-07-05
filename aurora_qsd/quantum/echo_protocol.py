@@ -18,6 +18,7 @@ from dataclasses import dataclass, field
 import numpy as np
 
 from aurora_qsd.quantum.fez_cells import _trilock_init, append_sunscreen_reset
+from aurora_qsd.quantum.willow_noise import qiskit_idle_noise_model
 
 try:
     from qiskit import QuantumCircuit
@@ -208,16 +209,8 @@ def _survival_probability(qc: "QuantumCircuit", state: str, target: int = 1) -> 
 
 
 def _willow_idle_noise_model(tau_ns: float = 1000.0, t2_ns: float = 2000.0) -> "NoiseModel":
-    """Idle thermal noise during echo delay τ (Willow/qsim-like dephasing)."""
-    from qiskit_aer.noise import NoiseModel, thermal_relaxation_error
-
-    t1_ns = 2.0 * t2_ns
-    nm = NoiseModel()
-    nm.add_all_qubit_quantum_error(
-        thermal_relaxation_error(t1_ns, t2_ns, tau_ns),
-        ["delay"],
-    )
-    return nm
+    """Idle thermal noise during echo delay τ (Willow/qsim-like)."""
+    return qiskit_idle_noise_model(tau_ns=tau_ns, t2_ns=t2_ns)
 
 
 def _count_survival(counts: dict[str, int]) -> int:

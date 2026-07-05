@@ -12,6 +12,7 @@ from aurora_qsd.quantum.echo_protocol import (
     THETA_STAR_WILLOW,
     THETA_STAR_WILLOW_DEG,
 )
+from aurora_qsd.quantum.willow_noise import cirq_idle_noise_ops
 
 try:
     import cirq
@@ -124,11 +125,10 @@ def _echo_forward_ops(qubits: list, mode: str, theta: float, phi: float, pulse_v
 
 
 def _idle_noise_ops(qubits: list, tau_ns: float, t2_ns: float) -> list:
-    """Dephasing during idle τ (matches Qiskit thermal-relaxation sweep scale)."""
+    """Thermal relaxation during idle τ (same channel as Qiskit Aer)."""
     if tau_ns <= 0:
         return []
-    gamma = 1.0 - math.exp(-tau_ns / t2_ns)
-    return [cirq.phase_damp(gamma).on(q) for q in qubits]
+    return cirq_idle_noise_ops(qubits, tau_ns, t2_ns)
 
 
 def build_echo_circuit(
