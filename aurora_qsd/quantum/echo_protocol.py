@@ -17,6 +17,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
+from aurora_qsd.core.constants import THETA_STAR_WILLOW_HW, THETA_STAR_WILLOW_HW_DEG
 from aurora_qsd.quantum.fez_cells import _trilock_init, append_sunscreen_reset
 from aurora_qsd.quantum.willow_noise import qiskit_idle_noise_model
 
@@ -25,8 +26,8 @@ try:
 except ImportError:
     QuantumCircuit = None  # type: ignore[misc, assignment]
 
-THETA_STAR_WILLOW = float(np.pi / 8.0)
-THETA_STAR_WILLOW_DEG = 22.5
+THETA_STAR_WILLOW = THETA_STAR_WILLOW_HW
+THETA_STAR_WILLOW_DEG = THETA_STAR_WILLOW_HW_DEG
 STATES = ("0", "1", "+", "-", "+i", "-i")
 PULSE_VARIANTS = ("tridelta", "phase", "sunscreen", "hybrid", "relock")
 DEFAULT_PULSE_VARIANT = "tridelta"

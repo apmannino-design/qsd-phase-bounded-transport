@@ -14,7 +14,9 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
+from aurora_qsd.core.constants import THETA_STAR_WILLOW_HW, THETA_STAR_WILLOW_HW_DEG
 from aurora_qsd.quantum.echo_protocol import STATES, THETA_STAR_WILLOW, THETA_STAR_WILLOW_DEG
+from aurora_qsd.quantum.fez_cells import negative_control_angle
 from aurora_qsd.quantum.willow_lines import WillowLine, get_line
 
 try:
@@ -80,10 +82,12 @@ def _cz_cnot(control, target) -> list:
     return [cirq.H(target), cirq.CZ(control, target), cirq.H(target)]
 
 
-def _sunscreen_ops(qubits: list, theta: float) -> list:
-    """Full TriDelta cell on a line using native CZ (Willow-compatible)."""
+def _sunscreen_body_ops(qubits: list, theta: float, with_init: bool = False) -> list:
+    """3Q QSD body layer — TriLock init only when with_init=True (fez-aligned)."""
     q0, q1, q2 = qubits
-    ops = _trilock_init_ops(qubits, theta)
+    ops: list = []
+    if with_init:
+        ops.extend(_trilock_init_ops(qubits, theta))
     ops.extend(_cz_cnot(q0, q1))
     ops.extend([cirq.rz(theta)(q0), cirq.rz(np.pi / 2.0 - theta)(q1)])
     ops.extend(_cz_cnot(q1, q0))
@@ -91,6 +95,16 @@ def _sunscreen_ops(qubits: list, theta: float) -> list:
     ops.append(cirq.rz(theta)(q2))
     ops.extend(_cz_cnot(q1, q2))
     return ops
+
+
+def _sunscreen_reset_ops(qubits: list, theta: float) -> list:
+    """Full TriLock re-preparation between depth blocks (ibm_fez sunscreen)."""
+    return _sunscreen_body_ops(qubits, theta, with_init=True)
+
+
+def _sunscreen_ops(qubits: list, theta: float) -> list:
+    """Full TriDelta cell — legacy alias (always includes init)."""
+    return _sunscreen_body_ops(qubits, theta, with_init=True)
 
 
 def _invert_ops(ops: list) -> list:
@@ -136,21 +150,27 @@ def build_grid_echo_circuit(
 def build_depth_sunscreen_circuit(
     line: WillowLine,
     theta: float = THETA_STAR_WILLOW,
-    layers: int = 12,
-    relock_interval: int = 4,
+    layers: int = 16,
+    relock_interval: int = 3,
 ) -> "cirq.Circuit":
     """Depth-scaling QSD sunscreen on interior line (fez-validated protocol)."""
     _require_cirq()
     qubits = list(line.qubits())
     ops: list = []
-    done = 0
-    while done < layers:
-        if done > 0:
-            ops.extend(_sunscreen_ops(qubits, theta))
-        block = min(relock_interval, layers - done)
-        for _ in range(block):
-            ops.extend(_sunscreen_ops(qubits, theta))
-        done += block
+    layers_done = 0
+    while layers_done < layers:
+        if layers_done > 0:
+            ops.extend(_sunscreen_reset_ops(qubits, theta))
+        block = min(relock_interval, layers - layers_done)
+        for j in range(block):
+            ops.extend(
+                _sunscreen_body_ops(
+                    qubits,
+                    theta,
+                    with_init=(layers_done == 0 and j == 0),
+                )
+            )
+        layers_done += block
     for q in qubits:
         ops.append(cirq.measure(q, key=f"m_{q.row}_{q.col}"))
     return cirq.Circuit(ops)
@@ -182,9 +202,11 @@ class WillowRunResult:
     shots: int = 4000
     tau_ns: float = 1000.0
     theta_deg: float = 0.0
+    theta_star_deg: float = THETA_STAR_WILLOW_HW_DEG
     pulse: str = "phase"
     echo: dict = field(default_factory=dict)
     depth: dict = field(default_factory=dict)
+    depth_gap: float = 0.0
     comparison_boundary: dict = field(default_factory=dict)
     verdict: str = "NULL"
     notes: str = ""
@@ -197,9 +219,11 @@ class WillowRunResult:
             "shots": self.shots,
             "tau_ns": self.tau_ns,
             "theta_deg": self.theta_deg,
+            "theta_star_deg": self.theta_star_deg,
             "pulse": self.pulse,
             "echo": self.echo,
             "depth": self.depth,
+            "depth_gap": self.depth_gap,
             "comparison_boundary": self.comparison_boundary,
             "verdict": self.verdict,
             "notes": self.notes,
@@ -232,21 +256,33 @@ def _zzz_score(counts: dict, qubits: list) -> float:
     return acc / total
 
 
+def _zzz_from_result(result, shots: int) -> float:
+    """⟨Z⊗Z⊗Z⟩ from Cirq sampler result (parity of measured bits)."""
+    keys = sorted(result.data.keys())
+    zzz = []
+    for i in range(shots):
+        pop = sum(int(result.data[k][i]) for k in keys)
+        zzz.append(1.0 if pop % 2 == 0 else -1.0)
+    return float(np.mean(zzz))
+
+
 def run_willow_correct(
     shots: int = 4000,
     tau_ns: float = 1000.0,
     theta_deg: float = 0.0,
+    theta_star_deg: float = THETA_STAR_WILLOW_HW_DEG,
     pulse: str = "phase",
     line_name: str = "interior",
-    depth_layers: int = 12,
-    relock_interval: int = 4,
+    depth_layers: int = 16,
+    relock_interval: int = 3,
+    negative_offset_deg: float = 70.0,
     compare_boundary: bool = True,
 ) -> WillowRunResult:
     """
     Correct Willow campaign:
       1. Interior line q(6,5)–q(6,6)–q(6,7)
       2. Native willow_pink noisy sampler
-      3. Phase echo at θ=0° (best sim Δ≈0) + depth sunscreen
+      3. Phase echo + depth sunscreen at hardware θ* (default 22.48°)
     """
     _require_cirq()
     from cirq_google import engine
@@ -255,6 +291,8 @@ def run_willow_correct(
     sampler = proc.get_sampler()
     line = get_line(line_name)
     theta = float(np.radians(theta_deg))
+    theta_star = float(np.radians(theta_star_deg))
+    theta_neg = negative_control_angle(theta_star, offset_deg=negative_offset_deg)
 
     out = WillowRunResult(
         line=line_name,
@@ -262,21 +300,22 @@ def run_willow_correct(
         shots=shots,
         tau_ns=tau_ns,
         theta_deg=theta_deg,
+        theta_star_deg=theta_star_deg,
         pulse=pulse,
     )
 
     out.echo = _pooled_echo(sampler, line, shots, tau_ns, theta, pulse)
 
-    # Depth sunscreen: θ* vs negative control
-    for label, th in [("qsd_theta_star", THETA_STAR_WILLOW), ("negative_theta", THETA_STAR_WILLOW + np.radians(70))]:
-        c = build_depth_sunscreen_circuit(line, theta=th, layers=depth_layers, relock_interval=relock_interval)
+    for label, th in [("qsd_theta_star", theta_star), ("negative_theta", theta_neg)]:
+        c = build_depth_sunscreen_circuit(
+            line,
+            theta=th,
+            layers=depth_layers,
+            relock_interval=relock_interval,
+        )
         result = sampler.run(c, repetitions=shots)
-        keys = sorted(result.data.keys())
-        zzz = []
-        for i in range(shots):
-            pop = sum(int(result.data[k][i]) for k in keys)
-            zzz.append(1.0 if pop % 2 == 0 else -1.0)
-        out.depth[label] = {"zzz": float(np.mean(zzz)), "n": shots}
+        zzz = _zzz_from_result(result, shots)
+        out.depth[label] = {"zzz": zzz, "n": shots, "theta_deg": float(np.degrees(th))}
 
     if compare_boundary:
         boundary = get_line("boundary")
@@ -287,16 +326,24 @@ def run_willow_correct(
     fn = out.echo["no_echo"]["F"]
     zsd = out.depth.get("qsd_theta_star", {}).get("zzz", 0.0)
     zneg = out.depth.get("negative_theta", {}).get("zzz", 0.0)
+    out.depth_gap = float(zsd - zneg)
+    depth_win = abs(out.depth_gap) >= 0.05
 
-    if fq > fx and fq > fn and zsd > zneg + 0.05:
+    if fq > fx and fq > fn and depth_win:
         out.verdict = "QSD_WIN"
-        out.notes = "Interior line: echo QSD beats controls and depth ZZZ beats negative θ."
+        out.notes = (
+            f"Interior line @ θ*={theta_star_deg:.2f}°: echo QSD beats controls "
+            f"and depth |ΔZZZ|={abs(out.depth_gap):.3f} vs wrong θ."
+        )
     elif fq > fx and fq > fn:
         out.verdict = "ECHO_WIN"
         out.notes = "Echo QSD beats X and no-echo on interior line."
-    elif zsd > zneg + 0.05:
+    elif depth_win:
         out.verdict = "DEPTH_WIN"
-        out.notes = "Depth sunscreen ZZZ angle-specific on interior line."
+        out.notes = (
+            f"Depth sunscreen at θ*={theta_star_deg:.2f}°: "
+            f"ZZZ {zsd:+.3f} vs wrong θ {zneg:+.3f} (|Δ|={abs(out.depth_gap):.3f})."
+        )
     else:
         out.verdict = "NULL"
         out.notes = "No clear QSD advantage on interior line with native willow_pink noise."

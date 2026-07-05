@@ -20,7 +20,7 @@ def test_noiseless_echo_survival(state: str, mode: str) -> None:
 def test_willow_benchmark_schema() -> None:
     result = run_willow_echo_benchmark(shots=512, tau_ns=1000, n_random=3, seed=0, t2_ns=2000)
     d = result.to_dict()
-    assert d["theta_star_deg"] == 22.5
+    assert d["theta_star_deg"] == 22.48
     assert set(d["per_state"]) == {"echo_qsd", "echo_x", "echo_random", "no_echo"}
     for mode in d["per_state"]:
         assert set(d["per_state"][mode]) == set(STATES)

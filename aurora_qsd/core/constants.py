@@ -11,6 +11,10 @@ THETA_STAR_DEG = float(np.degrees(THETA_STAR))
 THETA_STAR_HW_DEG = 22.47
 THETA_STAR_HW = float(np.radians(THETA_STAR_HW_DEG))
 
+# Willow / fez campaign lock point (fine-tuned on willow_pink interior line)
+THETA_STAR_WILLOW_HW_DEG = 22.48
+THETA_STAR_WILLOW_HW = float(np.radians(THETA_STAR_WILLOW_HW_DEG))
+
 # Golden-ratio outer corridor: θ_φ = arctan(1/φ)
 PHI = (1.0 + np.sqrt(5.0)) / 2.0
 THETA_PHI = float(np.arctan(1.0 / PHI))
