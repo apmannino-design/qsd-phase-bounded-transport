@@ -91,7 +91,7 @@ def sweep_theta(
     t2_ns: float = 2000.0,
     span_deg: float = 20.0,
     n_points: int = 9,
-    pulse_variant: str = "phase",
+    pulse_variant: str = "tridelta",
 ) -> list[SweepPoint]:
     """Sweep echo angle θ around θ* = 22.5°."""
     sim = _make_sim(tau_ns, t2_ns)
@@ -115,7 +115,7 @@ def sweep_tau(
     theta: float = THETA_STAR_WILLOW,
     t2_ns: float = 2000.0,
     taus_ns: tuple[float, ...] = (250, 500, 1000, 1500, 2000, 3000),
-    pulse_variant: str = "phase",
+    pulse_variant: str = "tridelta",
 ) -> list[SweepPoint]:
     """Sweep idle time τ."""
     points: list[SweepPoint] = []

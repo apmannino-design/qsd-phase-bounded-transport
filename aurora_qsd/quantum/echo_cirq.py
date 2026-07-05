@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 import numpy as np
 
 from aurora_qsd.quantum.echo_protocol import (
+    DEFAULT_PULSE_VARIANT,
     STATES,
     THETA_STAR_WILLOW,
     THETA_STAR_WILLOW_DEG,
@@ -96,15 +97,20 @@ def _qsd_sunscreen_ops(qubits: list, theta: float) -> list:
     return ops
 
 
-def _qsd_pulse_ops(qubits: list, theta: float, variant: str = "phase") -> list:
+def _qsd_tridelta_ops(qubits: list, theta: float) -> list:
+    """Full TriDelta TriLock sunscreen layer (matches fez_cells.append_sunscreen_reset)."""
+    return _qsd_sunscreen_ops(qubits, theta)
+
+
+def _qsd_pulse_ops(qubits: list, theta: float, variant: str = DEFAULT_PULSE_VARIANT) -> list:
+    if variant in ("tridelta", "sunscreen"):
+        return _qsd_tridelta_ops(qubits, theta)
     if variant == "phase":
         return _qsd_phase_ops(qubits, theta)
-    if variant == "sunscreen":
-        return _qsd_sunscreen_ops(qubits, theta)
     if variant == "hybrid":
         return [cirq.X(q) for q in qubits] + _qsd_phase_ops(qubits, theta)
     if variant == "relock":
-        return _qsd_phase_ops(qubits, theta)
+        return _qsd_tridelta_ops(qubits, theta)
     raise ValueError(f"unknown pulse variant: {variant}")
 
 
@@ -137,7 +143,7 @@ def build_echo_circuit(
     tau_ns: float = 1000.0,
     theta: float = THETA_STAR_WILLOW,
     phi: float = 0.0,
-    pulse_variant: str = "phase",
+    pulse_variant: str = DEFAULT_PULSE_VARIANT,
     t2_ns: float = 2000.0,
 ) -> "cirq.Circuit":
     """Build Cirq echo circuit with idle dephasing during τ."""
@@ -155,7 +161,7 @@ def build_echo_circuit(
             half = int(tau_ns / 2)
             ops.append(cirq.wait(*qubits, nanos=half))
             ops.extend(_idle_noise_ops(qubits, half, t2_ns))
-            ops.extend(_qsd_phase_ops(qubits, theta))
+            ops.extend(_qsd_tridelta_ops(qubits, theta))
             rem = int(tau_ns) - half
             ops.append(cirq.wait(*qubits, nanos=rem))
             ops.extend(_idle_noise_ops(qubits, rem, t2_ns))
@@ -226,7 +232,7 @@ def run_willow_echo_benchmark(
     seed: int = 42,
     t2_ns: float = 2000.0,
     theta: float = THETA_STAR_WILLOW,
-    pulse_variant: str = "phase",
+    pulse_variant: str = DEFAULT_PULSE_VARIANT,
     use_density_matrix: bool = True,
 ) -> WillowEchoCirqResult:
     """Run Willow echo benchmark on Cirq density-matrix simulator."""

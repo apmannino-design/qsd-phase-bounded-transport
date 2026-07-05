@@ -35,7 +35,7 @@ def test_echo_sweep_runs() -> None:
     result = run_willow_echo_sweep(shots=256, span_deg=10.0, n_theta=5, taus_ns=(500, 1000))
     assert result.theta_sweep
     assert result.tau_sweep
-    assert len(result.pulse_sweep) == 4
+    assert len(result.pulse_sweep) == 5
     assert result.recommendation
 
 

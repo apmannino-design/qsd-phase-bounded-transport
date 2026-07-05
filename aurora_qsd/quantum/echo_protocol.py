@@ -4,7 +4,7 @@ Willow / line echo protocol — correct QSD validation experiment.
 NOT the IBM fez ZZZ depth test. This is:
   prepare |ψ⟩ → P → idle τ → P† → measure survival
 
-echo_qsd:   P = TriLock sunscreen layer at θ* = π/8
+echo_qsd:   P = full TriDelta TriLock sunscreen (3Q QSD cell) at θ* = π/8
 echo_x:     P = X on line
 echo_random:P = Rz(φ) on line
 no_echo:    τ only
@@ -28,7 +28,8 @@ except ImportError:
 THETA_STAR_WILLOW = float(np.pi / 8.0)
 THETA_STAR_WILLOW_DEG = 22.5
 STATES = ("0", "1", "+", "-", "+i", "-i")
-PULSE_VARIANTS = ("phase", "sunscreen", "hybrid", "relock")
+PULSE_VARIANTS = ("tridelta", "phase", "sunscreen", "hybrid", "relock")
+DEFAULT_PULSE_VARIANT = "tridelta"
 
 
 def _require_qiskit() -> None:
@@ -99,11 +100,16 @@ def _qsd_sunscreen_layer(theta: float = THETA_STAR_WILLOW) -> "QuantumCircuit":
     return qc
 
 
-def _qsd_pulse_layer(theta: float, variant: str = "phase") -> "QuantumCircuit":
+def _qsd_tridelta_layer(theta: float = THETA_STAR_WILLOW) -> "QuantumCircuit":
+    """Full TriDelta TriLock sunscreen: init + 2Q QSD + line bridge (fez-validated)."""
+    return _qsd_sunscreen_layer(theta)
+
+
+def _qsd_pulse_layer(theta: float, variant: str = DEFAULT_PULSE_VARIANT) -> "QuantumCircuit":
+    if variant in ("tridelta", "sunscreen"):
+        return _qsd_tridelta_layer(theta)
     if variant == "phase":
         return _qsd_echo_layer(theta)
-    if variant == "sunscreen":
-        return _qsd_sunscreen_layer(theta)
     if variant == "hybrid":
         _require_qiskit()
         qc = QuantumCircuit(3, name="qsd_hybrid")
@@ -112,7 +118,7 @@ def _qsd_pulse_layer(theta: float, variant: str = "phase") -> "QuantumCircuit":
         qc.compose(_qsd_echo_layer(theta), qubits=[0, 1, 2], inplace=True)
         return qc
     if variant == "relock":
-        return _qsd_echo_layer(theta)
+        return _qsd_tridelta_layer(theta)
     raise ValueError(f"unknown pulse variant: {variant}")
 
 
@@ -122,7 +128,7 @@ def _append_echo_forward(
     mode: str,
     theta: float,
     phi: float,
-    pulse_variant: str = "phase",
+    pulse_variant: str = DEFAULT_PULSE_VARIANT,
 ) -> None:
     q0, q1, q2 = line
     if mode == "qsd":
@@ -147,7 +153,7 @@ def _append_echo_inverse(
     mode: str,
     theta: float,
     phi: float,
-    pulse_variant: str = "phase",
+    pulse_variant: str = DEFAULT_PULSE_VARIANT,
 ) -> None:
     q0, q1, q2 = line
     if mode == "qsd":
@@ -172,7 +178,7 @@ def build_echo_circuit(
     phi: float = 0.0,
     line: tuple[int, int, int] = (0, 1, 2),
     target: int = 1,
-    pulse_variant: str = "phase",
+    pulse_variant: str = DEFAULT_PULSE_VARIANT,
 ) -> "QuantumCircuit":
     """Echo circuit: |0⟩ on line, |ψ⟩ on middle qubit, survival via inverse-prep + Z."""
     _require_qiskit()
@@ -186,7 +192,7 @@ def build_echo_circuit(
         if pulse_variant == "relock" and mode == "qsd":
             half = int(tau_ns / 2)
             qc.delay(half, list(line), unit="ns")
-            qc.compose(_qsd_echo_layer(theta), qubits=list(line), inplace=True)
+            qc.compose(_qsd_tridelta_layer(theta), qubits=list(line), inplace=True)
             qc.delay(int(tau_ns) - half, list(line), unit="ns")
         else:
             qc.delay(int(tau_ns), list(line), unit="ns")
@@ -266,7 +272,7 @@ def _run_echo_shots(
     tau_ns: float,
     theta: float,
     phi: float,
-    pulse_variant: str = "phase",
+    pulse_variant: str = DEFAULT_PULSE_VARIANT,
 ) -> dict[str, int]:
     from qiskit import transpile
 
@@ -290,7 +296,7 @@ def pooled_echo_fidelity(
     tau_ns: float = 1000.0,
     theta: float = THETA_STAR_WILLOW,
     phi: float = 0.0,
-    pulse_variant: str = "phase",
+    pulse_variant: str = DEFAULT_PULSE_VARIANT,
     states: tuple[str, ...] = STATES,
 ) -> float:
     """Mean survival fidelity pooled over input states."""
@@ -308,6 +314,7 @@ def run_willow_echo_benchmark(
     n_random: int = 10,
     seed: int = 42,
     t2_ns: float = 2000.0,
+    pulse_variant: str = DEFAULT_PULSE_VARIANT,
 ) -> WillowEchoResult:
     """Run echo benchmark matching Willow JSON schema."""
     _require_qiskit()
@@ -323,7 +330,9 @@ def run_willow_echo_benchmark(
     for mode_name, mode in [("echo_qsd", "qsd"), ("echo_x", "x"), ("no_echo", "none")]:
         out.per_state[mode_name] = {}
         for state in STATES:
-            counts = _run_echo_shots(sim, state, mode, shots, tau_ns, THETA_STAR_WILLOW, 0.0)
+            counts = _run_echo_shots(
+                sim, state, mode, shots, tau_ns, THETA_STAR_WILLOW, 0.0, pulse_variant
+            )
             out.per_state[mode_name][state] = {
                 "succ": _count_survival(counts),
                 "tot": shots,

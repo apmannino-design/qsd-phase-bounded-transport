@@ -16,7 +16,7 @@ def main() -> int:
     parser.add_argument("--tau", type=float, default=1000.0, help="Idle time τ (ns)")
     parser.add_argument("--t2", type=float, default=2000.0, help="T2 for idle dephasing (ns)")
     parser.add_argument("--theta-deg", type=float, default=22.5, help="QSD echo angle (deg)")
-    parser.add_argument("--pulse", default="phase", choices=["phase", "sunscreen", "hybrid", "relock"])
+    parser.add_argument("--pulse", default="tridelta", choices=["tridelta", "phase", "sunscreen", "hybrid", "relock"])
     parser.add_argument("--statevector", action="store_true", help="Use statevector sim (noiseless idle)")
     args = parser.parse_args()
 
