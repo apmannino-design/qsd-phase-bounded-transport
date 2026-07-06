@@ -106,9 +106,9 @@ def run_gain_sweep(
     """Grid search θ × depth × re-lock; maximize |ΔZZZ| on interior line."""
     sampler, _ = _get_sampler()
     line = get_line(line_name)
-    thetas = theta_values or [22.45, 22.46, 22.47, 22.48, 22.49, 22.50, 22.51]
-    depths = depth_values or [8, 10, 12, 14, 16, 18, 20, 24]
-    relocks = relock_values or [2, 3, 4, 5]
+    thetas = theta_values or [22.46, 22.47, 22.48, 22.49, 22.50]
+    depths = depth_values or [12, 14, 16, 18, 20]
+    relocks = relock_values or [2, 3, 4]
 
     t0 = time.time()
     out = GainSweepResult(phase="coarse_sweep", shots=shots, line=line.labels())
@@ -136,8 +136,8 @@ def run_fine_sweep(
     line_name: str = "interior",
 ) -> GainSweepResult:
     """Fine grid around coarse winner."""
-    thetas = [round(center_theta + d, 3) for d in (-0.03, -0.02, -0.01, 0.0, 0.01, 0.02, 0.03)]
-    depths = sorted({max(4, center_depth + d) for d in (-4, -2, 0, 2, 4)})
+    thetas = [round(center_theta + d, 3) for d in (-0.02, -0.01, 0.0, 0.01, 0.02)]
+    depths = sorted({max(4, center_depth + d) for d in (-2, 0, 2)})
     relocks = sorted({max(2, center_relock + d) for d in (-1, 0, 1)})
 
     sampler, _ = _get_sampler()

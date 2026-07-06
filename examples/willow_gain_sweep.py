@@ -12,8 +12,8 @@ from aurora_qsd.quantum.willow_gain_sweep import run_full_gain_campaign
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Willow gain maximization sweep")
-    parser.add_argument("--coarse-shots", type=int, default=300)
-    parser.add_argument("--fine-shots", type=int, default=400)
+    parser.add_argument("--coarse-shots", type=int, default=250)
+    parser.add_argument("--fine-shots", type=int, default=350)
     parser.add_argument("--validate-shots", type=int, default=2000)
     parser.add_argument("--cell-shots", type=int, default=500)
     args = parser.parse_args()
