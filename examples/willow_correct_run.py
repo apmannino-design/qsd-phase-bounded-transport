@@ -18,13 +18,13 @@ def main() -> int:
     parser.add_argument(
         "--theta-star-deg",
         type=float,
-        default=22.48,
-        help="Hardware lock angle for depth sunscreen (default 22.48°)",
+        default=22.49,
+        help="Hardware lock angle for depth sunscreen (sweep optimum 22.49°)",
     )
     parser.add_argument("--pulse", default="phase", choices=["phase", "tridelta"])
     parser.add_argument("--line", default="interior", choices=["interior", "interior_center", "boundary"])
-    parser.add_argument("--depth", type=int, default=16, help="Sunscreen depth layers")
-    parser.add_argument("--relock", type=int, default=3, help="Re-lock interval (Aurora aggressive)")
+    parser.add_argument("--depth", type=int, default=14, help="Sunscreen depth layers (sweep optimum)")
+    parser.add_argument("--relock", type=int, default=5, help="Re-lock interval (sweep optimum)")
     parser.add_argument("--no-boundary-compare", action="store_true")
     args = parser.parse_args()
 

@@ -150,8 +150,8 @@ def build_grid_echo_circuit(
 def build_depth_sunscreen_circuit(
     line: WillowLine,
     theta: float = THETA_STAR_WILLOW,
-    layers: int = 16,
-    relock_interval: int = 3,
+    layers: int = 14,
+    relock_interval: int = 5,
 ) -> "cirq.Circuit":
     """Depth-scaling QSD sunscreen on interior line (fez-validated protocol)."""
     _require_cirq()
