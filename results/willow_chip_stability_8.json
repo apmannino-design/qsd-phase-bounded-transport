@@ -1,0 +1,170 @@
+{
+  "processor": "willow_pink",
+  "theta_star_deg": 22.49,
+  "n_cells": 8,
+  "n_qubits": 24,
+  "shots": 300,
+  "cells": [
+    {
+      "cell_id": 0,
+      "line": [
+        "q(0,6)",
+        "q(0,7)",
+        "q(0,8)"
+      ],
+      "zzz": -0.2,
+      "theta_deg": 19.625278562119853,
+      "ae_deg": -2.8647214378801436,
+      "sigma": 0.1810272435348793,
+      "heron": 0.015741884444444458,
+      "in_band": false,
+      "relock_interval": 4,
+      "depth_layers": 14,
+      "abs_gap": 0.36,
+      "shots": 300
+    },
+    {
+      "cell_id": 1,
+      "line": [
+        "q(1,5)",
+        "q(2,5)",
+        "q(3,5)"
+      ],
+      "zzz": 0.06666666666666667,
+      "theta_deg": 84.69852177739729,
+      "ae_deg": 62.20852177739729,
+      "sigma": 1.2697559709263946,
+      "heron": 0.016486560000000004,
+      "in_band": false,
+      "relock_interval": 4,
+      "depth_layers": 14,
+      "abs_gap": 0.4933333333333334,
+      "shots": 300
+    },
+    {
+      "cell_id": 2,
+      "line": [
+        "q(1,6)",
+        "q(1,7)",
+        "q(1,8)"
+      ],
+      "zzz": -0.06,
+      "theta_deg": 11.607277264478894,
+      "ae_deg": -10.882722735521105,
+      "sigma": 0.6197293491702611,
+      "heron": 0.001437252345679013,
+      "in_band": false,
+      "relock_interval": 4,
+      "depth_layers": 14,
+      "abs_gap": 0.5066666666666666,
+      "shots": 300
+    },
+    {
+      "cell_id": 3,
+      "line": [
+        "q(2,4)",
+        "q(3,4)",
+        "q(4,4)"
+      ],
+      "zzz": -0.07333333333333333,
+      "theta_deg": 7.205366607606791,
+      "ae_deg": -15.284633392393207,
+      "sigma": 0.8042468486441947,
+      "heron": 0.0036912375308641976,
+      "in_band": false,
+      "relock_interval": 4,
+      "depth_layers": 14,
+      "abs_gap": 0.6133333333333334,
+      "shots": 300
+    },
+    {
+      "cell_id": 4,
+      "line": [
+        "q(2,6)",
+        "q(2,7)",
+        "q(2,8)"
+      ],
+      "zzz": -0.18666666666666668,
+      "theta_deg": 39.05011688833757,
+      "ae_deg": 16.56011688833757,
+      "sigma": 1.0863269602384857,
+      "heron": 5.2481975308641996e-05,
+      "in_band": false,
+      "relock_interval": 4,
+      "depth_layers": 14,
+      "abs_gap": 0.8933333333333333,
+      "shots": 300
+    },
+    {
+      "cell_id": 5,
+      "line": [
+        "q(2,9)",
+        "q(3,9)",
+        "q(4,9)"
+      ],
+      "zzz": -0.07333333333333333,
+      "theta_deg": 46.86366516126281,
+      "ae_deg": 24.373665161262814,
+      "sigma": 1.5023626338641298,
+      "heron": 2.6579753086419574e-05,
+      "in_band": false,
+      "relock_interval": 4,
+      "depth_layers": 14,
+      "abs_gap": 0.74,
+      "shots": 300
+    },
+    {
+      "cell_id": 6,
+      "line": [
+        "q(2,10)",
+        "q(3,10)",
+        "q(4,10)"
+      ],
+      "zzz": -0.12,
+      "theta_deg": 13.082930360226307,
+      "ae_deg": -9.40706963977369,
+      "sigma": 0.5480448646702354,
+      "heron": 0.0013024079012345692,
+      "in_band": false,
+      "relock_interval": 4,
+      "depth_layers": 14,
+      "abs_gap": 0.7533333333333333,
+      "shots": 300
+    },
+    {
+      "cell_id": 7,
+      "line": [
+        "q(3,3)",
+        "q(4,3)",
+        "q(5,3)"
+      ],
+      "zzz": 0.006666666666666667,
+      "theta_deg": 20.916988291895102,
+      "ae_deg": -1.5730117081048955,
+      "sigma": 0.10084396699241144,
+      "heron": 0.0060701412345679035,
+      "in_band": false,
+      "relock_interval": 4,
+      "depth_layers": 14,
+      "abs_gap": 0.6133333333333333,
+      "shots": 300
+    }
+  ],
+  "aggregate": {
+    "ae_median_deg": 13.083678063957155,
+    "ae_mean_deg": 17.89430784258384,
+    "sigma_median": 0.7119880989072279,
+    "sigma_mean": 0.764042229755124,
+    "abs_gap_median": 0.6133333333333333,
+    "cells_in_band": 0,
+    "cells_ae_near_zero": 2,
+    "cells_sigma_near_zero": 0,
+    "cells_winning": 8,
+    "aurora_satisfied": true,
+    "zero_dissipation_at_theta_star": false,
+    "optimal_relock_hint": 21
+  },
+  "elapsed_s": 801.1754817962646,
+  "verdict": "PARTIAL_STABLE",
+  "notes": "Angle-specific wins on 8/8 cells; dispersion collapse partial (in-band 0/8)."
+}
