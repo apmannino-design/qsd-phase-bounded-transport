@@ -1,21 +1,440 @@
 {
   "status": "GO",
-  "timestamp": "2026-07-06T11:19:14Z",
   "config": {
     "theta_star_deg": 22.49,
     "depth_layers": 14,
     "relock_interval": 5,
-    "line": ["q(6,5)", "q(6,6)", "q(6,7)"],
-    "processor": "willow_pink",
-    "shots": 2000
+    "line": "q(6,5)-q(6,6)-q(6,7)",
+    "processor": "willow_pink"
   },
   "interior": {
-    "zzz_theta_star": -0.315,
-    "zzz_negative": 0.502,
-    "abs_gap": 0.817,
+    "processor": "willow_pink",
+    "line": "interior",
+    "line_coords": [
+      "q(6,5)",
+      "q(6,6)",
+      "q(6,7)"
+    ],
+    "shots": 4000,
+    "tau_ns": 1000.0,
+    "theta_deg": 0.0,
+    "theta_star_deg": 22.49,
+    "pulse": "phase",
+    "echo": {
+      "echo_qsd": {
+        "F": 0.982125,
+        "n": 24000
+      },
+      "echo_x": {
+        "F": 0.981875,
+        "n": 24000
+      },
+      "no_echo": {
+        "F": 0.9825416666666666,
+        "n": 24000
+      }
+    },
+    "depth": {
+      "qsd_theta_star": {
+        "zzz": -0.336,
+        "n": 4000,
+        "theta_deg": 22.49
+      },
+      "negative_theta": {
+        "zzz": 0.5155,
+        "n": 4000,
+        "theta_deg": 92.49
+      }
+    },
+    "depth_gap": -0.8514999999999999,
+    "comparison_boundary": {},
     "verdict": "DEPTH_WIN",
-    "echo": "NULL (~0.98 all modes)"
+    "notes": "Depth sunscreen at \u03b8*=22.49\u00b0: ZZZ -0.336 vs wrong \u03b8 +0.515 (|\u0394|=0.851)."
   },
-  "hardware_ready": true,
-  "handoff_doc": "results/WILLOW_TEAM_SUMMARY.md"
+  "cells": {
+    "n_cells": 25,
+    "n_qubits": 75,
+    "abs_gap_median": 0.75,
+    "abs_gap_mean": 0.74152,
+    "cells_winning": 25,
+    "cells": [
+      {
+        "cell_id": 0,
+        "line": [
+          "q(0,6)",
+          "q(0,7)",
+          "q(0,8)"
+        ],
+        "theta_deg": 22.49,
+        "depth_layers": 14,
+        "relock_interval": 5,
+        "zzz_theta_star": -0.28,
+        "zzz_negative": 0.26,
+        "abs_gap": 0.54,
+        "shots": 1000
+      },
+      {
+        "cell_id": 1,
+        "line": [
+          "q(1,5)",
+          "q(2,5)",
+          "q(3,5)"
+        ],
+        "theta_deg": 22.49,
+        "depth_layers": 14,
+        "relock_interval": 5,
+        "zzz_theta_star": -0.016,
+        "zzz_negative": 0.636,
+        "abs_gap": 0.652,
+        "shots": 1000
+      },
+      {
+        "cell_id": 3,
+        "line": [
+          "q(2,4)",
+          "q(3,4)",
+          "q(4,4)"
+        ],
+        "theta_deg": 22.49,
+        "depth_layers": 14,
+        "relock_interval": 5,
+        "zzz_theta_star": -0.1,
+        "zzz_negative": 0.538,
+        "abs_gap": 0.638,
+        "shots": 1000
+      },
+      {
+        "cell_id": 4,
+        "line": [
+          "q(2,6)",
+          "q(2,7)",
+          "q(2,8)"
+        ],
+        "theta_deg": 22.49,
+        "depth_layers": 14,
+        "relock_interval": 5,
+        "zzz_theta_star": -0.196,
+        "zzz_negative": 0.692,
+        "abs_gap": 0.8879999999999999,
+        "shots": 1000
+      },
+      {
+        "cell_id": 6,
+        "line": [
+          "q(2,10)",
+          "q(3,10)",
+          "q(4,10)"
+        ],
+        "theta_deg": 22.49,
+        "depth_layers": 14,
+        "relock_interval": 5,
+        "zzz_theta_star": -0.202,
+        "zzz_negative": 0.564,
+        "abs_gap": 0.766,
+        "shots": 1000
+      },
+      {
+        "cell_id": 7,
+        "line": [
+          "q(3,3)",
+          "q(4,3)",
+          "q(5,3)"
+        ],
+        "theta_deg": 22.49,
+        "depth_layers": 14,
+        "relock_interval": 5,
+        "zzz_theta_star": -0.07,
+        "zzz_negative": 0.68,
+        "abs_gap": 0.75,
+        "shots": 1000
+      },
+      {
+        "cell_id": 8,
+        "line": [
+          "q(3,6)",
+          "q(3,7)",
+          "q(3,8)"
+        ],
+        "theta_deg": 22.49,
+        "depth_layers": 14,
+        "relock_interval": 5,
+        "zzz_theta_star": -0.06,
+        "zzz_negative": 0.75,
+        "abs_gap": 0.81,
+        "shots": 1000
+      },
+      {
+        "cell_id": 9,
+        "line": [
+          "q(4,2)",
+          "q(5,2)",
+          "q(6,2)"
+        ],
+        "theta_deg": 22.49,
+        "depth_layers": 14,
+        "relock_interval": 5,
+        "zzz_theta_star": -0.236,
+        "zzz_negative": 0.622,
+        "abs_gap": 0.858,
+        "shots": 1000
+      },
+      {
+        "cell_id": 10,
+        "line": [
+          "q(4,5)",
+          "q(4,6)",
+          "q(4,7)"
+        ],
+        "theta_deg": 22.49,
+        "depth_layers": 14,
+        "relock_interval": 5,
+        "zzz_theta_star": -0.194,
+        "zzz_negative": 0.45,
+        "abs_gap": 0.644,
+        "shots": 1000
+      },
+      {
+        "cell_id": 11,
+        "line": [
+          "q(4,8)",
+          "q(5,8)",
+          "q(6,8)"
+        ],
+        "theta_deg": 22.49,
+        "depth_layers": 14,
+        "relock_interval": 5,
+        "zzz_theta_star": -0.252,
+        "zzz_negative": 0.666,
+        "abs_gap": 0.918,
+        "shots": 1000
+      },
+      {
+        "cell_id": 12,
+        "line": [
+          "q(4,11)",
+          "q(5,11)",
+          "q(6,11)"
+        ],
+        "theta_deg": 22.49,
+        "depth_layers": 14,
+        "relock_interval": 5,
+        "zzz_theta_star": -0.176,
+        "zzz_negative": 0.592,
+        "abs_gap": 0.768,
+        "shots": 1000
+      },
+      {
+        "cell_id": 13,
+        "line": [
+          "q(4,12)",
+          "q(5,12)",
+          "q(6,12)"
+        ],
+        "theta_deg": 22.49,
+        "depth_layers": 14,
+        "relock_interval": 5,
+        "zzz_theta_star": -0.274,
+        "zzz_negative": 0.636,
+        "abs_gap": 0.91,
+        "shots": 1000
+      },
+      {
+        "cell_id": 14,
+        "line": [
+          "q(5,4)",
+          "q(6,4)",
+          "q(7,4)"
+        ],
+        "theta_deg": 22.49,
+        "depth_layers": 14,
+        "relock_interval": 5,
+        "zzz_theta_star": 0.004,
+        "zzz_negative": 0.672,
+        "abs_gap": 0.668,
+        "shots": 1000
+      },
+      {
+        "cell_id": 15,
+        "line": [
+          "q(5,5)",
+          "q(5,6)",
+          "q(5,7)"
+        ],
+        "theta_deg": 22.49,
+        "depth_layers": 14,
+        "relock_interval": 5,
+        "zzz_theta_star": -0.27,
+        "zzz_negative": 0.532,
+        "abs_gap": 0.802,
+        "shots": 1000
+      },
+      {
+        "cell_id": 16,
+        "line": [
+          "q(5,9)",
+          "q(6,9)",
+          "q(7,9)"
+        ],
+        "theta_deg": 22.49,
+        "depth_layers": 14,
+        "relock_interval": 5,
+        "zzz_theta_star": 0.026,
+        "zzz_negative": 0.68,
+        "abs_gap": 0.654,
+        "shots": 1000
+      },
+      {
+        "cell_id": 17,
+        "line": [
+          "q(5,10)",
+          "q(6,10)",
+          "q(7,10)"
+        ],
+        "theta_deg": 22.49,
+        "depth_layers": 14,
+        "relock_interval": 5,
+        "zzz_theta_star": -0.236,
+        "zzz_negative": 0.478,
+        "abs_gap": 0.714,
+        "shots": 1000
+      },
+      {
+        "cell_id": 19,
+        "line": [
+          "q(6,5)",
+          "q(7,5)",
+          "q(8,5)"
+        ],
+        "theta_deg": 22.49,
+        "depth_layers": 14,
+        "relock_interval": 5,
+        "zzz_theta_star": -0.048,
+        "zzz_negative": 0.648,
+        "abs_gap": 0.6960000000000001,
+        "shots": 1000
+      },
+      {
+        "cell_id": 20,
+        "line": [
+          "q(6,6)",
+          "q(7,6)",
+          "q(8,6)"
+        ],
+        "theta_deg": 22.49,
+        "depth_layers": 14,
+        "relock_interval": 5,
+        "zzz_theta_star": -0.22,
+        "zzz_negative": 0.474,
+        "abs_gap": 0.694,
+        "shots": 1000
+      },
+      {
+        "cell_id": 22,
+        "line": [
+          "q(7,8)",
+          "q(8,8)",
+          "q(9,8)"
+        ],
+        "theta_deg": 22.49,
+        "depth_layers": 14,
+        "relock_interval": 5,
+        "zzz_theta_star": -0.166,
+        "zzz_negative": 0.476,
+        "abs_gap": 0.642,
+        "shots": 1000
+      },
+      {
+        "cell_id": 23,
+        "line": [
+          "q(7,11)",
+          "q(7,12)",
+          "q(7,13)"
+        ],
+        "theta_deg": 22.49,
+        "depth_layers": 14,
+        "relock_interval": 5,
+        "zzz_theta_star": -0.306,
+        "zzz_negative": 0.48,
+        "abs_gap": 0.786,
+        "shots": 1000
+      },
+      {
+        "cell_id": 26,
+        "line": [
+          "q(9,5)",
+          "q(9,6)",
+          "q(9,7)"
+        ],
+        "theta_deg": 22.49,
+        "depth_layers": 14,
+        "relock_interval": 5,
+        "zzz_theta_star": -0.246,
+        "zzz_negative": 0.628,
+        "abs_gap": 0.874,
+        "shots": 1000
+      },
+      {
+        "cell_id": 28,
+        "line": [
+          "q(10,5)",
+          "q(10,6)",
+          "q(10,7)"
+        ],
+        "theta_deg": 22.49,
+        "depth_layers": 14,
+        "relock_interval": 5,
+        "zzz_theta_star": -0.132,
+        "zzz_negative": 0.57,
+        "abs_gap": 0.702,
+        "shots": 1000
+      },
+      {
+        "cell_id": 29,
+        "line": [
+          "q(10,8)",
+          "q(10,9)",
+          "q(10,10)"
+        ],
+        "theta_deg": 22.49,
+        "depth_layers": 14,
+        "relock_interval": 5,
+        "zzz_theta_star": -0.104,
+        "zzz_negative": 0.676,
+        "abs_gap": 0.78,
+        "shots": 1000
+      },
+      {
+        "cell_id": 30,
+        "line": [
+          "q(11,6)",
+          "q(11,7)",
+          "q(11,8)"
+        ],
+        "theta_deg": 22.49,
+        "depth_layers": 14,
+        "relock_interval": 5,
+        "zzz_theta_star": -0.078,
+        "zzz_negative": 0.7,
+        "abs_gap": 0.7779999999999999,
+        "shots": 1000
+      },
+      {
+        "cell_id": 31,
+        "line": [
+          "q(12,6)",
+          "q(12,7)",
+          "q(12,8)"
+        ],
+        "theta_deg": 22.49,
+        "depth_layers": 14,
+        "relock_interval": 5,
+        "zzz_theta_star": -0.09,
+        "zzz_negative": 0.516,
+        "abs_gap": 0.606,
+        "shots": 1000
+      }
+    ]
+  },
+  "elapsed_s": 10780.416057109833,
+  "hardware_ready": true
 }
