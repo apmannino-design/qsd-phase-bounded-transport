@@ -273,8 +273,8 @@ def run_willow_correct(
     theta_star_deg: float = THETA_STAR_WILLOW_HW_DEG,
     pulse: str = "phase",
     line_name: str = "interior",
-    depth_layers: int = 16,
-    relock_interval: int = 3,
+    depth_layers: int = 14,
+    relock_interval: int = 5,
     negative_offset_deg: float = 70.0,
     compare_boundary: bool = True,
 ) -> WillowRunResult:

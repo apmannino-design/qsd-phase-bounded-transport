@@ -1,0 +1,21 @@
+{
+  "status": "GO",
+  "timestamp": "2026-07-06T11:19:14Z",
+  "config": {
+    "theta_star_deg": 22.49,
+    "depth_layers": 14,
+    "relock_interval": 5,
+    "line": ["q(6,5)", "q(6,6)", "q(6,7)"],
+    "processor": "willow_pink",
+    "shots": 2000
+  },
+  "interior": {
+    "zzz_theta_star": -0.315,
+    "zzz_negative": 0.502,
+    "abs_gap": 0.817,
+    "verdict": "DEPTH_WIN",
+    "echo": "NULL (~0.98 all modes)"
+  },
+  "hardware_ready": true,
+  "handoff_doc": "results/WILLOW_TEAM_SUMMARY.md"
+}
