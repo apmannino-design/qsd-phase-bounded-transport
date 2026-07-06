@@ -9,7 +9,7 @@ import numpy as np
 from aurora_qsd.core.constants import THETA_STAR_WILLOW_HW_DEG
 from aurora_qsd.quantum.extreme_stress import build_apocalypse_simulator
 from aurora_qsd.quantum.fez_cells import build_zzz_cell_circuit, negative_control_angle, zzz_correlator
-from aurora_qsd.quantum.willow_gain_sweep import OPTIMAL_THETA_DEG, OPTIMAL_RELOCK_INTERVAL
+from aurora_qsd.quantum.willow_algorithm import OPTIMAL_THETA_DEG, OPTIMAL_RELOCK_INTERVAL
 from aurora_qsd.quantum.willow_run import (
     _depth_head_to_head,
     _require_cirq,
