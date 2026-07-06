@@ -64,10 +64,12 @@ class QuantumQSDAnalyzer:
         self.t2_us = t2_us
         self.alignment_tol_deg = alignment_tol_deg
 
-    def from_counts(self, counts: dict[str, int]) -> AnalysisReport:
+    def from_counts(self, counts: dict[str, int], n_qubits: int | None = None) -> AnalysisReport:
         """Build covariance from bitstring counts and run QSD analysis."""
-        sigma = self._counts_to_covariance(counts)
-        return self.from_covariance(sigma, parity=zzz_score(counts))
+        if n_qubits is None:
+            n_qubits = len(next(iter(counts)))
+        sigma = covariance_from_counts(counts, n_qubits=n_qubits)
+        return self.from_covariance(sigma, parity=zzz_score(counts, n_qubits=n_qubits))
 
     def from_covariance(self, sigma: np.ndarray, parity: float | None = None) -> AnalysisReport:
         """Analyze a covariance matrix directly."""
@@ -98,24 +100,9 @@ class QuantumQSDAnalyzer:
         )
 
     def _counts_to_covariance(self, counts: dict[str, int]) -> np.ndarray:
-        """Map measurement counts to a 3×3 covariance proxy."""
-        total = sum(counts.values())
+        """Map measurement counts to a covariance proxy (2- or 3-qubit)."""
         n_qubits = len(next(iter(counts)))
-        probs = {k: v / total for k, v in counts.items()}
-
-        # Observable expectations for 2-qubit case
-        p00 = probs.get("00", 0.0)
-        p01 = probs.get("01", 0.0)
-        p10 = probs.get("10", 0.0)
-        p11 = probs.get("11", 0.0)
-
-        # Pauli-Z expectations
-        z0 = p00 + p01 - p10 - p11
-        z1 = p00 - p01 + p10 - p11
-        zz = p00 - p01 - p10 + p11
-
-        obs = np.array([z0, z1, zz])
-        return np.outer(obs, obs) + 0.01 * np.eye(3)
+        return covariance_from_counts(counts, n_qubits=n_qubits)
 
     def _generate_recommendations(
         self,
@@ -150,3 +137,63 @@ class QuantumQSDAnalyzer:
             recs.append(f"Zero-dissipation point confirmed (V(θ*) = {v_at_star:.4f})")
 
         return recs
+
+
+def _z_expectation(counts: dict[str, int], i: int) -> float:
+    total = sum(counts.values())
+    if total == 0:
+        return 0.0
+    acc = 0.0
+    for bitstring, n in counts.items():
+        if len(bitstring) <= i:
+            continue
+        acc += (1.0 - 2.0 * int(bitstring[i])) * n
+    return acc / total
+
+
+def _zz_expectation(counts: dict[str, int], i: int, j: int) -> float:
+    total = sum(counts.values())
+    if total == 0:
+        return 0.0
+    acc = 0.0
+    for bitstring, n in counts.items():
+        if len(bitstring) <= max(i, j):
+            continue
+        sign = 1.0 if int(bitstring[i]) == int(bitstring[j]) else -1.0
+        acc += sign * n
+    return acc / total
+
+
+def covariance_from_counts(counts: dict[str, int], n_qubits: int = 3) -> np.ndarray:
+    """
+    Map Z-basis counts → n×n Pauli-Z covariance matrix.
+
+    For 3 qubits: Cov(Zᵢ, Zⱼ) = ⟨ZᵢZⱼ⟩ − ⟨Zᵢ⟩⟨Zⱼ⟩, Var(Zᵢ) = 1 − ⟨Zᵢ⟩².
+  """
+    if not counts:
+        return np.eye(n_qubits) * 0.01
+
+    if n_qubits == 2:
+        total = sum(counts.values())
+        probs = {k: v / total for k, v in counts.items()}
+        p00 = probs.get("00", 0.0)
+        p01 = probs.get("01", 0.0)
+        p10 = probs.get("10", 0.0)
+        p11 = probs.get("11", 0.0)
+        z0 = p00 + p01 - p10 - p11
+        z1 = p00 - p01 + p10 - p11
+        zz = p00 - p01 - p10 + p11
+        obs = np.array([z0, z1, zz])
+        return np.outer(obs, obs) + 0.01 * np.eye(3)
+
+    z = [_z_expectation(counts, i) for i in range(n_qubits)]
+    cov = np.zeros((n_qubits, n_qubits), dtype=float)
+    for i in range(n_qubits):
+        for j in range(n_qubits):
+            if i == j:
+                cov[i, j] = max(1.0 - z[i] ** 2, 1e-4)
+            else:
+                cov[i, j] = _zz_expectation(counts, i, j) - z[i] * z[j]
+    # Regularize to keep PSD for TriDelta
+    cov += 1e-3 * np.eye(n_qubits)
+    return cov

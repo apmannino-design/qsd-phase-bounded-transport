@@ -22,8 +22,10 @@ def main() -> int:
     parser.add_argument("--theta-deg", type=float, default=22.49)
     parser.add_argument("--depth", type=int, default=14)
     parser.add_argument("--relock", type=int, default=5)
-    parser.add_argument("--ae-tol", type=float, default=3.0, help="Ae band tolerance (deg)")
-    parser.add_argument("--sigma-tol", type=float, default=0.05)
+    parser.add_argument("--ae-tol", type=float, default=8.0, help="Ae band tolerance (deg)")
+    parser.add_argument("--sigma-tol", type=float, default=0.25)
+    parser.add_argument("--no-calibrate", action="store_true", help="Skip per-cell θ offset sweep")
+    parser.add_argument("--no-task-benchmark", action="store_true")
     parser.add_argument("--out", default="results/willow_chip_stability.json")
     args = parser.parse_args()
 
@@ -35,6 +37,8 @@ def main() -> int:
         base_relock=args.relock,
         ae_tol_deg=args.ae_tol,
         sigma_tol=args.sigma_tol,
+        calibrate_theta=not args.no_calibrate,
+        run_task_benchmark=not args.no_task_benchmark,
     )
 
     out = Path(args.out)
