@@ -282,7 +282,7 @@ def run_willow_correct(
     Correct Willow campaign:
       1. Interior line q(6,5)–q(6,6)–q(6,7)
       2. Native willow_pink noisy sampler
-      3. Phase echo + depth sunscreen at hardware θ* (default 22.48°)
+      3. Phase echo + depth sunscreen at hardware θ* (default 22.49°)
     """
     _require_cirq()
     from cirq_google import engine
@@ -444,7 +444,7 @@ def run_willow_max(
         depth_layers=depth_layers,
         relock_interval=relock_interval,
         n_cells=len(cells),
-        n_qubits=max(len(cells) * 3, 3 if include_interior else 0),
+        n_qubits=len(cells) * 3 + (3 if include_interior else 0),
     )
 
     if include_interior:

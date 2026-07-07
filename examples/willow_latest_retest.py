@@ -152,7 +152,7 @@ def main() -> int:
 
     payload["elapsed_s"] = time.time() - t0
     payload["summary"] = {
-        "interior_abs_gap": interior.depth_gap,
+        "interior_abs_gap": abs(interior.depth_gap),
         "interior_verdict": interior.verdict,
         "retention_verdict": payload.get("phases", {}).get("retention_audit", {}).get("result", {}).get("verdict"),
         "cells_winning": payload.get("phases", {}).get("chip_cells", {}).get("cells_winning"),
