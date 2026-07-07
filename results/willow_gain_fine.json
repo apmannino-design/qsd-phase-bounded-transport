@@ -1,0 +1,428 @@
+{
+  "phase": "fine_sweep",
+  "shots": 350,
+  "line": [
+    "q(6,5)",
+    "q(6,6)",
+    "q(6,7)"
+  ],
+  "points": [
+    {
+      "theta_deg": 22.46,
+      "depth_layers": 14,
+      "relock_interval": 3,
+      "zzz_theta_star": 0.022857142857142857,
+      "zzz_negative": -0.5485714285714286,
+      "abs_gap": 0.5714285714285715,
+      "shots": 350
+    },
+    {
+      "theta_deg": 22.46,
+      "depth_layers": 14,
+      "relock_interval": 4,
+      "zzz_theta_star": 0.03428571428571429,
+      "zzz_negative": 0.49714285714285716,
+      "abs_gap": 0.46285714285714286,
+      "shots": 350
+    },
+    {
+      "theta_deg": 22.46,
+      "depth_layers": 14,
+      "relock_interval": 5,
+      "zzz_theta_star": -0.29714285714285715,
+      "zzz_negative": 0.52,
+      "abs_gap": 0.8171428571428572,
+      "shots": 350
+    },
+    {
+      "theta_deg": 22.46,
+      "depth_layers": 16,
+      "relock_interval": 3,
+      "zzz_theta_star": -0.06857142857142857,
+      "zzz_negative": 0.5428571428571428,
+      "abs_gap": 0.6114285714285714,
+      "shots": 350
+    },
+    {
+      "theta_deg": 22.46,
+      "depth_layers": 16,
+      "relock_interval": 4,
+      "zzz_theta_star": 0.28,
+      "zzz_negative": -0.5657142857142857,
+      "abs_gap": 0.8457142857142858,
+      "shots": 350
+    },
+    {
+      "theta_deg": 22.46,
+      "depth_layers": 16,
+      "relock_interval": 5,
+      "zzz_theta_star": -0.011428571428571429,
+      "zzz_negative": -0.44571428571428573,
+      "abs_gap": 0.4342857142857143,
+      "shots": 350
+    },
+    {
+      "theta_deg": 22.46,
+      "depth_layers": 18,
+      "relock_interval": 3,
+      "zzz_theta_star": -0.12,
+      "zzz_negative": -0.6057142857142858,
+      "abs_gap": 0.48571428571428577,
+      "shots": 350
+    },
+    {
+      "theta_deg": 22.46,
+      "depth_layers": 18,
+      "relock_interval": 4,
+      "zzz_theta_star": -0.09714285714285714,
+      "zzz_negative": -0.4742857142857143,
+      "abs_gap": 0.37714285714285717,
+      "shots": 350
+    },
+    {
+      "theta_deg": 22.46,
+      "depth_layers": 18,
+      "relock_interval": 5,
+      "zzz_theta_star": -0.2914285714285714,
+      "zzz_negative": 0.21714285714285714,
+      "abs_gap": 0.5085714285714286,
+      "shots": 350
+    },
+    {
+      "theta_deg": 22.47,
+      "depth_layers": 14,
+      "relock_interval": 3,
+      "zzz_theta_star": 0.2,
+      "zzz_negative": -0.5942857142857143,
+      "abs_gap": 0.7942857142857143,
+      "shots": 350
+    },
+    {
+      "theta_deg": 22.47,
+      "depth_layers": 14,
+      "relock_interval": 4,
+      "zzz_theta_star": 0.08571428571428572,
+      "zzz_negative": 0.52,
+      "abs_gap": 0.4342857142857143,
+      "shots": 350
+    },
+    {
+      "theta_deg": 22.47,
+      "depth_layers": 14,
+      "relock_interval": 5,
+      "zzz_theta_star": -0.22857142857142856,
+      "zzz_negative": 0.5428571428571428,
+      "abs_gap": 0.7714285714285714,
+      "shots": 350
+    },
+    {
+      "theta_deg": 22.47,
+      "depth_layers": 16,
+      "relock_interval": 3,
+      "zzz_theta_star": -0.19428571428571428,
+      "zzz_negative": 0.5485714285714286,
+      "abs_gap": 0.7428571428571429,
+      "shots": 350
+    },
+    {
+      "theta_deg": 22.47,
+      "depth_layers": 16,
+      "relock_interval": 4,
+      "zzz_theta_star": 0.32,
+      "zzz_negative": -0.4857142857142857,
+      "abs_gap": 0.8057142857142857,
+      "shots": 350
+    },
+    {
+      "theta_deg": 22.47,
+      "depth_layers": 16,
+      "relock_interval": 5,
+      "zzz_theta_star": 0.04,
+      "zzz_negative": -0.4685714285714286,
+      "abs_gap": 0.5085714285714286,
+      "shots": 350
+    },
+    {
+      "theta_deg": 22.47,
+      "depth_layers": 18,
+      "relock_interval": 3,
+      "zzz_theta_star": -0.06285714285714286,
+      "zzz_negative": -0.5771428571428572,
+      "abs_gap": 0.5142857142857143,
+      "shots": 350
+    },
+    {
+      "theta_deg": 22.47,
+      "depth_layers": 18,
+      "relock_interval": 4,
+      "zzz_theta_star": -0.13142857142857142,
+      "zzz_negative": -0.5314285714285715,
+      "abs_gap": 0.4,
+      "shots": 350
+    },
+    {
+      "theta_deg": 22.47,
+      "depth_layers": 18,
+      "relock_interval": 5,
+      "zzz_theta_star": -0.4228571428571429,
+      "zzz_negative": 0.3142857142857143,
+      "abs_gap": 0.7371428571428571,
+      "shots": 350
+    },
+    {
+      "theta_deg": 22.48,
+      "depth_layers": 14,
+      "relock_interval": 3,
+      "zzz_theta_star": 0.14857142857142858,
+      "zzz_negative": -0.5371428571428571,
+      "abs_gap": 0.6857142857142857,
+      "shots": 350
+    },
+    {
+      "theta_deg": 22.48,
+      "depth_layers": 14,
+      "relock_interval": 4,
+      "zzz_theta_star": 0.0,
+      "zzz_negative": 0.49142857142857144,
+      "abs_gap": 0.49142857142857144,
+      "shots": 350
+    },
+    {
+      "theta_deg": 22.48,
+      "depth_layers": 14,
+      "relock_interval": 5,
+      "zzz_theta_star": -0.30857142857142855,
+      "zzz_negative": 0.5428571428571428,
+      "abs_gap": 0.8514285714285714,
+      "shots": 350
+    },
+    {
+      "theta_deg": 22.48,
+      "depth_layers": 16,
+      "relock_interval": 3,
+      "zzz_theta_star": -0.2,
+      "zzz_negative": 0.4857142857142857,
+      "abs_gap": 0.6857142857142857,
+      "shots": 350
+    },
+    {
+      "theta_deg": 22.48,
+      "depth_layers": 16,
+      "relock_interval": 4,
+      "zzz_theta_star": 0.33714285714285713,
+      "zzz_negative": -0.46285714285714286,
+      "abs_gap": 0.8,
+      "shots": 350
+    },
+    {
+      "theta_deg": 22.48,
+      "depth_layers": 16,
+      "relock_interval": 5,
+      "zzz_theta_star": -0.011428571428571429,
+      "zzz_negative": -0.44,
+      "abs_gap": 0.42857142857142855,
+      "shots": 350
+    },
+    {
+      "theta_deg": 22.48,
+      "depth_layers": 18,
+      "relock_interval": 3,
+      "zzz_theta_star": -0.05714285714285714,
+      "zzz_negative": -0.6,
+      "abs_gap": 0.5428571428571428,
+      "shots": 350
+    },
+    {
+      "theta_deg": 22.48,
+      "depth_layers": 18,
+      "relock_interval": 4,
+      "zzz_theta_star": -0.19428571428571428,
+      "zzz_negative": -0.5028571428571429,
+      "abs_gap": 0.3085714285714286,
+      "shots": 350
+    },
+    {
+      "theta_deg": 22.48,
+      "depth_layers": 18,
+      "relock_interval": 5,
+      "zzz_theta_star": -0.24,
+      "zzz_negative": 0.33714285714285713,
+      "abs_gap": 0.5771428571428572,
+      "shots": 350
+    },
+    {
+      "theta_deg": 22.49,
+      "depth_layers": 14,
+      "relock_interval": 3,
+      "zzz_theta_star": 0.017142857142857144,
+      "zzz_negative": -0.5428571428571428,
+      "abs_gap": 0.5599999999999999,
+      "shots": 350
+    },
+    {
+      "theta_deg": 22.49,
+      "depth_layers": 14,
+      "relock_interval": 4,
+      "zzz_theta_star": -0.02857142857142857,
+      "zzz_negative": 0.5257142857142857,
+      "abs_gap": 0.5542857142857143,
+      "shots": 350
+    },
+    {
+      "theta_deg": 22.49,
+      "depth_layers": 14,
+      "relock_interval": 5,
+      "zzz_theta_star": -0.3485714285714286,
+      "zzz_negative": 0.5771428571428572,
+      "abs_gap": 0.9257142857142857,
+      "shots": 350
+    },
+    {
+      "theta_deg": 22.49,
+      "depth_layers": 16,
+      "relock_interval": 3,
+      "zzz_theta_star": -0.07428571428571429,
+      "zzz_negative": 0.5771428571428572,
+      "abs_gap": 0.6514285714285715,
+      "shots": 350
+    },
+    {
+      "theta_deg": 22.49,
+      "depth_layers": 16,
+      "relock_interval": 4,
+      "zzz_theta_star": 0.18857142857142858,
+      "zzz_negative": -0.46285714285714286,
+      "abs_gap": 0.6514285714285715,
+      "shots": 350
+    },
+    {
+      "theta_deg": 22.49,
+      "depth_layers": 16,
+      "relock_interval": 5,
+      "zzz_theta_star": -0.05142857142857143,
+      "zzz_negative": -0.38285714285714284,
+      "abs_gap": 0.3314285714285714,
+      "shots": 350
+    },
+    {
+      "theta_deg": 22.49,
+      "depth_layers": 18,
+      "relock_interval": 3,
+      "zzz_theta_star": -0.05714285714285714,
+      "zzz_negative": -0.5714285714285714,
+      "abs_gap": 0.5142857142857142,
+      "shots": 350
+    },
+    {
+      "theta_deg": 22.49,
+      "depth_layers": 18,
+      "relock_interval": 4,
+      "zzz_theta_star": -0.13714285714285715,
+      "zzz_negative": -0.5371428571428571,
+      "abs_gap": 0.4,
+      "shots": 350
+    },
+    {
+      "theta_deg": 22.49,
+      "depth_layers": 18,
+      "relock_interval": 5,
+      "zzz_theta_star": -0.19428571428571428,
+      "zzz_negative": 0.26857142857142857,
+      "abs_gap": 0.46285714285714286,
+      "shots": 350
+    },
+    {
+      "theta_deg": 22.5,
+      "depth_layers": 14,
+      "relock_interval": 3,
+      "zzz_theta_star": 0.06285714285714286,
+      "zzz_negative": -0.5714285714285714,
+      "abs_gap": 0.6342857142857142,
+      "shots": 350
+    },
+    {
+      "theta_deg": 22.5,
+      "depth_layers": 14,
+      "relock_interval": 4,
+      "zzz_theta_star": -0.011428571428571429,
+      "zzz_negative": 0.48,
+      "abs_gap": 0.49142857142857144,
+      "shots": 350
+    },
+    {
+      "theta_deg": 22.5,
+      "depth_layers": 14,
+      "relock_interval": 5,
+      "zzz_theta_star": -0.3657142857142857,
+      "zzz_negative": 0.49714285714285716,
+      "abs_gap": 0.8628571428571429,
+      "shots": 350
+    },
+    {
+      "theta_deg": 22.5,
+      "depth_layers": 16,
+      "relock_interval": 3,
+      "zzz_theta_star": -0.1657142857142857,
+      "zzz_negative": 0.4342857142857143,
+      "abs_gap": 0.6,
+      "shots": 350
+    },
+    {
+      "theta_deg": 22.5,
+      "depth_layers": 16,
+      "relock_interval": 4,
+      "zzz_theta_star": 0.2742857142857143,
+      "zzz_negative": -0.46285714285714286,
+      "abs_gap": 0.7371428571428571,
+      "shots": 350
+    },
+    {
+      "theta_deg": 22.5,
+      "depth_layers": 16,
+      "relock_interval": 5,
+      "zzz_theta_star": 0.04,
+      "zzz_negative": -0.52,
+      "abs_gap": 0.56,
+      "shots": 350
+    },
+    {
+      "theta_deg": 22.5,
+      "depth_layers": 18,
+      "relock_interval": 3,
+      "zzz_theta_star": -0.08,
+      "zzz_negative": -0.46285714285714286,
+      "abs_gap": 0.38285714285714284,
+      "shots": 350
+    },
+    {
+      "theta_deg": 22.5,
+      "depth_layers": 18,
+      "relock_interval": 4,
+      "zzz_theta_star": -0.13142857142857142,
+      "zzz_negative": -0.4685714285714286,
+      "abs_gap": 0.3371428571428572,
+      "shots": 350
+    },
+    {
+      "theta_deg": 22.5,
+      "depth_layers": 18,
+      "relock_interval": 5,
+      "zzz_theta_star": -0.26285714285714284,
+      "zzz_negative": 0.26285714285714284,
+      "abs_gap": 0.5257142857142857,
+      "shots": 350
+    }
+  ],
+  "best": {
+    "theta_deg": 22.49,
+    "depth_layers": 14,
+    "relock_interval": 5,
+    "zzz_theta_star": -0.3485714285714286,
+    "zzz_negative": 0.5771428571428572,
+    "abs_gap": 0.9257142857142857,
+    "shots": 350
+  },
+  "validation": {},
+  "cells": {},
+  "elapsed_s": 6823.16451883316
+}

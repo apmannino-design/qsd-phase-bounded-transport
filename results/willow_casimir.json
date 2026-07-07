@@ -1,0 +1,60 @@
+{
+  "hamiltonian": "-1.0*(Z0Z1+Z1Z2) -0.5*Z0Z2 -0.8*Z0Z1Z2 -0.15*X1",
+  "analogy": "q0,q2 = Casimir plates; q1 = gap mode; Z0Z2 = direct cavity coupling; Z0Z1Z2 = mode-aligned tripartite binding. Boundary line = physical chip edge.",
+  "guidance": "Use depth sunscreen @ \u03b8* for Casimir ZZZ binding (tripartite correlator). Trotter evolution under full Casimir H may still favor bare \u2014 check verdicts. Interior cavity lines outperform boundary plate-edge lines on Willow.",
+  "interior_depth_binding": {
+    "task": "casimir_depth_binding",
+    "hamiltonian": "-1.0*(Z0Z1+Z1Z2) -0.5*Z0Z2 -0.8*Z0Z1Z2 -0.15*X1",
+    "line": [
+      "q(6,5)",
+      "q(6,6)",
+      "q(6,7)"
+    ],
+    "line_role": "cavity_interior",
+    "e_zzz_component_ground": -0.798854505816071,
+    "qsd": {
+      "zzz": -0.308,
+      "binding_energy": 0.2464,
+      "error_vs_ground": 1.045254505816071
+    },
+    "wrong": {
+      "zzz": 0.476,
+      "binding_energy": -0.3808,
+      "error_vs_ground": 0.41805450581607095
+    },
+    "abs_gap": 0.784,
+    "verdict": "QSD_WINS",
+    "notes": "Casimir ZZZ binding @ \u03b8*=22.49\u00b0: |\u0394ZZZ|=0.784 (cavity_interior line). Tripartite term captures mode-aligned plate coupling."
+  },
+  "boundary_depth_binding": {
+    "task": "casimir_depth_binding",
+    "hamiltonian": "-1.0*(Z0Z1+Z1Z2) -0.5*Z0Z2 -0.8*Z0Z1Z2 -0.15*X1",
+    "line": [
+      "q(0,6)",
+      "q(0,7)",
+      "q(0,8)"
+    ],
+    "line_role": "plate_edge",
+    "e_zzz_component_ground": -0.798854505816071,
+    "qsd": {
+      "zzz": -0.2,
+      "binding_energy": 0.16000000000000003,
+      "error_vs_ground": 0.958854505816071
+    },
+    "wrong": {
+      "zzz": 0.26,
+      "binding_energy": -0.20800000000000002,
+      "error_vs_ground": 0.590854505816071
+    },
+    "abs_gap": 0.46,
+    "verdict": "QSD_WINS",
+    "notes": "Casimir ZZZ binding @ \u03b8*=22.49\u00b0: |\u0394ZZZ|=0.460 (plate_edge line). Tripartite term captures mode-aligned plate coupling."
+  },
+  "summary": {
+    "depth_binding_wins": 2,
+    "interior_depth_gap": 0.784,
+    "boundary_depth_gap": 0.46,
+    "interior_trotter_verdict": null,
+    "boundary_trotter_verdict": null
+  }
+}
