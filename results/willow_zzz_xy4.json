@@ -1,0 +1,73 @@
+{
+  "candidate": "zzz_preservation_interior",
+  "protocol": "XY4 matched-depth control first, then QSD \u03b8* vs \u03b8*+70\u00b0",
+  "result": {
+    "task": "zzz_preservation_xy4_control",
+    "processor": "willow_pink",
+    "line": [
+      "q(6,5)",
+      "q(6,6)",
+      "q(6,7)"
+    ],
+    "theta_star_deg": 22.49,
+    "depth_layers": 14,
+    "relock_interval": 5,
+    "shots": 4000,
+    "gate_budget": {
+      "layers": 14,
+      "relock_interval": 5,
+      "qsd_body_per_layer": {
+        "one_qubit": 11,
+        "two_qubit": 4,
+        "moments": 11
+      },
+      "xy4_body_per_layer": {
+        "one_qubit": 11,
+        "two_qubit": 0,
+        "moments": 4
+      },
+      "qsd_total": {
+        "one_qubit": 185,
+        "two_qubit": 64,
+        "moments": 164
+      },
+      "xy4_total": {
+        "one_qubit": 185,
+        "two_qubit": 0,
+        "moments": 67
+      },
+      "matched_1q_per_body_layer": true,
+      "two_qubit_asymmetry": "QSD includes 4 two-qubit ops per body layer; XY4 is 1q-only (standard DD)."
+    },
+    "xy4_matched": {
+      "zzz": 0.291,
+      "n": 4000,
+      "control": "XY4_matched_depth"
+    },
+    "qsd_theta_star": {
+      "zzz": -0.3035,
+      "n": 4000,
+      "theta_deg": 22.49
+    },
+    "qsd_wrong_theta": {
+      "zzz": 0.505,
+      "n": 4000,
+      "theta_deg": 92.49
+    },
+    "gaps": {
+      "angle_specific_signed": -0.8085,
+      "angle_specific_abs": 0.8085,
+      "qsd_vs_xy4_signed": -0.5945,
+      "qsd_vs_xy4_abs": 0.5945,
+      "xy4_vs_wrong_abs": 0.21400000000000002
+    },
+    "verdict": "ENDORSABLE",
+    "endorsable": true,
+    "notes": "\u27e8ZZZ\u27e9 preservation survives matched-depth XY4: |\u0394ZZZ|=0.808 (\u03b8* vs wrong), |\u03b8*\u2212XY4|=0.595. Interior bar met."
+  },
+  "endorsement_bar": {
+    "angle_gap_min": 0.05,
+    "interior_abs_gap_min": 0.5
+  },
+  "hardware_ready": true
+}
