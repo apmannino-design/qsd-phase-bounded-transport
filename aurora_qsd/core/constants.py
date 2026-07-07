@@ -30,3 +30,12 @@ DEFAULT_SHOTS = 8192
 
 # Preregistered energy gate (GOES/Kp pipelines)
 DELTA_E_CRIT = 0.2248
+
+# SO(2) peak-merger geometry (preregistered July 7, 2026)
+# Projector rotation α at structural ratio lock ΔL/ΔX = tan(65.53°).
+MERGER_PROJECTOR_ALPHA_DEG = 17.93
+MERGER_STRUCTURAL_RATIO_LX = 2.1974  # ΔL/ΔX target at peak merger
+MERGER_PARTITION_THETA_DEG = 27.61   # partition angle θ at peak merger
+
+# April submission geometric reference: (90° − arccos(1/√3)) / 2
+SUBMISSION_THETA_STAR_DEG = float((90.0 - np.degrees(np.arccos(1.0 / np.sqrt(3.0)))) / 2.0)
