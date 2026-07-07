@@ -40,7 +40,7 @@ def test_chip_stability_schema() -> None:
     assert "sigma_median" in d["aggregate"]
     assert "cells_tri_band" in d["aggregate"]
     assert "cells_zzz_band" in d["aggregate"]
-    assert d["verdict"] in {"CHIP_STABLE", "PARTIAL_STABLE", "NULL"}
+    assert d["verdict"] in {"CHIP_STABLE", "PARTIAL_STABLE", "ERROR_LIMITED", "NULL"}
     for cell in d["cells"]:
         assert "tri_band" in cell
         assert "zzz_band" in cell
@@ -54,6 +54,24 @@ def test_controller_adapts_relock() -> None:
     assert ctrl._adapt_relock(0, in_band=True) == 6
     assert ctrl._adapt_relock(0, in_band=True) == 7
     assert ctrl._adapt_relock(0, in_band=False) == 6
+
+
+def test_finetune_ae_sigma_schema() -> None:
+    pytest.importorskip("cirq")
+    pytest.importorskip("cirq_google")
+    from aurora_qsd.quantum.chip_stability import run_chip_stability
+
+    result = run_chip_stability(
+        shots=128,
+        max_cells=1,
+        theta_star_deg=22.49,
+        calibrate_shots=64,
+        finetune_ae_sigma=True,
+        run_task_benchmark=False,
+    )
+    d = result.to_dict()
+    assert "cells_ae_sigma_locked" in d["aggregate"]
+    assert d["verdict"] in {"CHIP_STABLE", "PARTIAL_STABLE", "ERROR_LIMITED", "NULL"}
 
 
 def test_dual_band_logic() -> None:

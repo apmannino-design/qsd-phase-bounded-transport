@@ -47,6 +47,8 @@ def _covariance_from_3q_counts(counts: dict[str, int]) -> np.ndarray:
 
 # Default micro-sweep offsets (degrees) for per-cell θ calibration
 DEFAULT_THETA_OFFSETS_DEG = (-4.0, -2.0, 0.0, 2.0, 4.0)
+# Fine grid for Ae → ∅ / Δσ → ∅ pass after angle-map placement
+DEFAULT_FINETUNE_OFFSETS_DEG = (-1.5, -1.0, -0.5, -0.25, 0.0, 0.25, 0.5, 1.0, 1.5)
 
 
 @dataclass
@@ -150,6 +152,9 @@ class ChipStabilityController:
         calibrate_theta: bool = True,
         calibrate_shots: int = 128,
         theta_offsets_deg: tuple[float, ...] = DEFAULT_THETA_OFFSETS_DEG,
+        finetune_ae_sigma: bool = False,
+        finetune_offsets_deg: tuple[float, ...] = DEFAULT_FINETUNE_OFFSETS_DEG,
+        finetune_relock_sweep: bool = False,
     ):
         self.theta_star = float(np.radians(theta_star_deg))
         self.theta_star_deg = theta_star_deg
@@ -167,6 +172,9 @@ class ChipStabilityController:
         self.calibrate_theta = calibrate_theta
         self.calibrate_shots = calibrate_shots
         self.theta_offsets_deg = theta_offsets_deg
+        self.finetune_ae_sigma = finetune_ae_sigma
+        self.finetune_offsets_deg = finetune_offsets_deg
+        self.finetune_relock_sweep = finetune_relock_sweep
         self.analyzer = QuantumQSDAnalyzer(theta_target=self.theta_star, rho=rho, t2_us=t2_us)
         self._intervals: dict[int, int] = {}
         self._theta_offsets: dict[int, float] = {}
@@ -235,6 +243,72 @@ class ChipStabilityController:
         self._theta_offsets[cell_id] = best_offset
         return best_offset
 
+    def _ae_sigma_from_circuit(
+        self,
+        sampler,
+        line: WillowLine,
+        theta: float,
+        relock: int,
+        shots: int,
+    ) -> tuple[float, float]:
+        """Run sunscreen circuit and return (|Ae| deg, σ)."""
+        c = build_depth_sunscreen_circuit(
+            line, theta=theta, layers=self.base_depth, relock_interval=relock,
+        )
+        counts = _counts_3q(sampler.run(c, repetitions=shots), shots)
+        report = self.analyzer.from_counts(counts, n_qubits=3)
+        ae_deg = abs(float(np.degrees(report.tri_delta.alignment_error)))
+        sigma = abs(float(phase_force(report.tri_delta.theta)))
+        return ae_deg, sigma
+
+    def finetune_cell_ae_sigma(
+        self,
+        sampler,
+        line: WillowLine,
+        cell_id: int,
+        shots: int | None = None,
+    ) -> tuple[float, float, float]:
+        """
+        Fine-tune θ offset around angle-map placement: minimize |Ae|, then σ.
+
+        Target: Ae → ∅, Δσ → ∅ at θ* on each cell.
+        Returns (best_offset_deg, |Ae|, σ).
+        """
+        _require_cirq()
+        shots = shots or self.calibrate_shots
+        base_offset = self._theta_offsets.get(cell_id, 0.0)
+        relock = self._intervals.get(cell_id, self.base_relock)
+        relock_candidates = [relock]
+        if self.finetune_relock_sweep:
+            relock_candidates = sorted(
+                {max(self.min_relock, min(self.max_relock, r)) for r in (3, 4, 5, 6, 7)}
+            )
+
+        best_offset = base_offset
+        best_relock = relock
+        best_ae = float("inf")
+        best_sigma = float("inf")
+
+        for delta_deg in self.finetune_offsets_deg:
+            offset_deg = base_offset + delta_deg
+            theta = self.theta_star + float(np.radians(offset_deg))
+            for rl in relock_candidates:
+                ae_deg, sigma = self._ae_sigma_from_circuit(
+                    sampler, line, theta, rl, shots,
+                )
+                better = (ae_deg < best_ae - 1e-9) or (
+                    abs(ae_deg - best_ae) <= 1e-9 and sigma < best_sigma
+                )
+                if better:
+                    best_ae = ae_deg
+                    best_sigma = sigma
+                    best_offset = offset_deg
+                    best_relock = rl
+
+        self._theta_offsets[cell_id] = best_offset
+        self._intervals[cell_id] = best_relock
+        return best_offset, best_ae, best_sigma
+
     def run_cell(
         self,
         sampler,
@@ -249,6 +323,8 @@ class ChipStabilityController:
         do_cal = self.calibrate_theta if calibrate is None else calibrate
         if do_cal:
             self.calibrate_cell_theta(sampler, line, cell_id)
+            if self.finetune_ae_sigma:
+                self.finetune_cell_ae_sigma(sampler, line, cell_id)
 
         theta_cell = self._cell_theta(cell_id)
         theta_neg = theta_neg or negative_control_angle(self.theta_star)
@@ -344,6 +420,10 @@ class ChipStabilityController:
         zzz_band = sum(1 for c in out.cells if c.zzz_band)
         ae_near_zero = sum(1 for a in ae_vals if a <= self.ae_tol_deg)
         sigma_near_zero = sum(1 for s in sig_vals if s <= self.sigma_tol)
+        ae_locked = sum(
+            1 for c in out.cells
+            if abs(c.ae_deg) <= self.ae_tol_deg and c.sigma <= self.sigma_tol
+        )
         cells_winning = int(sum(1 for g in gaps if g >= self.zzz_gap_tol))
         cells_task_winning = int(sum(1 for e, g in zip(task_errs, gaps) if g >= self.zzz_gap_tol))
 
@@ -360,6 +440,7 @@ class ChipStabilityController:
             "cells_zzz_band": zzz_band,
             "cells_ae_near_zero": ae_near_zero,
             "cells_sigma_near_zero": sigma_near_zero,
+            "cells_ae_sigma_locked": ae_locked,
             "cells_winning": cells_winning,
             "cells_task_winning": cells_task_winning,
             "aurora_satisfied": bool(aurora.satisfied),
@@ -386,7 +467,17 @@ class ChipStabilityController:
             if out.task_benchmark
             else cells_task_winning >= max(1, len(lines) // 2)
         )
-        if (
+        angle_map_ok = cells_winning >= max(1, len(lines) // 2)
+        ae_sigma_ok = ae_locked >= max(1, int(len(lines) * 0.75))
+
+        if angle_map_ok and ae_sigma_ok and task_ok:
+            out.verdict = "ERROR_LIMITED"
+            out.notes = (
+                f"Angle map + Ae/σ lock: {cells_winning}/{len(lines)} |ΔZZZ| wins, "
+                f"{ae_locked}/{len(lines)} cells Ae→∅ & Δσ→∅ "
+                f"(median |Ae|={agg['ae_median_deg']:.2f}°, median σ={agg['sigma_median']:.4f})."
+            )
+        elif (
             in_band >= max(1, len(lines) // 2)
             and cells_winning >= max(1, len(lines) // 2)
             and agg["sigma_median"] <= 0.15
