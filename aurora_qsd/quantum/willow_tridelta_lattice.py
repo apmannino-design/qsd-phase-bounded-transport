@@ -126,24 +126,25 @@ def greedy_edge_layers(edges: Sequence[tuple[int, int]]) -> list[list[tuple[int,
     return layers
 
 
-def _zz_interaction(q0, q1, jzz: float, dt: float) -> Iterator:
-    exponent = -2.0 * jzz * dt / math.pi
-    yield cirq.Z(q0) ** (-jzz * dt / math.pi)
-    yield cirq.Z(q1) ** (-jzz * dt / math.pi)
-    yield cirq.CZ(q0, q1) ** exponent
+def _zz_native(q0, q1, jzz: float, dt: float) -> Iterator:
+    """exp(-i dt jzz Z⊗Z) via native Willow CZ + RZ (no fractional CZ)."""
+    angle = 2.0 * jzz * dt
+    yield cirq.CZ(q0, q1)
+    yield cirq.rz(angle)(q0)
+    yield cirq.rz(angle)(q1)
+    yield cirq.CZ(q0, q1)
 
 
-def _xx_interaction(q0, q1, jxx: float, dt: float) -> Iterator:
+def _xx_native(q0, q1, jxx: float, dt: float) -> Iterator:
     yield cirq.H(q0)
     yield cirq.H(q1)
-    yield from _zz_interaction(q0, q1, jxx, dt)
+    yield from _zz_native(q0, q1, jxx, dt)
     yield cirq.H(q0)
     yield cirq.H(q1)
 
 
 def _local_field(q, h_field: float, dt: float):
-    exponent = -2.0 * h_field * dt / math.pi
-    return cirq.Z(q) ** exponent
+    return cirq.rz(2.0 * h_field * dt)(q)
 
 
 def filter_edges_on_device(
@@ -182,7 +183,7 @@ def build_tridelta_circuit(
     theta_deg: float,
     config: TrideltaLatticeConfig,
 ) -> "cirq.Circuit":
-    """Submission Listing 1 — Trotterized Tridelta lattice at angle θ."""
+    """Trotterized Tridelta lattice — native willow_pink gates (CZ, RZ, H)."""
     _require_cirq()
     jzz, jxx = couplings(theta_deg)
     edge_layers = greedy_edge_layers(logical_edges)
@@ -192,12 +193,12 @@ def build_tridelta_circuit(
         for layer in edge_layers:
             for i, j in layer:
                 circuit.append(
-                    list(_zz_interaction(hw_qubits[i], hw_qubits[j], jzz, config.dt))
+                    list(_zz_native(hw_qubits[i], hw_qubits[j], jzz, config.dt))
                 )
         for layer in edge_layers:
             for i, j in layer:
                 circuit.append(
-                    list(_xx_interaction(hw_qubits[i], hw_qubits[j], jxx, config.dt))
+                    list(_xx_native(hw_qubits[i], hw_qubits[j], jxx, config.dt))
                 )
         if abs(config.h_field) > 0:
             circuit.append(
@@ -254,6 +255,16 @@ def delta_e_from_shots(x_shots: np.ndarray, eps: float = 1e-6) -> float:
     return float(np.mean(z))
 
 
+def _measurement_bit_array(result, key: str, n_qubits: int, shots: int) -> np.ndarray:
+    """Decode packed integer measurements from willow_pink sampler."""
+    series = result.data[key]
+    rows = []
+    for i in range(shots):
+        val = int(series.iloc[i])
+        rows.append([(val >> q) & 1 for q in range(n_qubits)])
+    return np.asarray(rows, dtype=int)
+
+
 def run_single_point(
     sampler,
     hw_qubits: Sequence,
@@ -263,7 +274,7 @@ def run_single_point(
 ) -> ThetaPointResult:
     circuit = build_tridelta_circuit(hw_qubits, logical_edges, theta_deg, config)
     result = sampler.run(circuit, repetitions=config.shots)
-    arr = result.records[circuit][config.measure_key].to_numpy()
+    arr = _measurement_bit_array(result, config.measure_key, len(hw_qubits), config.shots)
     x_shots = nearest_neighbor_correlator_per_shot(arr, logical_edges)
     return ThetaPointResult(
         theta_deg=theta_deg,
