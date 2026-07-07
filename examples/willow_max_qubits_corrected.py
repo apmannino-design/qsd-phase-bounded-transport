@@ -45,8 +45,8 @@ def run_phase(name: str, **kwargs) -> dict:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Max-qubit corrected Willow QVM campaign")
-    parser.add_argument("--shots-interior", type=int, default=1000)
-    parser.add_argument("--shots-cells", type=int, default=200)
+    parser.add_argument("--shots-interior", type=int, default=4000)
+    parser.add_argument("--shots-cells", type=int, default=1000)
     parser.add_argument("--interior-only", action="store_true")
     parser.add_argument("--cells-only", action="store_true")
     args = parser.parse_args()
