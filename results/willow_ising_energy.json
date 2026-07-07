@@ -1,0 +1,35 @@
+{
+  "task": "ising_3q_energy",
+  "line": [
+    "q(6,5)",
+    "q(6,6)",
+    "q(6,7)"
+  ],
+  "J": 1.2,
+  "h_field": 0.1,
+  "trotter_steps": 10,
+  "dt": 0.25,
+  "shots": 600,
+  "e_ground": -2.4111120954835683,
+  "zzz_ground": 6.739779092760416e-13,
+  "bare": {
+    "energy": -2.1103333333333336,
+    "error_vs_ground": 0.3007787621502347,
+    "noiseless_energy": -2.3971898460067065,
+    "n": 600
+  },
+  "qsd": {
+    "energy": -0.6599999999999999,
+    "error_vs_ground": 1.7511120954835684,
+    "noiseless_energy": -0.8043284877987291,
+    "n": 600
+  },
+  "wrong": {
+    "energy": 0.03899999999999997,
+    "error_vs_ground": 2.4501120954835685,
+    "noiseless_energy": 0.027702610386643307,
+    "n": 600
+  },
+  "verdict": "NULL",
+  "notes": "Periodic QSD did not improve energy estimate (bare 0.301, qsd 1.751)."
+}
