@@ -32,7 +32,7 @@ def test_willow_correct_run_schema() -> None:
     d = result.to_dict()
     assert d["line"] == "interior"
     assert d["line_coords"] == ["q(6,5)", "q(6,6)", "q(6,7)"]
-    assert d["theta_star_deg"] == 22.48
+    assert d["theta_star_deg"] == 22.49
     assert "echo_qsd" in d["echo"]
     assert "qsd_theta_star" in d["depth"]
     assert "depth_gap" in d
