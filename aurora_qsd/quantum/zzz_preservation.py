@@ -1,21 +1,19 @@
 """
 ⟨ZZZ⟩ preservation line — QSD depth sunscreen vs matched-depth XY4 control.
 
-Control construction: matched layers, matched 1q count, documented 2q asymmetry.
+Control construction:
+  - Matched layer schedule (14L, re-lock /5)
+  - XY4: three complete XY4 blocks per body layer (12 single-qubit pulses)
+  - QSD: 11 single-qubit + 4 two-qubit per body layer (asymmetry documented)
 
-Scoring requires noiseless reference per arm:
+Scoring requires noiseless ideal per arm:
   retention R = ⟨ZZZ⟩_noisy / ⟨ZZZ⟩_ideal
 
-Arm-vs-arm gaps alone are insufficient — a coherent rotation (different unitary,
-zero protection) can pass |θ*−XY4| thresholds via sign flips while |magnitude|
-stays a dead heat.
-
-Decisive artifact: R(θ) = noisy/ideal across θ sweep.
-  Flat R(θ)  → coherent artifact (unitarity, not protection)
-  R peaked at θ* → angle-specific retention
-
-NOT preregistered: the ≥0.05 |θ*−XY4| bar was added post-hoc and is reported
-for transparency only — it does not gate endorsement.
+Verdict ladder (July 7 audit — simulation never endorses):
+  NO_TARGET_SIGNAL  → |ideal(θ*)| < 0.5
+  COHERENT_ARTIFACT   → ideal angle gap ≥ noisy angle gap
+  NO_PROTECTION_ADVANTAGE → retention fail or R outside (0, 1.05]
+  PROTECTION_CANDIDATE → passes all (hardware confirmation still required)
 """
 
 from __future__ import annotations
@@ -39,17 +37,12 @@ from aurora_qsd.quantum.willow_run import (
     build_depth_sunscreen_circuit,
 )
 
-# Interior |ΔZZZ| bar from hardware handoff (preregistered elsewhere)
-INTERIOR_GAP_THRESHOLD = 0.5
-
-# Post-hoc exploratory — NOT preregistered before XY4 run
-POST_HOC_ARM_GAP_THRESHOLD = 0.05
-
-# Retention endorsement: R(θ*) must exceed R(XY4) by this margin (exploratory)
-RETENTION_MARGIN = 0.15
-
-# Flat R(θ) if peak - median < this (exploratory)
-RETENTION_PEAK_FLATNESS = 0.10
+# Audit thresholds (July 7, 2026 retention audit)
+MIN_TARGET_SIGNAL = 0.5
+RETENTION_ADVANTAGE_MARGIN = 0.10
+VALID_R_MAX = 1.05
+INTERIOR_GAP_THRESHOLD = 0.5  # preregistered hardware handoff bar (informational)
+POST_HOC_ARM_GAP_THRESHOLD = 0.05  # NOT preregistered
 
 
 def _count_gates(ops: list) -> dict[str, int]:
@@ -61,16 +54,49 @@ def _count_gates(ops: list) -> dict[str, int]:
     return {"one_qubit": n1, "two_qubit": n2, "moments": len(c)}
 
 
-def _xy4_body_ops(qubits: list) -> list:
-    """One matched body layer: 11 single-qubit pulses (same 1q budget as QSD body)."""
+def _xy4_single_qubit(q) -> list:
     import cirq
 
+    return [cirq.X(q), cirq.Y(q), cirq.X(q), cirq.Y(q)]
+
+
+def _xy4_body_ops(qubits: list) -> list:
+    """
+    One body layer: three complete XY4 blocks (12 single-qubit pulses).
+
+    Prior bug: dropping the 12th pulse made the layer ≈ I⊗I⊗Y (not DD).
+    +1 single-qubit pulse per layer vs QSD body (11) is documented in gate budget.
+    """
     ops: list = []
     for q in qubits:
-        ops.extend([cirq.X(q), cirq.Y(q), cirq.X(q), cirq.Y(q)])
-    if ops:
-        ops.pop()
+        ops.extend(_xy4_single_qubit(q))
     return ops
+
+
+def verify_xy4_layer(qubits: list | None = None) -> dict:
+    """Verify repaired XY4 body is genuine DD, not degenerate I⊗I⊗Y."""
+    import cirq
+
+    if qubits is None:
+        qubits = list(cirq.LineQubit.range(3))
+
+    ops = _xy4_body_ops(qubits)
+    n1 = len(ops)
+    u_layer = cirq.unitary(cirq.Circuit(ops))
+
+    # Degenerate old control: proportional to I⊗I⊗Y (only q2 rotates)
+    y3 = np.kron(np.eye(2), np.kron(np.eye(2), cirq.unitary(cirq.Y)))
+    overlap_y = float(np.abs(np.trace(u_layer.conj().T @ y3)) / u_layer.size)
+
+    # Full XY4 on all qubits should differ strongly from single-qubit Y on q2
+    return {
+        "pulses_per_layer": n1,
+        "expected_pulses": 12,
+        "is_twelve_pulse_xy4": n1 == 12,
+        "overlap_with_IIIY": overlap_y,
+        "degenerate_IIIY": overlap_y > 0.99,
+        "passes": n1 == 12 and overlap_y < 0.99,
+    }
 
 
 def build_xy4_matched_circuit(
@@ -80,7 +106,7 @@ def build_xy4_matched_circuit(
     relock_interval: int = OPTIMAL_RELOCK_INTERVAL,
     measure: bool = True,
 ) -> "cirq.Circuit":
-    """Matched-depth XY4 DD control (same schedule as QSD sunscreen)."""
+    """Matched-schedule XY4 dynamical decoupling control."""
     _require_cirq()
     import cirq
 
@@ -111,7 +137,6 @@ def build_qsd_circuit(
     relock_interval: int = OPTIMAL_RELOCK_INTERVAL,
     measure: bool = True,
 ) -> "cirq.Circuit":
-    """QSD depth sunscreen with optional measurement stripping for ideal sim."""
     c = build_depth_sunscreen_circuit(
         line, theta=theta, layers=layers, relock_interval=relock_interval,
     )
@@ -125,7 +150,7 @@ def build_qsd_circuit(
 
 
 def ideal_zzz_from_circuit(circuit) -> float:
-    """Noiseless ⟨Z⊗Z⊗Z⟩ via statevector simulation (qsim-class, seconds)."""
+    """Noiseless ⟨Z⊗Z⊗Z⟩ via statevector simulation."""
     _require_cirq()
     import cirq
 
@@ -140,52 +165,64 @@ def ideal_zzz_from_circuit(circuit) -> float:
     return float(np.real(acc))
 
 
-def compute_retention(measured: float, ideal: float) -> dict:
-    """
-    Retention R = measured / ideal.
+def ideal_zzz_density_matrix(circuit) -> float:
+    """Independent ideal check via density-matrix simulation."""
+    _require_cirq()
+    import cirq
 
-    Interpretation:
-      ideal ≈ −1, measured ≈ −0.30 → R ≈ 0.30 (30% of target correlator retained)
-      ideal ≈ −0.30, measured ≈ −0.30 → R ≈ 1.0 (noiseless matched; no protection)
-    """
+    c = cirq.Circuit(
+        [op for op in circuit.all_operations() if not cirq.is_measurement(op)]
+    )
+    rho = cirq.DensityMatrixSimulator().simulate(c).final_density_matrix
+    zzz = np.array([[1, 0], [0, -1]], dtype=complex)
+    op = np.kron(zzz, np.kron(zzz, zzz))
+    return float(np.real(np.trace(rho @ op)))
+
+
+def compute_retention(measured: float | None, ideal: float) -> dict:
+    """Retention R = measured / ideal."""
     eps = 1e-9
-    out = {
+    out: dict = {
         "ideal_zzz": ideal,
         "measured_zzz": measured,
         "retention_signed": None,
         "retention_magnitude": None,
-        "noise_delta": float(measured - ideal),
-        "magnitude_ratio": float(abs(measured) / abs(ideal)) if abs(ideal) > eps else None,
+        "noise_delta": None,
+        "magnitude_ratio": None,
     }
-    if abs(ideal) > eps:
-        out["retention_signed"] = float(measured / ideal)
-        out["retention_magnitude"] = float(abs(measured) / abs(ideal))
+    if measured is not None:
+        out["noise_delta"] = float(measured - ideal)
+        if abs(ideal) > eps:
+            out["retention_signed"] = float(measured / ideal)
+            out["retention_magnitude"] = float(abs(measured) / abs(ideal))
+            out["magnitude_ratio"] = out["retention_magnitude"]
     return out
 
 
 def _gate_budget_metadata(line: WillowLine, theta: float, layers: int, relock: int) -> dict:
     qubits = list(line.qubits())
-    import cirq
-
-    qsd_ops = [
-        op
-        for op in build_qsd_circuit(line, theta, layers, relock, measure=False).all_operations()
-    ]
-    xy4_ops = [
-        op
-        for op in build_xy4_matched_circuit(line, theta, layers, relock, measure=False).all_operations()
-    ]
+    qsd_ops = list(build_qsd_circuit(line, theta, layers, relock, measure=False).all_operations())
+    xy4_ops = list(
+        build_xy4_matched_circuit(line, theta, layers, relock, measure=False).all_operations()
+    )
+    qsd_body = _count_gates(_sunscreen_body_ops(qubits, theta, with_init=False))
+    xy4_body = _count_gates(_xy4_body_ops(qubits))
     return {
         "layers": layers,
         "relock_interval": relock,
-        "qsd_body_per_layer": _count_gates(_sunscreen_body_ops(qubits, theta, with_init=False)),
-        "xy4_body_per_layer": _count_gates(_xy4_body_ops(qubits)),
+        "qsd_body_per_layer": qsd_body,
+        "xy4_body_per_layer": xy4_body,
         "qsd_total": _count_gates(qsd_ops),
         "xy4_total": _count_gates(xy4_ops),
-        "matched_1q_per_body_layer": True,
-        "two_qubit_asymmetry": (
-            "QSD includes 4 two-qubit ops per body layer; XY4 is 1q-only (standard DD)."
+        "matched_1q_per_body_layer": False,
+        "one_qubit_asymmetry": (
+            f"XY4 has {xy4_body['one_qubit']} 1q/layer vs QSD {qsd_body['one_qubit']} "
+            f"(repaired full XY4; prior 11-pulse layer was degenerate I⊗I⊗Y)."
         ),
+        "two_qubit_asymmetry": (
+            f"QSD has {qsd_body['two_qubit']} 2q/layer; XY4 has 0 (standard DD)."
+        ),
+        "xy4_layer_check": verify_xy4_layer(qubits),
     }
 
 
@@ -197,8 +234,8 @@ def _run_arm(
     shots: int,
     layers: int,
     relock: int,
+    ideals_only: bool = False,
 ) -> dict:
-    """Run one arm: noisy measurement + noiseless ideal + retention."""
     if arm == "xy4":
         c_noisy = build_xy4_matched_circuit(line, theta, layers, relock, measure=True)
         c_ideal = build_xy4_matched_circuit(line, theta, layers, relock, measure=False)
@@ -208,24 +245,21 @@ def _run_arm(
     else:
         raise ValueError(arm)
 
-    measured = _zzz_from_result(sampler.run(c_noisy, repetitions=shots), shots)
-    ideal = ideal_zzz_from_circuit(c_ideal)
-    ret = compute_retention(measured, ideal)
-    return {
+    ideal_sv = ideal_zzz_from_circuit(c_ideal)
+    ideal_dm = ideal_zzz_density_matrix(c_ideal)
+    measured = None
+    if not ideals_only:
+        measured = _zzz_from_result(sampler.run(c_noisy, repetitions=shots), shots)
+
+    ret = compute_retention(measured, ideal_sv)
+    ret.update({
         "arm": arm,
         "theta_deg": float(np.degrees(theta)),
-        "shots": shots,
-        **ret,
-    }
-
-
-@dataclass
-class RetentionSweepPoint:
-    theta_deg: float
-    ideal_zzz: float
-    measured_zzz: float
-    retention_signed: float | None
-    retention_magnitude: float | None
+        "shots": shots if not ideals_only else 0,
+        "ideal_zzz_dm": ideal_dm,
+        "ideal_paths_agree": abs(ideal_sv - ideal_dm) < 1e-5,
+    })
+    return ret
 
 
 @dataclass
@@ -268,24 +302,33 @@ class ZZZPreservationResult:
         }
 
 
+def _audit_theta_points(theta_star_deg: float) -> list[float]:
+    """θ points matching July 7 audit table (2°–92.49°)."""
+    pts = [2.0, 8.0, 14.0, 20.0, theta_star_deg, 26.0, 32.0, 38.0, 44.0, 50.0, 56.0, 62.0, 68.0, 74.0, 80.0, 86.0]
+    wrong = theta_star_deg + 70.0
+    if wrong not in pts:
+        pts.append(wrong)
+    return sorted(pts)
+
+
 def run_retention_theta_sweep(
     sampler,
     line: WillowLine,
     shots: int,
     layers: int,
     relock: int,
-    theta_center_deg: float = OPTIMAL_THETA_DEG,
-    span_deg: float = 40.0,
-    n_points: int = 17,
+    theta_star_deg: float = OPTIMAL_THETA_DEG,
+    theta_points_deg: list[float] | None = None,
+    ideals_only: bool = False,
 ) -> list[dict]:
-    """R(θ) = noisy/ideal for QSD depth sunscreen across partition angle."""
-    thetas_deg = np.linspace(theta_center_deg - span_deg, theta_center_deg + span_deg, n_points)
-    points: list[dict] = []
-    for td in thetas_deg:
+    """R(θ): noisy/ideal for QSD at each θ."""
+    points_deg = theta_points_deg or _audit_theta_points(theta_star_deg)
+    out: list[dict] = []
+    for td in points_deg:
         theta = float(np.radians(td))
-        row = _run_arm(sampler, line, "qsd", theta, shots, layers, relock)
-        points.append(row)
-    return points
+        row = _run_arm(sampler, line, "qsd", theta, shots, layers, relock, ideals_only=ideals_only)
+        out.append(row)
+    return out
 
 
 def _analyze_retention_curve(
@@ -293,117 +336,106 @@ def _analyze_retention_curve(
     theta_star_deg: float,
     xy4_retention_signed: float | None,
 ) -> dict:
-    """Detect flat R(θ) vs peak at θ*."""
     if not sweep:
         return {"status": "no_sweep"}
 
     rs = [p["retention_signed"] for p in sweep if p.get("retention_signed") is not None]
     thetas = [p["theta_deg"] for p in sweep if p.get("retention_signed") is not None]
     if not rs:
-        return {"status": "undefined_retention"}
+        ideals = [p["ideal_zzz"] for p in sweep]
+        noisies = [p.get("measured_zzz") for p in sweep]
+        return {
+            "status": "ideals_only",
+            "ideal_curve": [{"theta_deg": t, "ideal": i} for t, i in zip(thetas or [p["theta_deg"] for p in sweep], ideals)],
+            "noisy_curve": [{"theta_deg": p["theta_deg"], "noisy": p.get("measured_zzz")} for p in sweep],
+        }
 
     arr = np.array(rs)
     peak_idx = int(np.argmax(arr))
-    peak_theta = thetas[peak_idx]
-    peak_r = float(arr[peak_idx])
-    median_r = float(np.median(arr))
     star_idx = int(np.argmin([abs(t - theta_star_deg) for t in thetas]))
-    r_at_star = float(rs[star_idx])
-    theta_at_star = thetas[star_idx]
-
-    flat = (peak_r - median_r) < RETENTION_PEAK_FLATNESS
-    peak_near_star = abs(peak_theta - theta_star_deg) <= (
-        thetas[1] - thetas[0] if len(thetas) > 1 else 5.0
-    )
-
-    beats_xy4 = (
-        xy4_retention_signed is not None
-        and r_at_star > xy4_retention_signed + RETENTION_MARGIN
-    )
 
     return {
         "status": "computed",
-        "r_at_theta_star": r_at_star,
-        "theta_nearest_star_deg": theta_at_star,
-        "r_peak": peak_r,
-        "theta_peak_deg": peak_theta,
-        "r_median": median_r,
+        "r_at_theta_star": float(rs[star_idx]),
+        "theta_nearest_star_deg": thetas[star_idx],
+        "r_peak": float(arr[peak_idx]),
+        "theta_peak_deg": thetas[peak_idx],
+        "r_median": float(np.median(arr)),
         "r_xy4": xy4_retention_signed,
-        "flat_curve": flat,
-        "peak_near_theta_star": peak_near_star,
-        "retention_beats_xy4": beats_xy4,
-        "curve": [{"theta_deg": t, "R": r} for t, r in zip(thetas, rs)],
+        "peak_near_theta_star": abs(thetas[peak_idx] - theta_star_deg) <= 5.0,
+        "curve": [{"theta_deg": t, "R": r, "ideal": p["ideal_zzz"], "noisy": p.get("measured_zzz")}
+                  for t, r, p in zip(thetas, rs, sweep[: len(thetas)])],
     }
 
 
-def _assign_verdict(
-    arm_gaps: dict,
-    retention: dict,
-    analysis: dict,
-) -> tuple[str, bool, str]:
+def assign_retention_verdict(arms: dict, arm_gaps: dict, analysis: dict) -> tuple[str, bool, str]:
     """
-    Endorsement requires retention dominance, not arm-vs-arm sign flips.
+    July 7 audit verdict ladder. endorsable is always False on simulation alone.
+    """
+    qsd = arms["qsd_theta_star"]
+    wrong = arms["qsd_wrong_theta"]
+    xy4 = arms["xy4_matched"]
 
-    Never returns ENDORSABLE without R(θ*) ≫ R(XY4) and peaked R(θ).
-    """
-    r_star = analysis.get("r_at_theta_star")
-    r_xy4 = analysis.get("r_xy4")
-    mag_qsd = arm_gaps.get("magnitude_qsd_vs_xy4_delta")
+    ideal_star = qsd["ideal_zzz"]
+    ideal_wrong = wrong["ideal_zzz"]
+    z_star = qsd.get("measured_zzz")
+    z_wrong = wrong.get("measured_zzz")
+    r_star = qsd.get("retention_signed")
+    r_xy4 = xy4.get("retention_signed")
+
     mag_note = ""
-    if mag_qsd is not None:
-        mag_note = f" |magnitude dead-heat check: |θ*|-|XY4|={mag_qsd:.3f}."
+    if arm_gaps.get("magnitude_qsd_vs_xy4_delta") is not None:
+        mag_note = f" |magnitude Δ={arm_gaps['magnitude_qsd_vs_xy4_delta']:.3f}."
+
+    if abs(ideal_star) < MIN_TARGET_SIGNAL:
+        return (
+            "NO_TARGET_SIGNAL",
+            False,
+            f"|ideal(θ*)|={abs(ideal_star):.3f} < {MIN_TARGET_SIGNAL}; nothing to preserve.{mag_note}",
+        )
+
+    if z_star is not None and z_wrong is not None:
+        ideal_gap = abs(ideal_star - ideal_wrong)
+        noisy_gap = abs(z_star - z_wrong)
+        if ideal_gap >= noisy_gap - 1e-9:
+            return (
+                "COHERENT_ARTIFACT",
+                False,
+                f"Ideal angle gap {ideal_gap:.3f} ≥ noisy gap {noisy_gap:.3f}; "
+                f"signature is unitary, not protective.{mag_note}",
+            )
 
     if r_star is None or r_xy4 is None:
         return (
             "PENDING_RETENTION",
             False,
-            "Retention R(θ) not computed; arm-vs-arm gaps alone are insufficient." + mag_note,
+            "Noisy retention not computed." + mag_note,
         )
 
-    ideal_star = analysis.get("ideal_at_star")
-    if ideal_star is not None and abs(ideal_star) < 0.35:
+    valid_r = 0.0 < r_star <= VALID_R_MAX
+    beats_xy4 = r_star >= r_xy4 + RETENTION_ADVANTAGE_MARGIN
+    peak_ok = analysis.get("peak_near_theta_star", False)
+
+    if not valid_r or not beats_xy4:
         return (
-            "WEAK_TARGET",
+            "NO_PROTECTION_ADVANTAGE",
             False,
-            f"|ideal(θ*)|={abs(ideal_star):.3f} — unitary targets weak ⟨ZZZ⟩, not −1; "
-            f"R(θ*)={r_star:.3f} vs R(XY4)={r_xy4:.3f} does not establish protection.{mag_note}",
+            f"R(θ*)={r_star:.3f}, R(XY4)={r_xy4:.3f}; need R∈(0,{VALID_R_MAX}] and "
+            f"R(θ*)≥R(XY4)+{RETENTION_ADVANTAGE_MARGIN}.{mag_note}",
         )
 
-    if analysis.get("flat_curve"):
+    if peak_ok:
         return (
-            "COHERENT_ARTIFACT",
+            "PROTECTION_CANDIDATE",
             False,
-            f"R(θ) flat (peak−median={analysis.get('r_peak', 0) - analysis.get('r_median', 0):.3f}); "
-            f"likely unitary rotation, not noise protection.{mag_note}",
-        )
-
-    if r_star is not None and abs(r_star - 1.0) < 0.05 and abs(analysis.get("ideal_at_star", 0)) < 0.5:
-        return (
-            "COHERENT_ARTIFACT",
-            False,
-            f"Noisy ≈ noiseless at θ* (R≈{r_star:.3f}); circuit computes a function, does not protect.{mag_note}",
-        )
-
-    if analysis.get("retention_beats_xy4") and analysis.get("peak_near_theta_star"):
-        return (
-            "RETENTION_WIN",
-            True,
-            f"R(θ*)={r_star:.3f} ≫ R(XY4)={r_xy4:.3f}; peak near θ*={analysis.get('theta_peak_deg'):.1f}°.{mag_note}",
-        )
-
-    if abs(arm_gaps.get("angle_specific_abs", 0)) >= INTERIOR_GAP_THRESHOLD:
-        return (
-            "ARM_GAP_ONLY",
-            False,
-            f"Arm-vs-arm |ΔZZZ|={arm_gaps['angle_specific_abs']:.3f} passes interior bar, but "
-            f"retention R(θ*)={r_star:.3f} vs R(XY4)={r_xy4:.3f} does not endorse "
-            f"(need R(θ*) > R(XY4)+{RETENTION_MARGIN}).{mag_note}",
+            f"Simulation candidate: R(θ*)={r_star:.3f}, peak near θ*; hardware confirmation required.{mag_note}",
         )
 
     return (
-        "NULL",
+        "NO_PROTECTION_ADVANTAGE",
         False,
-        f"No retention win: R(θ*)={r_star:.3f}, R(XY4)={r_xy4:.3f}.{mag_note}",
+        f"R(θ*)={r_star:.3f} but retention peak at θ={analysis.get('theta_peak_deg', '?')}°, "
+        f"not θ*={analysis.get('theta_nearest_star_deg', '?')}°.{mag_note}",
     )
 
 
@@ -416,18 +448,8 @@ def run_zzz_preservation_benchmark(
     relock_interval: int = OPTIMAL_RELOCK_INTERVAL,
     negative_offset_deg: float = 70.0,
     run_theta_sweep: bool = True,
-    sweep_span_deg: float = 40.0,
-    sweep_n_points: int = 17,
+    ideals_only: bool = False,
 ) -> ZZZPreservationResult:
-    """
-    Matched-depth XY4 control + retention scoring vs noiseless ideal.
-
-    Protocol order:
-      1. Noiseless ideal ⟨ZZZ⟩ per arm (statevector)
-      2. XY4 matched-depth noisy
-      3. QSD @ θ* and wrong θ noisy
-      4. R(θ) sweep (QSD, noisy+ideal at each θ)
-    """
     _require_cirq()
     from cirq_google import engine
 
@@ -435,8 +457,12 @@ def run_zzz_preservation_benchmark(
     theta_star = float(np.radians(theta_star_deg))
     theta_wrong = negative_control_angle(theta_star, offset_deg=negative_offset_deg)
 
-    proc = engine.create_default_noisy_quantum_virtual_machine("willow_pink").get_processor("willow_pink")
-    sampler = proc.get_sampler()
+    sampler = None
+    if not ideals_only:
+        proc = engine.create_default_noisy_quantum_virtual_machine("willow_pink").get_processor(
+            "willow_pink"
+        )
+        sampler = proc.get_sampler()
 
     out = ZZZPreservationResult(
         line=line.labels(),
@@ -446,39 +472,35 @@ def run_zzz_preservation_benchmark(
         shots=shots,
         gate_budget=_gate_budget_metadata(line, theta_star, layers, relock_interval),
         preregistration={
-            "interior_abs_gap_0_5": "preregistered (hardware handoff)",
+            "min_target_signal": MIN_TARGET_SIGNAL,
+            "retention_advantage_margin": RETENTION_ADVANTAGE_MARGIN,
+            "valid_r_range": f"(0, {VALID_R_MAX}]",
             "arm_gap_0_05": "NOT preregistered — post-hoc exploratory only",
-            "retention_margin": f"exploratory +{RETENTION_MARGIN} over R(XY4)",
-            "do_not_stamp_until": "R(θ) sweep complete and peaked at θ*",
+            "simulation_endorses": False,
         },
     )
 
-    # Arms: XY4 first, then QSD θ*, QSD wrong
-    xy4 = _run_arm(sampler, line, "xy4", theta_star, shots, layers, relock_interval)
-    qsd_star = _run_arm(sampler, line, "qsd", theta_star, shots, layers, relock_interval)
-    qsd_wrong = _run_arm(sampler, line, "qsd", theta_wrong, shots, layers, relock_interval)
+    xy4 = _run_arm(sampler, line, "xy4", theta_star, shots, layers, relock_interval, ideals_only)
+    qsd_star = _run_arm(sampler, line, "qsd", theta_star, shots, layers, relock_interval, ideals_only)
+    qsd_wrong = _run_arm(sampler, line, "qsd", theta_wrong, shots, layers, relock_interval, ideals_only)
 
-    out.arms = {
-        "xy4_matched": xy4,
-        "qsd_theta_star": qsd_star,
-        "qsd_wrong_theta": qsd_wrong,
-    }
+    out.arms = {"xy4_matched": xy4, "qsd_theta_star": qsd_star, "qsd_wrong_theta": qsd_wrong}
 
-    z_star = qsd_star["measured_zzz"]
-    z_wrong = qsd_wrong["measured_zzz"]
-    z_xy4 = xy4["measured_zzz"]
-
-    out.arm_gaps = {
-        "angle_specific_signed": float(z_star - z_wrong),
-        "angle_specific_abs": abs(z_star - z_wrong),
-        "qsd_vs_xy4_signed": float(z_star - z_xy4),
-        "qsd_vs_xy4_abs": abs(z_star - z_xy4),
-        "magnitude_qsd": abs(z_star),
-        "magnitude_xy4": abs(z_xy4),
-        "magnitude_qsd_vs_xy4_delta": abs(abs(z_star) - abs(z_xy4)),
-        "post_hoc_arm_gap_passes_0_05": abs(z_star - z_xy4) >= POST_HOC_ARM_GAP_THRESHOLD,
-        "post_hoc_note": "≥0.05 |θ*−XY4| was NOT preregistered; reported for transparency only",
-    }
+    if not ideals_only:
+        z_star, z_wrong, z_xy4 = qsd_star["measured_zzz"], qsd_wrong["measured_zzz"], xy4["measured_zzz"]
+        out.arm_gaps = {
+            "angle_specific_signed": float(z_star - z_wrong),
+            "angle_specific_abs": abs(z_star - z_wrong),
+            "qsd_vs_xy4_signed": float(z_star - z_xy4),
+            "qsd_vs_xy4_abs": abs(z_star - z_xy4),
+            "ideal_angle_gap": abs(qsd_star["ideal_zzz"] - qsd_wrong["ideal_zzz"]),
+            "noisy_angle_gap": abs(z_star - z_wrong),
+            "magnitude_qsd": abs(z_star),
+            "magnitude_xy4": abs(z_xy4),
+            "magnitude_qsd_vs_xy4_delta": abs(abs(z_star) - abs(z_xy4)),
+            "post_hoc_arm_gap_passes_0_05": abs(z_star - z_xy4) >= POST_HOC_ARM_GAP_THRESHOLD,
+            "post_hoc_note": "≥0.05 |θ*−XY4| was NOT preregistered",
+        }
 
     if run_theta_sweep:
         out.retention_theta_sweep = run_retention_theta_sweep(
@@ -487,9 +509,8 @@ def run_zzz_preservation_benchmark(
             sweep_shots,
             layers,
             relock_interval,
-            theta_center_deg=theta_star_deg,
-            span_deg=sweep_span_deg,
-            n_points=sweep_n_points,
+            theta_star_deg=theta_star_deg,
+            ideals_only=ideals_only,
         )
 
     analysis = _analyze_retention_curve(
@@ -497,36 +518,50 @@ def run_zzz_preservation_benchmark(
         theta_star_deg,
         xy4.get("retention_signed"),
     )
-    analysis["ideal_at_star"] = qsd_star.get("ideal_zzz")
-    analysis["ideal_xy4"] = xy4.get("ideal_zzz")
-    analysis["ideal_wrong"] = qsd_wrong.get("ideal_zzz")
+    analysis["ideal_at_star"] = qsd_star["ideal_zzz"]
+    analysis["ideal_xy4"] = xy4["ideal_zzz"]
+    analysis["ideal_wrong"] = qsd_wrong["ideal_zzz"]
     out.retention_analysis = analysis
 
-    verdict, endorsable, notes = _assign_verdict(out.arm_gaps, out.arms, analysis)
+    verdict, endorsable, notes = assign_retention_verdict(out.arms, out.arm_gaps, analysis)
     out.verdict = verdict
     out.endorsable = endorsable
     out.notes = notes
-
     return out
 
 
-def run_zzz_preservation_campaign(
+def run_retention_audit_benchmark(
     shots: int = 4000,
-    sweep_shots: int = 512,
-    **kwargs,
+    sweep_shots: int = 1000,
+    theta_star_deg: float = OPTIMAL_THETA_DEG,
+    ideals_only: bool = False,
 ) -> dict:
-    """Full ⟨ZZZ⟩ preservation campaign with retention scoring."""
+    """July 7 audit protocol wrapper."""
     result = run_zzz_preservation_benchmark(
-        shots=shots, sweep_shots=sweep_shots, line_name="interior", **kwargs,
+        shots=shots,
+        sweep_shots=sweep_shots,
+        theta_star_deg=theta_star_deg,
+        run_theta_sweep=True,
+        ideals_only=ideals_only,
     )
     return {
-        "candidate": "zzz_preservation_interior",
-        "protocol": (
-            "XY4 matched-depth control; noiseless ideal per arm; "
-            "retention R=noisy/ideal; R(θ) sweep for peak test"
-        ),
+        "audit": "RESULTS_JULY07_2026_RETENTION_AUDIT",
+        "xy4_repaired": True,
         "result": result.to_dict(),
-        "stamp_status": "HOLD — do not update README/meta/Zalcman until R(θ) adjudicated",
+        "stamp_status": "HOLD — simulation does not endorse",
+        "endorsable": False,
         "hardware_ready": False,
-        "endorsable": result.endorsable,
+    }
+
+
+def run_zzz_preservation_campaign(**kwargs) -> dict:
+    """Alias for benchmark campaign JSON output."""
+    result = run_zzz_preservation_benchmark(line_name="interior", **kwargs)
+    return {
+        "candidate": "zzz_preservation_interior",
+        "protocol": "repaired XY4 + retention R=noisy/ideal + audit θ-sweep",
+        "result": result.to_dict(),
+        "stamp_status": "HOLD",
+        "endorsable": False,
+        "hardware_ready": False,
     }

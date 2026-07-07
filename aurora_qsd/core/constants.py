@@ -2,17 +2,17 @@
 
 import numpy as np
 
-# Lock point: θ* = arctan(√2 - 1) ≈ 22.4794°
+# Design constant: θ* = arctan(√2 − 1) = π/8 = 22.5° exactly (half-angle identity).
 TAN_THETA_STAR = np.sqrt(2.0) - 1.0
-THETA_STAR = float(np.arctan(TAN_THETA_STAR))
-THETA_STAR_DEG = float(np.degrees(THETA_STAR))
+THETA_STAR = float(np.arctan(TAN_THETA_STAR))  # π/8
+THETA_STAR_DEG = float(np.degrees(THETA_STAR))  # 22.5°
 
 # Hardware-validated source angle (ibm_fez, June 2026)
 THETA_STAR_HW_DEG = 22.47
 THETA_STAR_HW = float(np.radians(THETA_STAR_HW_DEG))
 
-# Willow / fez campaign lock point (fine-tuned on willow_pink interior line)
-THETA_STAR_WILLOW_HW_DEG = 22.48
+# Willow QVM empirical optimum (platform-calibrated; distinct from design θ*)
+THETA_STAR_WILLOW_HW_DEG = 22.49
 THETA_STAR_WILLOW_HW = float(np.radians(THETA_STAR_WILLOW_HW_DEG))
 
 # Golden-ratio outer corridor: θ_φ = arctan(1/φ)

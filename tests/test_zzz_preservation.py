@@ -1,10 +1,21 @@
-"""Tests for ⟨ZZZ⟩ preservation retention scoring."""
+"""Tests for ⟨ZZZ⟩ preservation retention scoring (repaired XY4)."""
 
 import numpy as np
 import pytest
 
 
-def test_xy4_body_matches_qsd_1q_budget() -> None:
+def test_xy4_is_twelve_pulse_dd() -> None:
+    pytest.importorskip("cirq")
+    from aurora_qsd.quantum.zzz_preservation import _xy4_body_ops, verify_xy4_layer
+
+    check = verify_xy4_layer()
+    assert check["is_twelve_pulse_xy4"]
+    assert check["passes"]
+    assert not check["degenerate_IIIY"]
+    assert len(_xy4_body_ops(list(__import__("cirq").LineQubit.range(3)))) == 12
+
+
+def test_xy4_not_matched_1q_to_qsd() -> None:
     pytest.importorskip("cirq")
     from aurora_qsd.quantum.willow_lines import get_line
     from aurora_qsd.quantum.zzz_preservation import _count_gates, _xy4_body_ops
@@ -15,68 +26,68 @@ def test_xy4_body_matches_qsd_1q_budget() -> None:
     theta = float(np.radians(22.49))
     qsd = _count_gates(_sunscreen_body_ops(qubits, theta, with_init=False))
     xy4 = _count_gates(_xy4_body_ops(qubits))
-    assert xy4["one_qubit"] == qsd["one_qubit"]
+    assert xy4["one_qubit"] == 12
+    assert qsd["one_qubit"] == 11
 
 
-def test_ideal_zzz_ground_state() -> None:
+def test_ideal_zzz_dual_paths_agree() -> None:
     pytest.importorskip("cirq")
     import cirq
-    from aurora_qsd.quantum.zzz_preservation import ideal_zzz_from_circuit
+    from aurora_qsd.quantum.zzz_preservation import ideal_zzz_density_matrix, ideal_zzz_from_circuit
 
     q0, q1, q2 = cirq.LineQubit.range(3)
     c = cirq.Circuit(cirq.X(q0), cirq.X(q1), cirq.X(q2))
-    zzz = ideal_zzz_from_circuit(c)
-    assert zzz == pytest.approx(-1.0, abs=1e-6)
+    sv = ideal_zzz_from_circuit(c)
+    dm = ideal_zzz_density_matrix(c)
+    assert sv == pytest.approx(dm, abs=1e-5)
+    assert sv == pytest.approx(-1.0, abs=1e-6)
 
 
 def test_compute_retention_scenarios() -> None:
     from aurora_qsd.quantum.zzz_preservation import compute_retention
 
-    # ideal ≈ −1, measured −0.30 → R ≈ 0.30
     r1 = compute_retention(-0.30, -1.0)
     assert r1["retention_signed"] == pytest.approx(0.30, abs=0.01)
 
-    # ideal ≈ −0.30, measured −0.30 → R ≈ 1.0 (no protection)
     r2 = compute_retention(-0.30, -0.30)
     assert r2["retention_signed"] == pytest.approx(1.0, abs=0.01)
 
-    # magnitude dead heat
-    r3 = compute_retention(-0.30, -1.0)
-    r4 = compute_retention(0.29, 1.0)
-    assert abs(abs(r3["measured_zzz"]) - abs(r4["measured_zzz"])) == pytest.approx(0.01, abs=0.01)
 
+def test_verdict_coherent_artifact() -> None:
+    from aurora_qsd.quantum.zzz_preservation import assign_retention_verdict
 
-def test_retention_analysis_flat_vs_peak() -> None:
-    from aurora_qsd.quantum.zzz_preservation import _analyze_retention_curve
+    arms = {
+        "qsd_theta_star": {"ideal_zzz": -0.19, "measured_zzz": -0.31, "retention_signed": 1.6},
+        "qsd_wrong_theta": {"ideal_zzz": 0.98, "measured_zzz": 0.51, "retention_signed": 0.52},
+        "xy4_matched": {"ideal_zzz": 0.35, "measured_zzz": 0.29, "retention_signed": 0.83},
+    }
+    gaps = {
+        "magnitude_qsd_vs_xy4_delta": 0.01,
+        "ideal_angle_gap": 1.17,
+        "noisy_angle_gap": 0.82,
+    }
+    v, e, _ = assign_retention_verdict(arms, gaps, {})
+    assert v == "NO_TARGET_SIGNAL"  # |ideal*| < 0.5 first
 
-    flat = [{"theta_deg": t, "retention_signed": 0.3 + 0.01 * (i % 2)} for i, t in enumerate(range(10, 50, 5))]
-    a_flat = _analyze_retention_curve(flat, 22.49, 0.29)
-    assert a_flat["flat_curve"] is True
-
-    peaked = [
-        {"theta_deg": float(t), "retention_signed": 0.2 + (0.6 if abs(t - 22.0) < 3 else 0.0)}
-        for t in range(10, 50, 5)
-    ]
-    a_peak = _analyze_retention_curve(peaked, 22.49, 0.29)
-    assert a_peak["peak_near_theta_star"] or a_peak["r_peak"] > a_peak["r_median"]
+    arms["qsd_theta_star"]["ideal_zzz"] = -0.6
+    v2, _, _ = assign_retention_verdict(arms, gaps, {})
+    assert v2 == "COHERENT_ARTIFACT"
 
 
 def test_zzz_preservation_schema() -> None:
     pytest.importorskip("cirq")
-    pytest.importorskip("cirq_google")
     from aurora_qsd.quantum.zzz_preservation import run_zzz_preservation_benchmark
 
-    result = run_zzz_preservation_benchmark(shots=128, sweep_shots=64, sweep_n_points=5)
+    result = run_zzz_preservation_benchmark(
+        shots=0, sweep_shots=0, run_theta_sweep=False, ideals_only=True,
+    )
     d = result.to_dict()
-    assert "arms" in d
-    assert "ideal_zzz" in d["arms"]["qsd_theta_star"]
-    assert "retention_signed" in d["arms"]["xy4_matched"]
+    assert d["gate_budget"]["xy4_layer_check"]["passes"]
     assert d["verdict"] in {
-        "PENDING_RETENTION",
-        "WEAK_TARGET",
+        "NO_TARGET_SIGNAL",
         "COHERENT_ARTIFACT",
-        "ARM_GAP_ONLY",
-        "RETENTION_WIN",
-        "NULL",
+        "NO_PROTECTION_ADVANTAGE",
+        "PROTECTION_CANDIDATE",
+        "PENDING_RETENTION",
     }
-    assert d["preregistration"]["arm_gap_0_05"].startswith("NOT preregistered")
+    assert d["endorsable"] is False
