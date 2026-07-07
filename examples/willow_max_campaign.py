@@ -37,7 +37,7 @@ def main() -> int:
     depth_max = run_phase(
         "depth_1241_interior",
         shots=150,
-        theta_star_deg=22.48,
+        theta_star_deg=22.49,
         depth_layers=1241,
         relock_interval=3,
         max_cells=0,
@@ -48,7 +48,7 @@ def main() -> int:
     qubit_max = run_phase(
         "qubits_96_depth_64",
         shots=100,
-        theta_star_deg=22.48,
+        theta_star_deg=22.49,
         depth_layers=64,
         relock_interval=3,
         max_cells=None,

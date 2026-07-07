@@ -13,7 +13,7 @@ from aurora_qsd.quantum.willow_run import run_willow_max
 def main() -> int:
     parser = argparse.ArgumentParser(description="Max Willow QSD (depth + multi-cell)")
     parser.add_argument("--shots", type=int, default=200)
-    parser.add_argument("--theta-star-deg", type=float, default=22.48)
+    parser.add_argument("--theta-star-deg", type=float, default=22.49)
     parser.add_argument("--depth", type=int, default=1241, help="Sunscreen layers (fez max=1241)")
     parser.add_argument("--relock", type=int, default=3)
     parser.add_argument("--max-cells", type=int, default=None, help="Cap cells (default: all ~32)")
