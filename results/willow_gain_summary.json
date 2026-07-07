@@ -1,0 +1,407 @@
+{
+  "best_config": {
+    "theta_deg": 22.49,
+    "depth_layers": 14,
+    "relock_interval": 5,
+    "zzz_theta_star": -0.3485714285714286,
+    "zzz_negative": 0.5771428571428572,
+    "abs_gap": 0.9257142857142857,
+    "shots": 350
+  },
+  "coarse_best_abs_gap": 0.992,
+  "fine_best_abs_gap": 0.9257142857142857,
+  "validated_abs_gap": 0.8200000000000001,
+  "validated": {
+    "theta_deg": 22.49,
+    "depth_layers": 14,
+    "relock_interval": 5,
+    "zzz_theta_star": -0.33,
+    "zzz_negative": 0.49,
+    "abs_gap": 0.8200000000000001,
+    "shots": 2000
+  },
+  "cells": {
+    "n_cells": 25,
+    "n_qubits": 75,
+    "abs_gap_median": 0.752,
+    "abs_gap_mean": 0.7342400000000001,
+    "cells_winning": 25,
+    "cells": [
+      {
+        "cell_id": 0,
+        "line": [
+          "q(0,6)",
+          "q(0,7)",
+          "q(0,8)"
+        ],
+        "theta_deg": 22.49,
+        "depth_layers": 14,
+        "relock_interval": 5,
+        "zzz_theta_star": -0.188,
+        "zzz_negative": 0.244,
+        "abs_gap": 0.432,
+        "shots": 500
+      },
+      {
+        "cell_id": 1,
+        "line": [
+          "q(1,5)",
+          "q(2,5)",
+          "q(3,5)"
+        ],
+        "theta_deg": 22.49,
+        "depth_layers": 14,
+        "relock_interval": 5,
+        "zzz_theta_star": -0.012,
+        "zzz_negative": 0.604,
+        "abs_gap": 0.616,
+        "shots": 500
+      },
+      {
+        "cell_id": 3,
+        "line": [
+          "q(2,4)",
+          "q(3,4)",
+          "q(4,4)"
+        ],
+        "theta_deg": 22.49,
+        "depth_layers": 14,
+        "relock_interval": 5,
+        "zzz_theta_star": -0.132,
+        "zzz_negative": 0.48,
+        "abs_gap": 0.612,
+        "shots": 500
+      },
+      {
+        "cell_id": 4,
+        "line": [
+          "q(2,6)",
+          "q(2,7)",
+          "q(2,8)"
+        ],
+        "theta_deg": 22.49,
+        "depth_layers": 14,
+        "relock_interval": 5,
+        "zzz_theta_star": -0.232,
+        "zzz_negative": 0.708,
+        "abs_gap": 0.94,
+        "shots": 500
+      },
+      {
+        "cell_id": 6,
+        "line": [
+          "q(2,10)",
+          "q(3,10)",
+          "q(4,10)"
+        ],
+        "theta_deg": 22.49,
+        "depth_layers": 14,
+        "relock_interval": 5,
+        "zzz_theta_star": -0.288,
+        "zzz_negative": 0.632,
+        "abs_gap": 0.9199999999999999,
+        "shots": 500
+      },
+      {
+        "cell_id": 7,
+        "line": [
+          "q(3,3)",
+          "q(4,3)",
+          "q(5,3)"
+        ],
+        "theta_deg": 22.49,
+        "depth_layers": 14,
+        "relock_interval": 5,
+        "zzz_theta_star": -0.1,
+        "zzz_negative": 0.652,
+        "abs_gap": 0.752,
+        "shots": 500
+      },
+      {
+        "cell_id": 8,
+        "line": [
+          "q(3,6)",
+          "q(3,7)",
+          "q(3,8)"
+        ],
+        "theta_deg": 22.49,
+        "depth_layers": 14,
+        "relock_interval": 5,
+        "zzz_theta_star": -0.176,
+        "zzz_negative": 0.74,
+        "abs_gap": 0.9159999999999999,
+        "shots": 500
+      },
+      {
+        "cell_id": 9,
+        "line": [
+          "q(4,2)",
+          "q(5,2)",
+          "q(6,2)"
+        ],
+        "theta_deg": 22.49,
+        "depth_layers": 14,
+        "relock_interval": 5,
+        "zzz_theta_star": -0.308,
+        "zzz_negative": 0.668,
+        "abs_gap": 0.976,
+        "shots": 500
+      },
+      {
+        "cell_id": 10,
+        "line": [
+          "q(4,5)",
+          "q(4,6)",
+          "q(4,7)"
+        ],
+        "theta_deg": 22.49,
+        "depth_layers": 14,
+        "relock_interval": 5,
+        "zzz_theta_star": -0.188,
+        "zzz_negative": 0.42,
+        "abs_gap": 0.608,
+        "shots": 500
+      },
+      {
+        "cell_id": 11,
+        "line": [
+          "q(4,8)",
+          "q(5,8)",
+          "q(6,8)"
+        ],
+        "theta_deg": 22.49,
+        "depth_layers": 14,
+        "relock_interval": 5,
+        "zzz_theta_star": -0.32,
+        "zzz_negative": 0.708,
+        "abs_gap": 1.028,
+        "shots": 500
+      },
+      {
+        "cell_id": 12,
+        "line": [
+          "q(4,11)",
+          "q(5,11)",
+          "q(6,11)"
+        ],
+        "theta_deg": 22.49,
+        "depth_layers": 14,
+        "relock_interval": 5,
+        "zzz_theta_star": -0.224,
+        "zzz_negative": 0.58,
+        "abs_gap": 0.8039999999999999,
+        "shots": 500
+      },
+      {
+        "cell_id": 13,
+        "line": [
+          "q(4,12)",
+          "q(5,12)",
+          "q(6,12)"
+        ],
+        "theta_deg": 22.49,
+        "depth_layers": 14,
+        "relock_interval": 5,
+        "zzz_theta_star": -0.232,
+        "zzz_negative": 0.628,
+        "abs_gap": 0.86,
+        "shots": 500
+      },
+      {
+        "cell_id": 14,
+        "line": [
+          "q(5,4)",
+          "q(6,4)",
+          "q(7,4)"
+        ],
+        "theta_deg": 22.49,
+        "depth_layers": 14,
+        "relock_interval": 5,
+        "zzz_theta_star": 0.024,
+        "zzz_negative": 0.624,
+        "abs_gap": 0.6,
+        "shots": 500
+      },
+      {
+        "cell_id": 15,
+        "line": [
+          "q(5,5)",
+          "q(5,6)",
+          "q(5,7)"
+        ],
+        "theta_deg": 22.49,
+        "depth_layers": 14,
+        "relock_interval": 5,
+        "zzz_theta_star": -0.308,
+        "zzz_negative": 0.484,
+        "abs_gap": 0.792,
+        "shots": 500
+      },
+      {
+        "cell_id": 16,
+        "line": [
+          "q(5,9)",
+          "q(6,9)",
+          "q(7,9)"
+        ],
+        "theta_deg": 22.49,
+        "depth_layers": 14,
+        "relock_interval": 5,
+        "zzz_theta_star": 0.076,
+        "zzz_negative": 0.64,
+        "abs_gap": 0.5640000000000001,
+        "shots": 500
+      },
+      {
+        "cell_id": 17,
+        "line": [
+          "q(5,10)",
+          "q(6,10)",
+          "q(7,10)"
+        ],
+        "theta_deg": 22.49,
+        "depth_layers": 14,
+        "relock_interval": 5,
+        "zzz_theta_star": -0.268,
+        "zzz_negative": 0.472,
+        "abs_gap": 0.74,
+        "shots": 500
+      },
+      {
+        "cell_id": 19,
+        "line": [
+          "q(6,5)",
+          "q(7,5)",
+          "q(8,5)"
+        ],
+        "theta_deg": 22.49,
+        "depth_layers": 14,
+        "relock_interval": 5,
+        "zzz_theta_star": 0.056,
+        "zzz_negative": 0.632,
+        "abs_gap": 0.576,
+        "shots": 500
+      },
+      {
+        "cell_id": 20,
+        "line": [
+          "q(6,6)",
+          "q(7,6)",
+          "q(8,6)"
+        ],
+        "theta_deg": 22.49,
+        "depth_layers": 14,
+        "relock_interval": 5,
+        "zzz_theta_star": -0.228,
+        "zzz_negative": 0.444,
+        "abs_gap": 0.672,
+        "shots": 500
+      },
+      {
+        "cell_id": 22,
+        "line": [
+          "q(7,8)",
+          "q(8,8)",
+          "q(9,8)"
+        ],
+        "theta_deg": 22.49,
+        "depth_layers": 14,
+        "relock_interval": 5,
+        "zzz_theta_star": -0.136,
+        "zzz_negative": 0.348,
+        "abs_gap": 0.484,
+        "shots": 500
+      },
+      {
+        "cell_id": 23,
+        "line": [
+          "q(7,11)",
+          "q(7,12)",
+          "q(7,13)"
+        ],
+        "theta_deg": 22.49,
+        "depth_layers": 14,
+        "relock_interval": 5,
+        "zzz_theta_star": -0.3,
+        "zzz_negative": 0.492,
+        "abs_gap": 0.792,
+        "shots": 500
+      },
+      {
+        "cell_id": 26,
+        "line": [
+          "q(9,5)",
+          "q(9,6)",
+          "q(9,7)"
+        ],
+        "theta_deg": 22.49,
+        "depth_layers": 14,
+        "relock_interval": 5,
+        "zzz_theta_star": -0.22,
+        "zzz_negative": 0.652,
+        "abs_gap": 0.872,
+        "shots": 500
+      },
+      {
+        "cell_id": 28,
+        "line": [
+          "q(10,5)",
+          "q(10,6)",
+          "q(10,7)"
+        ],
+        "theta_deg": 22.49,
+        "depth_layers": 14,
+        "relock_interval": 5,
+        "zzz_theta_star": -0.192,
+        "zzz_negative": 0.56,
+        "abs_gap": 0.752,
+        "shots": 500
+      },
+      {
+        "cell_id": 29,
+        "line": [
+          "q(10,8)",
+          "q(10,9)",
+          "q(10,10)"
+        ],
+        "theta_deg": 22.49,
+        "depth_layers": 14,
+        "relock_interval": 5,
+        "zzz_theta_star": -0.044,
+        "zzz_negative": 0.612,
+        "abs_gap": 0.656,
+        "shots": 500
+      },
+      {
+        "cell_id": 30,
+        "line": [
+          "q(11,6)",
+          "q(11,7)",
+          "q(11,8)"
+        ],
+        "theta_deg": 22.49,
+        "depth_layers": 14,
+        "relock_interval": 5,
+        "zzz_theta_star": -0.076,
+        "zzz_negative": 0.76,
+        "abs_gap": 0.836,
+        "shots": 500
+      },
+      {
+        "cell_id": 31,
+        "line": [
+          "q(12,6)",
+          "q(12,7)",
+          "q(12,8)"
+        ],
+        "theta_deg": 22.49,
+        "depth_layers": 14,
+        "relock_interval": 5,
+        "zzz_theta_star": -0.048,
+        "zzz_negative": 0.508,
+        "abs_gap": 0.556,
+        "shots": 500
+      }
+    ]
+  }
+}
