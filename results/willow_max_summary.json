@@ -1,0 +1,16 @@
+{
+  "depth_max": {
+    "qubits": 3,
+    "layers": 1241,
+    "abs_gap": 0.10666666666666667,
+    "verdict": "DEPTH_WIN"
+  },
+  "qubit_max": {
+    "qubits": 96,
+    "cells": 32,
+    "layers": 64,
+    "abs_gap_median": 0.16999999999999998,
+    "cells_winning": 25,
+    "verdict": "MAX_WIN"
+  }
+}
