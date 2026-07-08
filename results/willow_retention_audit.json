@@ -1,0 +1,476 @@
+{
+  "audit": "RESULTS_JULY07_2026_RETENTION_AUDIT",
+  "xy4_repaired": true,
+  "result": {
+    "task": "zzz_preservation_xy4_control",
+    "processor": "willow_pink",
+    "line": [
+      "q(6,5)",
+      "q(6,6)",
+      "q(6,7)"
+    ],
+    "theta_star_deg": 22.49,
+    "depth_layers": 14,
+    "relock_interval": 5,
+    "shots": 4000,
+    "gate_budget": {
+      "layers": 14,
+      "relock_interval": 5,
+      "qsd_body_per_layer": {
+        "one_qubit": 11,
+        "two_qubit": 4,
+        "moments": 11
+      },
+      "xy4_body_per_layer": {
+        "one_qubit": 12,
+        "two_qubit": 0,
+        "moments": 4
+      },
+      "qsd_total": {
+        "one_qubit": 185,
+        "two_qubit": 64,
+        "moments": 164
+      },
+      "xy4_total": {
+        "one_qubit": 201,
+        "two_qubit": 0,
+        "moments": 67
+      },
+      "matched_1q_per_body_layer": false,
+      "one_qubit_asymmetry": "XY4 has 12 1q/layer vs QSD 11 (repaired full XY4; prior 11-pulse layer was degenerate I\u2297I\u2297Y).",
+      "two_qubit_asymmetry": "QSD has 4 2q/layer; XY4 has 0 (standard DD).",
+      "xy4_layer_check": {
+        "pulses_per_layer": 12,
+        "expected_pulses": 12,
+        "is_twelve_pulse_xy4": true,
+        "overlap_with_IIIY": 0.0,
+        "degenerate_IIIY": false,
+        "passes": true
+      }
+    },
+    "preregistration": {
+      "min_target_signal": 0.5,
+      "retention_advantage_margin": 0.1,
+      "valid_r_range": "(0, 1.05]",
+      "arm_gap_0_05": "NOT preregistered \u2014 post-hoc exploratory only",
+      "simulation_endorses": false
+    },
+    "arms": {
+      "xy4_matched": {
+        "ideal_zzz": 0.3524431586265564,
+        "measured_zzz": null,
+        "retention_signed": null,
+        "retention_magnitude": null,
+        "noise_delta": null,
+        "magnitude_ratio": null,
+        "arm": "xy4",
+        "theta_deg": 22.49,
+        "shots": 0,
+        "ideal_zzz_dm": 0.35244325874373317,
+        "ideal_paths_agree": true
+      },
+      "qsd_theta_star": {
+        "ideal_zzz": -0.18773499131202698,
+        "measured_zzz": null,
+        "retention_signed": null,
+        "retention_magnitude": null,
+        "noise_delta": null,
+        "magnitude_ratio": null,
+        "arm": "qsd",
+        "theta_deg": 22.49,
+        "shots": 0,
+        "ideal_zzz_dm": -0.18773509934544563,
+        "ideal_paths_agree": true
+      },
+      "qsd_wrong_theta": {
+        "ideal_zzz": 0.9769390821456909,
+        "measured_zzz": null,
+        "retention_signed": null,
+        "retention_magnitude": null,
+        "noise_delta": null,
+        "magnitude_ratio": null,
+        "arm": "qsd",
+        "theta_deg": 92.49,
+        "shots": 0,
+        "ideal_zzz_dm": 0.97693629381547,
+        "ideal_paths_agree": true
+      }
+    },
+    "arm_gaps": {},
+    "retention_theta_sweep": [
+      {
+        "ideal_zzz": 0.9663333892822266,
+        "measured_zzz": null,
+        "retention_signed": null,
+        "retention_magnitude": null,
+        "noise_delta": null,
+        "magnitude_ratio": null,
+        "arm": "qsd",
+        "theta_deg": 2.0,
+        "shots": 0,
+        "ideal_zzz_dm": 0.9663340718361724,
+        "ideal_paths_agree": true
+      },
+      {
+        "ideal_zzz": 0.556774377822876,
+        "measured_zzz": null,
+        "retention_signed": null,
+        "retention_magnitude": null,
+        "noise_delta": null,
+        "magnitude_ratio": null,
+        "arm": "qsd",
+        "theta_deg": 8.0,
+        "shots": 0,
+        "ideal_zzz_dm": 0.5567745151929557,
+        "ideal_paths_agree": true
+      },
+      {
+        "ideal_zzz": 0.07987618446350098,
+        "measured_zzz": null,
+        "retention_signed": null,
+        "retention_magnitude": null,
+        "noise_delta": null,
+        "magnitude_ratio": null,
+        "arm": "qsd",
+        "theta_deg": 14.0,
+        "shots": 0,
+        "ideal_zzz_dm": 0.0798763744533062,
+        "ideal_paths_agree": true
+      },
+      {
+        "ideal_zzz": -0.15606775879859924,
+        "measured_zzz": null,
+        "retention_signed": null,
+        "retention_magnitude": null,
+        "noise_delta": null,
+        "magnitude_ratio": null,
+        "arm": "qsd",
+        "theta_deg": 20.0,
+        "shots": 0,
+        "ideal_zzz_dm": -0.15606706030666828,
+        "ideal_paths_agree": true
+      },
+      {
+        "ideal_zzz": -0.18773499131202698,
+        "measured_zzz": null,
+        "retention_signed": null,
+        "retention_magnitude": null,
+        "noise_delta": null,
+        "magnitude_ratio": null,
+        "arm": "qsd",
+        "theta_deg": 22.49,
+        "shots": 0,
+        "ideal_zzz_dm": -0.18773509934544563,
+        "ideal_paths_agree": true
+      },
+      {
+        "ideal_zzz": -0.17881238460540771,
+        "measured_zzz": null,
+        "retention_signed": null,
+        "retention_magnitude": null,
+        "noise_delta": null,
+        "magnitude_ratio": null,
+        "arm": "qsd",
+        "theta_deg": 26.0,
+        "shots": 0,
+        "ideal_zzz_dm": -0.1788124293088913,
+        "ideal_paths_agree": true
+      },
+      {
+        "ideal_zzz": -0.020935848355293274,
+        "measured_zzz": null,
+        "retention_signed": null,
+        "retention_magnitude": null,
+        "noise_delta": null,
+        "magnitude_ratio": null,
+        "arm": "qsd",
+        "theta_deg": 32.0,
+        "shots": 0,
+        "ideal_zzz_dm": -0.02093585580587387,
+        "ideal_paths_agree": true
+      },
+      {
+        "ideal_zzz": 0.2570205330848694,
+        "measured_zzz": null,
+        "retention_signed": null,
+        "retention_magnitude": null,
+        "noise_delta": null,
+        "magnitude_ratio": null,
+        "arm": "qsd",
+        "theta_deg": 38.0,
+        "shots": 0,
+        "ideal_zzz_dm": 0.25702102947980165,
+        "ideal_paths_agree": true
+      },
+      {
+        "ideal_zzz": 0.47978806495666504,
+        "measured_zzz": null,
+        "retention_signed": null,
+        "retention_magnitude": null,
+        "noise_delta": null,
+        "magnitude_ratio": null,
+        "arm": "qsd",
+        "theta_deg": 44.0,
+        "shots": 0,
+        "ideal_zzz_dm": 0.4797883516876027,
+        "ideal_paths_agree": true
+      },
+      {
+        "ideal_zzz": 0.527978241443634,
+        "measured_zzz": null,
+        "retention_signed": null,
+        "retention_magnitude": null,
+        "noise_delta": null,
+        "magnitude_ratio": null,
+        "arm": "qsd",
+        "theta_deg": 50.0,
+        "shots": 0,
+        "ideal_zzz_dm": 0.5279797452967614,
+        "ideal_paths_agree": true
+      },
+      {
+        "ideal_zzz": 0.49811866879463196,
+        "measured_zzz": null,
+        "retention_signed": null,
+        "retention_magnitude": null,
+        "noise_delta": null,
+        "magnitude_ratio": null,
+        "arm": "qsd",
+        "theta_deg": 56.0,
+        "shots": 0,
+        "ideal_zzz_dm": 0.498116638395004,
+        "ideal_paths_agree": true
+      },
+      {
+        "ideal_zzz": 0.4975283443927765,
+        "measured_zzz": null,
+        "retention_signed": null,
+        "retention_magnitude": null,
+        "noise_delta": null,
+        "magnitude_ratio": null,
+        "arm": "qsd",
+        "theta_deg": 62.0,
+        "shots": 0,
+        "ideal_zzz_dm": 0.4975277055054903,
+        "ideal_paths_agree": true
+      },
+      {
+        "ideal_zzz": 0.4935259521007538,
+        "measured_zzz": null,
+        "retention_signed": null,
+        "retention_magnitude": null,
+        "noise_delta": null,
+        "magnitude_ratio": null,
+        "arm": "qsd",
+        "theta_deg": 68.0,
+        "shots": 0,
+        "ideal_zzz_dm": 0.49352559447288513,
+        "ideal_paths_agree": true
+      },
+      {
+        "ideal_zzz": 0.5451456308364868,
+        "measured_zzz": null,
+        "retention_signed": null,
+        "retention_magnitude": null,
+        "noise_delta": null,
+        "magnitude_ratio": null,
+        "arm": "qsd",
+        "theta_deg": 74.0,
+        "shots": 0,
+        "ideal_zzz_dm": 0.5451448429375887,
+        "ideal_paths_agree": true
+      },
+      {
+        "ideal_zzz": 0.7339093089103699,
+        "measured_zzz": null,
+        "retention_signed": null,
+        "retention_magnitude": null,
+        "noise_delta": null,
+        "magnitude_ratio": null,
+        "arm": "qsd",
+        "theta_deg": 80.0,
+        "shots": 0,
+        "ideal_zzz_dm": 0.733909378759563,
+        "ideal_paths_agree": true
+      },
+      {
+        "ideal_zzz": 0.9458746314048767,
+        "measured_zzz": null,
+        "retention_signed": null,
+        "retention_magnitude": null,
+        "noise_delta": null,
+        "magnitude_ratio": null,
+        "arm": "qsd",
+        "theta_deg": 86.0,
+        "shots": 0,
+        "ideal_zzz_dm": 0.945876710851735,
+        "ideal_paths_agree": true
+      },
+      {
+        "ideal_zzz": 0.9769390821456909,
+        "measured_zzz": null,
+        "retention_signed": null,
+        "retention_magnitude": null,
+        "noise_delta": null,
+        "magnitude_ratio": null,
+        "arm": "qsd",
+        "theta_deg": 92.49,
+        "shots": 0,
+        "ideal_zzz_dm": 0.97693629381547,
+        "ideal_paths_agree": true
+      }
+    ],
+    "retention_analysis": {
+      "status": "ideals_only",
+      "ideal_curve": [
+        {
+          "theta_deg": 2.0,
+          "ideal": 0.9663333892822266
+        },
+        {
+          "theta_deg": 8.0,
+          "ideal": 0.556774377822876
+        },
+        {
+          "theta_deg": 14.0,
+          "ideal": 0.07987618446350098
+        },
+        {
+          "theta_deg": 20.0,
+          "ideal": -0.15606775879859924
+        },
+        {
+          "theta_deg": 22.49,
+          "ideal": -0.18773499131202698
+        },
+        {
+          "theta_deg": 26.0,
+          "ideal": -0.17881238460540771
+        },
+        {
+          "theta_deg": 32.0,
+          "ideal": -0.020935848355293274
+        },
+        {
+          "theta_deg": 38.0,
+          "ideal": 0.2570205330848694
+        },
+        {
+          "theta_deg": 44.0,
+          "ideal": 0.47978806495666504
+        },
+        {
+          "theta_deg": 50.0,
+          "ideal": 0.527978241443634
+        },
+        {
+          "theta_deg": 56.0,
+          "ideal": 0.49811866879463196
+        },
+        {
+          "theta_deg": 62.0,
+          "ideal": 0.4975283443927765
+        },
+        {
+          "theta_deg": 68.0,
+          "ideal": 0.4935259521007538
+        },
+        {
+          "theta_deg": 74.0,
+          "ideal": 0.5451456308364868
+        },
+        {
+          "theta_deg": 80.0,
+          "ideal": 0.7339093089103699
+        },
+        {
+          "theta_deg": 86.0,
+          "ideal": 0.9458746314048767
+        },
+        {
+          "theta_deg": 92.49,
+          "ideal": 0.9769390821456909
+        }
+      ],
+      "noisy_curve": [
+        {
+          "theta_deg": 2.0,
+          "noisy": null
+        },
+        {
+          "theta_deg": 8.0,
+          "noisy": null
+        },
+        {
+          "theta_deg": 14.0,
+          "noisy": null
+        },
+        {
+          "theta_deg": 20.0,
+          "noisy": null
+        },
+        {
+          "theta_deg": 22.49,
+          "noisy": null
+        },
+        {
+          "theta_deg": 26.0,
+          "noisy": null
+        },
+        {
+          "theta_deg": 32.0,
+          "noisy": null
+        },
+        {
+          "theta_deg": 38.0,
+          "noisy": null
+        },
+        {
+          "theta_deg": 44.0,
+          "noisy": null
+        },
+        {
+          "theta_deg": 50.0,
+          "noisy": null
+        },
+        {
+          "theta_deg": 56.0,
+          "noisy": null
+        },
+        {
+          "theta_deg": 62.0,
+          "noisy": null
+        },
+        {
+          "theta_deg": 68.0,
+          "noisy": null
+        },
+        {
+          "theta_deg": 74.0,
+          "noisy": null
+        },
+        {
+          "theta_deg": 80.0,
+          "noisy": null
+        },
+        {
+          "theta_deg": 86.0,
+          "noisy": null
+        },
+        {
+          "theta_deg": 92.49,
+          "noisy": null
+        }
+      ],
+      "ideal_at_star": -0.18773499131202698,
+      "ideal_xy4": 0.3524431586265564,
+      "ideal_wrong": 0.9769390821456909
+    },
+    "verdict": "NO_TARGET_SIGNAL",
+    "endorsable": false,
+    "notes": "|ideal(\u03b8*)|=0.188 < 0.5; nothing to preserve."
+  },
+  "stamp_status": "HOLD \u2014 simulation does not endorse",
+  "endorsable": false,
+  "hardware_ready": false
+}
