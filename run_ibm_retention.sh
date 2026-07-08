@@ -37,6 +37,11 @@ case "${PHASE}" in
     python3 examples/qsd_ibm_retention_audit.py retention \
       --backend aer_sim --theta-deg 22.28 --layers 1 --ideals-only
     ;;
+  aer-fez|aer_fez)
+    python3 examples/qsd_ibm_retention_audit.py \
+      --backend aer_fez --theta-deg "${THETA:-22.28}" --layers "${LAYERS:-14}" \
+      --shots "${SHOTS:-2048}" --sweep "$@"
+    ;;
   help|*)
     cat <<'EOF'
 IBM QSD Calibration + Wall Protocol

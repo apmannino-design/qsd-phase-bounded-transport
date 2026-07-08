@@ -44,6 +44,7 @@ from aurora_qsd.quantum.ibm_retention_audit import (
 from aurora_qsd.quantum.willow_algorithm import OPTIMAL_RELOCK_INTERVAL, OPTIMAL_SUNSCREEN_LAYERS
 
 RESULTS = Path("results")
+KNOWN_COMMANDS = frozenset({"calibrate", "wall", "retention"})
 
 
 def _parse_qubits(raw: str) -> tuple[int, int, int]:
@@ -58,6 +59,28 @@ def _add_common_args(ap: argparse.ArgumentParser) -> None:
     ap.add_argument("--qubits", default="20,21,36", help="Comma-separated 3 physical qubit indices")
     ap.add_argument("--shots", type=int, default=2048)
     ap.add_argument("--out", default=None, help="Output JSON path")
+
+
+def _add_retention_args(ap: argparse.ArgumentParser) -> None:
+    _add_common_args(ap)
+    ap.add_argument("--sweep-shots", type=int, default=1024)
+    ap.add_argument("--layers", type=int, default=OPTIMAL_SUNSCREEN_LAYERS)
+    ap.add_argument("--relock", type=int, default=OPTIMAL_RELOCK_INTERVAL)
+    ap.add_argument("--theta-deg", type=float, default=THETA_STAR_DEG)
+    ap.add_argument("--sweep", action="store_true")
+    ap.add_argument("--diagnostic", action="store_true")
+    ap.add_argument("--diagnostic-lines", type=int, default=3)
+    ap.add_argument("--ideals-only", action="store_true")
+    ap.add_argument("--md-out", default=None)
+
+
+def _parse_legacy_retention_args(argv: list[str]) -> argparse.Namespace:
+    """Backward-compatible flat CLI (pre-subcommand scripts and run_ibm_retention.sh aer-fez)."""
+    parser = argparse.ArgumentParser(
+        description="QSD IBM retention audit (legacy flat invocation → retention subcommand)",
+    )
+    _add_retention_args(parser)
+    return parser.parse_args(argv)
 
 
 def cmd_calibrate(args: argparse.Namespace) -> int:
@@ -163,6 +186,10 @@ def cmd_retention(args: argparse.Namespace) -> int:
 
 
 def main() -> int:
+    argv = sys.argv[1:]
+    if argv and argv[0] not in KNOWN_COMMANDS:
+        return int(cmd_retention(_parse_legacy_retention_args(argv)))
+
     parser = argparse.ArgumentParser(description="QSD IBM retention + θ calibration")
     sub = parser.add_subparsers(dest="command", required=True)
 
@@ -181,16 +208,7 @@ def main() -> int:
     p_wall.set_defaults(func=cmd_wall)
 
     p_ret = sub.add_parser("retention", help="retention audit (use --layers 1 for campaign depth)")
-    _add_common_args(p_ret)
-    p_ret.add_argument("--sweep-shots", type=int, default=1024)
-    p_ret.add_argument("--layers", type=int, default=OPTIMAL_SUNSCREEN_LAYERS)
-    p_ret.add_argument("--relock", type=int, default=OPTIMAL_RELOCK_INTERVAL)
-    p_ret.add_argument("--theta-deg", type=float, default=THETA_STAR_DEG)
-    p_ret.add_argument("--sweep", action="store_true")
-    p_ret.add_argument("--diagnostic", action="store_true")
-    p_ret.add_argument("--diagnostic-lines", type=int, default=3)
-    p_ret.add_argument("--ideals-only", action="store_true")
-    p_ret.add_argument("--md-out", default=None)
+    _add_retention_args(p_ret)
     p_ret.set_defaults(func=cmd_retention)
 
     args = parser.parse_args()

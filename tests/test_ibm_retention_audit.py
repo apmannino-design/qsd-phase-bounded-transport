@@ -60,3 +60,27 @@ def test_ibm_retention_ideals_only() -> None:
     d = result.to_dict()
     assert d["layers"] == 1
     assert abs(d["arms"]["qsd_theta_star"]["ideal_zzz"]) >= 0.5
+
+
+def test_legacy_flat_cli_parses() -> None:
+    from examples.qsd_ibm_retention_audit import _parse_legacy_retention_args
+
+    args = _parse_legacy_retention_args(["--backend", "aer_sim", "--ideals-only", "--layers", "1"])
+    assert args.backend == "aer_sim"
+    assert args.ideals_only is True
+    assert args.layers == 1
+
+
+def test_theta_star_at_one_layer_clears_signal_threshold() -> None:
+    pytest.importorskip("qiskit")
+    from aurora_qsd.quantum.ibm_retention_audit import (
+        THETA_WALL_DEG,
+        build_qsd_sunscreen_circuit,
+        ideal_zzz_qiskit,
+    )
+    from aurora_qsd.quantum.zzz_preservation import MIN_TARGET_SIGNAL
+
+    for theta in (22.5, THETA_WALL_DEG):
+        c = build_qsd_sunscreen_circuit((0, 1, 2), theta, layers=1, relock_interval=5, measure=False)
+        ideal = abs(ideal_zzz_qiskit(c)["ideal_zzz"])
+        assert ideal >= MIN_TARGET_SIGNAL - 0.01, f"|ideal|={ideal} at θ={theta}° @ 1L"
