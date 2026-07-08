@@ -6,3 +6,10 @@ __pycache__/
 .venv/
 dist/
 build/
+
+# Secrets — never commit tokens
+.env
+.env.local
+.env.*.local
+qiskit-ibm.json
+*.token
