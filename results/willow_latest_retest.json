@@ -1,0 +1,923 @@
+{
+  "status": "RETEST",
+  "date": "2026-07-07",
+  "findings_applied": {
+    "theta_star_deg": 22.49,
+    "design_theta_deg": 22.5,
+    "depth_layers": 14,
+    "relock_interval": 5,
+    "line": "q(6,5)-q(6,6)-q(6,7)",
+    "processor": "willow_pink",
+    "verdict_policy": "COHERENT_ARTIFACT not ENDORSABLE; sim never endorses",
+    "retention_metric": "R = noisy/ideal per arm",
+    "xy4_control": "repaired 12-pulse/layer",
+    "submission_protocol": "Tridelta Trotter lattice 9Q patch (separate module)"
+  },
+  "phases": {
+    "xy4_check": {
+      "pulses_per_layer": 12,
+      "expected_pulses": 12,
+      "is_twelve_pulse_xy4": true,
+      "overlap_with_IIIY": 0.0,
+      "degenerate_IIIY": false,
+      "passes": true
+    },
+    "interior_depth": {
+      "processor": "willow_pink",
+      "line": "interior",
+      "line_coords": [
+        "q(6,5)",
+        "q(6,6)",
+        "q(6,7)"
+      ],
+      "shots": 1000,
+      "tau_ns": 1000.0,
+      "theta_deg": 0.0,
+      "theta_star_deg": 22.49,
+      "pulse": "phase",
+      "echo": {
+        "echo_qsd": {
+          "F": 0.9791666666666666,
+          "n": 6000
+        },
+        "echo_x": {
+          "F": 0.9825,
+          "n": 6000
+        },
+        "no_echo": {
+          "F": 0.9786666666666667,
+          "n": 6000
+        }
+      },
+      "depth": {
+        "qsd_theta_star": {
+          "zzz": -0.332,
+          "n": 1000,
+          "theta_deg": 22.49
+        },
+        "negative_theta": {
+          "zzz": 0.55,
+          "n": 1000,
+          "theta_deg": 92.49
+        }
+      },
+      "depth_gap": -0.8820000000000001,
+      "comparison_boundary": {},
+      "verdict": "DEPTH_WIN",
+      "notes": "Depth sunscreen at \u03b8*=22.49\u00b0: ZZZ -0.332 vs wrong \u03b8 +0.550 (|\u0394|=0.882)."
+    },
+    "retention_audit": {
+      "audit": "RESULTS_JULY07_2026_RETENTION_AUDIT",
+      "xy4_repaired": true,
+      "result": {
+        "task": "zzz_preservation_xy4_control",
+        "processor": "willow_pink",
+        "line": [
+          "q(6,5)",
+          "q(6,6)",
+          "q(6,7)"
+        ],
+        "theta_star_deg": 22.49,
+        "depth_layers": 14,
+        "relock_interval": 5,
+        "shots": 1500,
+        "gate_budget": {
+          "layers": 14,
+          "relock_interval": 5,
+          "qsd_body_per_layer": {
+            "one_qubit": 11,
+            "two_qubit": 4,
+            "moments": 11
+          },
+          "xy4_body_per_layer": {
+            "one_qubit": 12,
+            "two_qubit": 0,
+            "moments": 4
+          },
+          "qsd_total": {
+            "one_qubit": 185,
+            "two_qubit": 64,
+            "moments": 164
+          },
+          "xy4_total": {
+            "one_qubit": 201,
+            "two_qubit": 0,
+            "moments": 67
+          },
+          "matched_1q_per_body_layer": false,
+          "one_qubit_asymmetry": "XY4 has 12 1q/layer vs QSD 11 (repaired full XY4; prior 11-pulse layer was degenerate I\u2297I\u2297Y).",
+          "two_qubit_asymmetry": "QSD has 4 2q/layer; XY4 has 0 (standard DD).",
+          "xy4_layer_check": {
+            "pulses_per_layer": 12,
+            "expected_pulses": 12,
+            "is_twelve_pulse_xy4": true,
+            "overlap_with_IIIY": 0.0,
+            "degenerate_IIIY": false,
+            "passes": true
+          }
+        },
+        "preregistration": {
+          "min_target_signal": 0.5,
+          "retention_advantage_margin": 0.1,
+          "valid_r_range": "(0, 1.05]",
+          "arm_gap_0_05": "NOT preregistered \u2014 post-hoc exploratory only",
+          "simulation_endorses": false
+        },
+        "arms": {
+          "xy4_matched": {
+            "ideal_zzz": 0.3524431586265564,
+            "measured_zzz": 0.2813333333333333,
+            "retention_signed": 0.7982374645309259,
+            "retention_magnitude": 0.7982374645309259,
+            "noise_delta": -0.07110982529322307,
+            "magnitude_ratio": 0.7982374645309259,
+            "arm": "xy4",
+            "theta_deg": 22.49,
+            "shots": 1500,
+            "ideal_zzz_dm": 0.35244325874373317,
+            "ideal_paths_agree": true
+          },
+          "qsd_theta_star": {
+            "ideal_zzz": -0.18773499131202698,
+            "measured_zzz": -0.308,
+            "retention_signed": 1.6406105108454996,
+            "retention_magnitude": 1.6406105108454996,
+            "noise_delta": -0.12026500868797302,
+            "magnitude_ratio": 1.6406105108454996,
+            "arm": "qsd",
+            "theta_deg": 22.49,
+            "shots": 1500,
+            "ideal_zzz_dm": -0.18773509934544563,
+            "ideal_paths_agree": true
+          },
+          "qsd_wrong_theta": {
+            "ideal_zzz": 0.9769390821456909,
+            "measured_zzz": 0.5186666666666667,
+            "retention_signed": 0.5309099371145006,
+            "retention_magnitude": 0.5309099371145006,
+            "noise_delta": -0.4582724154790242,
+            "magnitude_ratio": 0.5309099371145006,
+            "arm": "qsd",
+            "theta_deg": 92.49,
+            "shots": 1500,
+            "ideal_zzz_dm": 0.97693629381547,
+            "ideal_paths_agree": true
+          }
+        },
+        "arm_gaps": {
+          "angle_specific_signed": -0.8266666666666667,
+          "angle_specific_abs": 0.8266666666666667,
+          "qsd_vs_xy4_signed": -0.5893333333333333,
+          "qsd_vs_xy4_abs": 0.5893333333333333,
+          "ideal_angle_gap": 1.164674073457718,
+          "noisy_angle_gap": 0.8266666666666667,
+          "magnitude_qsd": 0.308,
+          "magnitude_xy4": 0.2813333333333333,
+          "magnitude_qsd_vs_xy4_delta": 0.026666666666666672,
+          "post_hoc_arm_gap_passes_0_05": true,
+          "post_hoc_note": "\u22650.05 |\u03b8*\u2212XY4| was NOT preregistered"
+        },
+        "retention_theta_sweep": [
+          {
+            "ideal_zzz": 0.9663333892822266,
+            "measured_zzz": -0.39,
+            "retention_signed": -0.4035874205792313,
+            "retention_magnitude": 0.4035874205792313,
+            "noise_delta": -1.3563333892822267,
+            "magnitude_ratio": 0.4035874205792313,
+            "arm": "qsd",
+            "theta_deg": 2.0,
+            "shots": 400,
+            "ideal_zzz_dm": 0.9663340718361724,
+            "ideal_paths_agree": true
+          },
+          {
+            "ideal_zzz": 0.556774377822876,
+            "measured_zzz": -0.545,
+            "retention_signed": -0.9788525149650086,
+            "retention_magnitude": 0.9788525149650086,
+            "noise_delta": -1.101774377822876,
+            "magnitude_ratio": 0.9788525149650086,
+            "arm": "qsd",
+            "theta_deg": 8.0,
+            "shots": 400,
+            "ideal_zzz_dm": 0.5567745151929557,
+            "ideal_paths_agree": true
+          },
+          {
+            "ideal_zzz": 0.07987618446350098,
+            "measured_zzz": -0.465,
+            "retention_signed": -5.821509917170361,
+            "retention_magnitude": 5.821509917170361,
+            "noise_delta": -0.5448761844635011,
+            "magnitude_ratio": 5.821509917170361,
+            "arm": "qsd",
+            "theta_deg": 14.0,
+            "shots": 400,
+            "ideal_zzz_dm": 0.0798763744533062,
+            "ideal_paths_agree": true
+          },
+          {
+            "ideal_zzz": -0.15606775879859924,
+            "measured_zzz": -0.37,
+            "retention_signed": 2.370765126943829,
+            "retention_magnitude": 2.370765126943829,
+            "noise_delta": -0.21393224120140075,
+            "magnitude_ratio": 2.370765126943829,
+            "arm": "qsd",
+            "theta_deg": 20.0,
+            "shots": 400,
+            "ideal_zzz_dm": -0.15606706030666828,
+            "ideal_paths_agree": true
+          },
+          {
+            "ideal_zzz": -0.18773499131202698,
+            "measured_zzz": -0.33,
+            "retention_signed": 1.7577969759058925,
+            "retention_magnitude": 1.7577969759058925,
+            "noise_delta": -0.14226500868797304,
+            "magnitude_ratio": 1.7577969759058925,
+            "arm": "qsd",
+            "theta_deg": 22.49,
+            "shots": 400,
+            "ideal_zzz_dm": -0.18773509934544563,
+            "ideal_paths_agree": true
+          },
+          {
+            "ideal_zzz": -0.17881238460540771,
+            "measured_zzz": -0.205,
+            "retention_signed": 1.146453029259587,
+            "retention_magnitude": 1.146453029259587,
+            "noise_delta": -0.026187615394592273,
+            "magnitude_ratio": 1.146453029259587,
+            "arm": "qsd",
+            "theta_deg": 26.0,
+            "shots": 400,
+            "ideal_zzz_dm": -0.1788124293088913,
+            "ideal_paths_agree": true
+          },
+          {
+            "ideal_zzz": -0.020935848355293274,
+            "measured_zzz": -0.085,
+            "retention_signed": 4.060021765418892,
+            "retention_magnitude": 4.060021765418892,
+            "noise_delta": -0.06406415164470673,
+            "magnitude_ratio": 4.060021765418892,
+            "arm": "qsd",
+            "theta_deg": 32.0,
+            "shots": 400,
+            "ideal_zzz_dm": -0.02093585580587387,
+            "ideal_paths_agree": true
+          },
+          {
+            "ideal_zzz": 0.2570205330848694,
+            "measured_zzz": 0.045,
+            "retention_signed": 0.1750832879377026,
+            "retention_magnitude": 0.1750832879377026,
+            "noise_delta": -0.2120205330848694,
+            "magnitude_ratio": 0.1750832879377026,
+            "arm": "qsd",
+            "theta_deg": 38.0,
+            "shots": 400,
+            "ideal_zzz_dm": 0.25702102947980165,
+            "ideal_paths_agree": true
+          },
+          {
+            "ideal_zzz": 0.47978806495666504,
+            "measured_zzz": 0.1,
+            "retention_signed": 0.20842535966173337,
+            "retention_magnitude": 0.20842535966173337,
+            "noise_delta": -0.37978806495666506,
+            "magnitude_ratio": 0.20842535966173337,
+            "arm": "qsd",
+            "theta_deg": 44.0,
+            "shots": 400,
+            "ideal_zzz_dm": 0.4797883516876027,
+            "ideal_paths_agree": true
+          },
+          {
+            "ideal_zzz": 0.527978241443634,
+            "measured_zzz": 0.26,
+            "retention_signed": 0.49244453576172065,
+            "retention_magnitude": 0.49244453576172065,
+            "noise_delta": -0.267978241443634,
+            "magnitude_ratio": 0.49244453576172065,
+            "arm": "qsd",
+            "theta_deg": 50.0,
+            "shots": 400,
+            "ideal_zzz_dm": 0.5279797452967614,
+            "ideal_paths_agree": true
+          },
+          {
+            "ideal_zzz": 0.49811866879463196,
+            "measured_zzz": 0.275,
+            "retention_signed": 0.5520772804308988,
+            "retention_magnitude": 0.5520772804308988,
+            "noise_delta": -0.22311866879463194,
+            "magnitude_ratio": 0.5520772804308988,
+            "arm": "qsd",
+            "theta_deg": 56.0,
+            "shots": 400,
+            "ideal_zzz_dm": 0.498116638395004,
+            "ideal_paths_agree": true
+          },
+          {
+            "ideal_zzz": 0.4975283443927765,
+            "measured_zzz": 0.125,
+            "retention_signed": 0.2512419672341684,
+            "retention_magnitude": 0.2512419672341684,
+            "noise_delta": -0.3725283443927765,
+            "magnitude_ratio": 0.2512419672341684,
+            "arm": "qsd",
+            "theta_deg": 62.0,
+            "shots": 400,
+            "ideal_zzz_dm": 0.4975277055054903,
+            "ideal_paths_agree": true
+          },
+          {
+            "ideal_zzz": 0.4935259521007538,
+            "measured_zzz": -0.04,
+            "retention_signed": -0.08104943585992812,
+            "retention_magnitude": 0.08104943585992812,
+            "noise_delta": -0.5335259521007538,
+            "magnitude_ratio": 0.08104943585992812,
+            "arm": "qsd",
+            "theta_deg": 68.0,
+            "shots": 400,
+            "ideal_zzz_dm": 0.49352559447288513,
+            "ideal_paths_agree": true
+          },
+          {
+            "ideal_zzz": 0.5451456308364868,
+            "measured_zzz": 0.095,
+            "retention_signed": 0.17426536071513465,
+            "retention_magnitude": 0.17426536071513465,
+            "noise_delta": -0.45014563083648684,
+            "magnitude_ratio": 0.17426536071513465,
+            "arm": "qsd",
+            "theta_deg": 74.0,
+            "shots": 400,
+            "ideal_zzz_dm": 0.5451448429375887,
+            "ideal_paths_agree": true
+          },
+          {
+            "ideal_zzz": 0.7339093089103699,
+            "measured_zzz": 0.25,
+            "retention_signed": 0.3406415438048787,
+            "retention_magnitude": 0.3406415438048787,
+            "noise_delta": -0.4839093089103699,
+            "magnitude_ratio": 0.3406415438048787,
+            "arm": "qsd",
+            "theta_deg": 80.0,
+            "shots": 400,
+            "ideal_zzz_dm": 0.733909378759563,
+            "ideal_paths_agree": true
+          },
+          {
+            "ideal_zzz": 0.9458746314048767,
+            "measured_zzz": 0.48,
+            "retention_signed": 0.5074668291791182,
+            "retention_magnitude": 0.5074668291791182,
+            "noise_delta": -0.4658746314048767,
+            "magnitude_ratio": 0.5074668291791182,
+            "arm": "qsd",
+            "theta_deg": 86.0,
+            "shots": 400,
+            "ideal_zzz_dm": 0.945876710851735,
+            "ideal_paths_agree": true
+          },
+          {
+            "ideal_zzz": 0.9769390821456909,
+            "measured_zzz": 0.585,
+            "retention_signed": 0.5988090871696327,
+            "retention_magnitude": 0.5988090871696327,
+            "noise_delta": -0.39193908214569095,
+            "magnitude_ratio": 0.5988090871696327,
+            "arm": "qsd",
+            "theta_deg": 92.49,
+            "shots": 400,
+            "ideal_zzz_dm": 0.97693629381547,
+            "ideal_paths_agree": true
+          }
+        ],
+        "retention_analysis": {
+          "status": "computed",
+          "r_at_theta_star": 1.7577969759058925,
+          "theta_nearest_star_deg": 22.49,
+          "r_peak": 4.060021765418892,
+          "theta_peak_deg": 32.0,
+          "r_median": 0.3406415438048787,
+          "r_xy4": 0.7982374645309259,
+          "peak_near_theta_star": false,
+          "curve": [
+            {
+              "theta_deg": 2.0,
+              "R": -0.4035874205792313,
+              "ideal": 0.9663333892822266,
+              "noisy": -0.39
+            },
+            {
+              "theta_deg": 8.0,
+              "R": -0.9788525149650086,
+              "ideal": 0.556774377822876,
+              "noisy": -0.545
+            },
+            {
+              "theta_deg": 14.0,
+              "R": -5.821509917170361,
+              "ideal": 0.07987618446350098,
+              "noisy": -0.465
+            },
+            {
+              "theta_deg": 20.0,
+              "R": 2.370765126943829,
+              "ideal": -0.15606775879859924,
+              "noisy": -0.37
+            },
+            {
+              "theta_deg": 22.49,
+              "R": 1.7577969759058925,
+              "ideal": -0.18773499131202698,
+              "noisy": -0.33
+            },
+            {
+              "theta_deg": 26.0,
+              "R": 1.146453029259587,
+              "ideal": -0.17881238460540771,
+              "noisy": -0.205
+            },
+            {
+              "theta_deg": 32.0,
+              "R": 4.060021765418892,
+              "ideal": -0.020935848355293274,
+              "noisy": -0.085
+            },
+            {
+              "theta_deg": 38.0,
+              "R": 0.1750832879377026,
+              "ideal": 0.2570205330848694,
+              "noisy": 0.045
+            },
+            {
+              "theta_deg": 44.0,
+              "R": 0.20842535966173337,
+              "ideal": 0.47978806495666504,
+              "noisy": 0.1
+            },
+            {
+              "theta_deg": 50.0,
+              "R": 0.49244453576172065,
+              "ideal": 0.527978241443634,
+              "noisy": 0.26
+            },
+            {
+              "theta_deg": 56.0,
+              "R": 0.5520772804308988,
+              "ideal": 0.49811866879463196,
+              "noisy": 0.275
+            },
+            {
+              "theta_deg": 62.0,
+              "R": 0.2512419672341684,
+              "ideal": 0.4975283443927765,
+              "noisy": 0.125
+            },
+            {
+              "theta_deg": 68.0,
+              "R": -0.08104943585992812,
+              "ideal": 0.4935259521007538,
+              "noisy": -0.04
+            },
+            {
+              "theta_deg": 74.0,
+              "R": 0.17426536071513465,
+              "ideal": 0.5451456308364868,
+              "noisy": 0.095
+            },
+            {
+              "theta_deg": 80.0,
+              "R": 0.3406415438048787,
+              "ideal": 0.7339093089103699,
+              "noisy": 0.25
+            },
+            {
+              "theta_deg": 86.0,
+              "R": 0.5074668291791182,
+              "ideal": 0.9458746314048767,
+              "noisy": 0.48
+            },
+            {
+              "theta_deg": 92.49,
+              "R": 0.5988090871696327,
+              "ideal": 0.9769390821456909,
+              "noisy": 0.585
+            }
+          ],
+          "ideal_at_star": -0.18773499131202698,
+          "ideal_xy4": 0.3524431586265564,
+          "ideal_wrong": 0.9769390821456909
+        },
+        "verdict": "NO_TARGET_SIGNAL",
+        "endorsable": false,
+        "notes": "|ideal(\u03b8*)|=0.188 < 0.5; nothing to preserve. |magnitude \u0394=0.027."
+      },
+      "stamp_status": "HOLD \u2014 simulation does not endorse",
+      "endorsable": false,
+      "hardware_ready": false
+    },
+    "chip_cells": {
+      "n_cells": 25,
+      "n_qubits": 75,
+      "abs_gap_median": 0.7599999999999999,
+      "abs_gap_mean": 0.7631999999999999,
+      "cells_winning": 25,
+      "cells": [
+        {
+          "cell_id": 0,
+          "line": [
+            "q(0,6)",
+            "q(0,7)",
+            "q(0,8)"
+          ],
+          "theta_deg": 22.49,
+          "depth_layers": 14,
+          "relock_interval": 5,
+          "zzz_theta_star": -0.26,
+          "zzz_negative": 0.31333333333333335,
+          "abs_gap": 0.5733333333333334,
+          "shots": 300
+        },
+        {
+          "cell_id": 1,
+          "line": [
+            "q(1,5)",
+            "q(2,5)",
+            "q(3,5)"
+          ],
+          "theta_deg": 22.49,
+          "depth_layers": 14,
+          "relock_interval": 5,
+          "zzz_theta_star": -0.08,
+          "zzz_negative": 0.66,
+          "abs_gap": 0.74,
+          "shots": 300
+        },
+        {
+          "cell_id": 3,
+          "line": [
+            "q(2,4)",
+            "q(3,4)",
+            "q(4,4)"
+          ],
+          "theta_deg": 22.49,
+          "depth_layers": 14,
+          "relock_interval": 5,
+          "zzz_theta_star": -0.14666666666666667,
+          "zzz_negative": 0.5,
+          "abs_gap": 0.6466666666666667,
+          "shots": 300
+        },
+        {
+          "cell_id": 4,
+          "line": [
+            "q(2,6)",
+            "q(2,7)",
+            "q(2,8)"
+          ],
+          "theta_deg": 22.49,
+          "depth_layers": 14,
+          "relock_interval": 5,
+          "zzz_theta_star": -0.21333333333333335,
+          "zzz_negative": 0.7066666666666667,
+          "abs_gap": 0.92,
+          "shots": 300
+        },
+        {
+          "cell_id": 6,
+          "line": [
+            "q(2,10)",
+            "q(3,10)",
+            "q(4,10)"
+          ],
+          "theta_deg": 22.49,
+          "depth_layers": 14,
+          "relock_interval": 5,
+          "zzz_theta_star": -0.26,
+          "zzz_negative": 0.6066666666666667,
+          "abs_gap": 0.8666666666666667,
+          "shots": 300
+        },
+        {
+          "cell_id": 7,
+          "line": [
+            "q(3,3)",
+            "q(4,3)",
+            "q(5,3)"
+          ],
+          "theta_deg": 22.49,
+          "depth_layers": 14,
+          "relock_interval": 5,
+          "zzz_theta_star": -0.04666666666666667,
+          "zzz_negative": 0.6866666666666666,
+          "abs_gap": 0.7333333333333333,
+          "shots": 300
+        },
+        {
+          "cell_id": 8,
+          "line": [
+            "q(3,6)",
+            "q(3,7)",
+            "q(3,8)"
+          ],
+          "theta_deg": 22.49,
+          "depth_layers": 14,
+          "relock_interval": 5,
+          "zzz_theta_star": -0.17333333333333334,
+          "zzz_negative": 0.6733333333333333,
+          "abs_gap": 0.8466666666666667,
+          "shots": 300
+        },
+        {
+          "cell_id": 9,
+          "line": [
+            "q(4,2)",
+            "q(5,2)",
+            "q(6,2)"
+          ],
+          "theta_deg": 22.49,
+          "depth_layers": 14,
+          "relock_interval": 5,
+          "zzz_theta_star": -0.28,
+          "zzz_negative": 0.6933333333333334,
+          "abs_gap": 0.9733333333333334,
+          "shots": 300
+        },
+        {
+          "cell_id": 10,
+          "line": [
+            "q(4,5)",
+            "q(4,6)",
+            "q(4,7)"
+          ],
+          "theta_deg": 22.49,
+          "depth_layers": 14,
+          "relock_interval": 5,
+          "zzz_theta_star": -0.16,
+          "zzz_negative": 0.4066666666666667,
+          "abs_gap": 0.5666666666666667,
+          "shots": 300
+        },
+        {
+          "cell_id": 11,
+          "line": [
+            "q(4,8)",
+            "q(5,8)",
+            "q(6,8)"
+          ],
+          "theta_deg": 22.49,
+          "depth_layers": 14,
+          "relock_interval": 5,
+          "zzz_theta_star": -0.25333333333333335,
+          "zzz_negative": 0.74,
+          "abs_gap": 0.9933333333333334,
+          "shots": 300
+        },
+        {
+          "cell_id": 12,
+          "line": [
+            "q(4,11)",
+            "q(5,11)",
+            "q(6,11)"
+          ],
+          "theta_deg": 22.49,
+          "depth_layers": 14,
+          "relock_interval": 5,
+          "zzz_theta_star": -0.25333333333333335,
+          "zzz_negative": 0.6,
+          "abs_gap": 0.8533333333333333,
+          "shots": 300
+        },
+        {
+          "cell_id": 13,
+          "line": [
+            "q(4,12)",
+            "q(5,12)",
+            "q(6,12)"
+          ],
+          "theta_deg": 22.49,
+          "depth_layers": 14,
+          "relock_interval": 5,
+          "zzz_theta_star": -0.16,
+          "zzz_negative": 0.6866666666666666,
+          "abs_gap": 0.8466666666666667,
+          "shots": 300
+        },
+        {
+          "cell_id": 14,
+          "line": [
+            "q(5,4)",
+            "q(6,4)",
+            "q(7,4)"
+          ],
+          "theta_deg": 22.49,
+          "depth_layers": 14,
+          "relock_interval": 5,
+          "zzz_theta_star": 0.006666666666666667,
+          "zzz_negative": 0.6666666666666666,
+          "abs_gap": 0.6599999999999999,
+          "shots": 300
+        },
+        {
+          "cell_id": 15,
+          "line": [
+            "q(5,5)",
+            "q(5,6)",
+            "q(5,7)"
+          ],
+          "theta_deg": 22.49,
+          "depth_layers": 14,
+          "relock_interval": 5,
+          "zzz_theta_star": -0.2733333333333333,
+          "zzz_negative": 0.5666666666666667,
+          "abs_gap": 0.84,
+          "shots": 300
+        },
+        {
+          "cell_id": 16,
+          "line": [
+            "q(5,9)",
+            "q(6,9)",
+            "q(7,9)"
+          ],
+          "theta_deg": 22.49,
+          "depth_layers": 14,
+          "relock_interval": 5,
+          "zzz_theta_star": 0.05333333333333334,
+          "zzz_negative": 0.6133333333333333,
+          "abs_gap": 0.5599999999999999,
+          "shots": 300
+        },
+        {
+          "cell_id": 17,
+          "line": [
+            "q(5,10)",
+            "q(6,10)",
+            "q(7,10)"
+          ],
+          "theta_deg": 22.49,
+          "depth_layers": 14,
+          "relock_interval": 5,
+          "zzz_theta_star": -0.31333333333333335,
+          "zzz_negative": 0.44,
+          "abs_gap": 0.7533333333333334,
+          "shots": 300
+        },
+        {
+          "cell_id": 19,
+          "line": [
+            "q(6,5)",
+            "q(7,5)",
+            "q(8,5)"
+          ],
+          "theta_deg": 22.49,
+          "depth_layers": 14,
+          "relock_interval": 5,
+          "zzz_theta_star": -0.11333333333333333,
+          "zzz_negative": 0.6466666666666666,
+          "abs_gap": 0.7599999999999999,
+          "shots": 300
+        },
+        {
+          "cell_id": 20,
+          "line": [
+            "q(6,6)",
+            "q(7,6)",
+            "q(8,6)"
+          ],
+          "theta_deg": 22.49,
+          "depth_layers": 14,
+          "relock_interval": 5,
+          "zzz_theta_star": -0.20666666666666667,
+          "zzz_negative": 0.47333333333333333,
+          "abs_gap": 0.6799999999999999,
+          "shots": 300
+        },
+        {
+          "cell_id": 22,
+          "line": [
+            "q(7,8)",
+            "q(8,8)",
+            "q(9,8)"
+          ],
+          "theta_deg": 22.49,
+          "depth_layers": 14,
+          "relock_interval": 5,
+          "zzz_theta_star": -0.18666666666666668,
+          "zzz_negative": 0.43333333333333335,
+          "abs_gap": 0.62,
+          "shots": 300
+        },
+        {
+          "cell_id": 23,
+          "line": [
+            "q(7,11)",
+            "q(7,12)",
+            "q(7,13)"
+          ],
+          "theta_deg": 22.49,
+          "depth_layers": 14,
+          "relock_interval": 5,
+          "zzz_theta_star": -0.29333333333333333,
+          "zzz_negative": 0.5333333333333333,
+          "abs_gap": 0.8266666666666667,
+          "shots": 300
+        },
+        {
+          "cell_id": 26,
+          "line": [
+            "q(9,5)",
+            "q(9,6)",
+            "q(9,7)"
+          ],
+          "theta_deg": 22.49,
+          "depth_layers": 14,
+          "relock_interval": 5,
+          "zzz_theta_star": -0.16666666666666666,
+          "zzz_negative": 0.68,
+          "abs_gap": 0.8466666666666667,
+          "shots": 300
+        },
+        {
+          "cell_id": 28,
+          "line": [
+            "q(10,5)",
+            "q(10,6)",
+            "q(10,7)"
+          ],
+          "theta_deg": 22.49,
+          "depth_layers": 14,
+          "relock_interval": 5,
+          "zzz_theta_star": -0.12,
+          "zzz_negative": 0.6,
+          "abs_gap": 0.72,
+          "shots": 300
+        },
+        {
+          "cell_id": 29,
+          "line": [
+            "q(10,8)",
+            "q(10,9)",
+            "q(10,10)"
+          ],
+          "theta_deg": 22.49,
+          "depth_layers": 14,
+          "relock_interval": 5,
+          "zzz_theta_star": -0.12,
+          "zzz_negative": 0.6866666666666666,
+          "abs_gap": 0.8066666666666666,
+          "shots": 300
+        },
+        {
+          "cell_id": 30,
+          "line": [
+            "q(11,6)",
+            "q(11,7)",
+            "q(11,8)"
+          ],
+          "theta_deg": 22.49,
+          "depth_layers": 14,
+          "relock_interval": 5,
+          "zzz_theta_star": -0.17333333333333334,
+          "zzz_negative": 0.68,
+          "abs_gap": 0.8533333333333334,
+          "shots": 300
+        },
+        {
+          "cell_id": 31,
+          "line": [
+            "q(12,6)",
+            "q(12,7)",
+            "q(12,8)"
+          ],
+          "theta_deg": 22.49,
+          "depth_layers": 14,
+          "relock_interval": 5,
+          "zzz_theta_star": -0.03333333333333333,
+          "zzz_negative": 0.56,
+          "abs_gap": 0.5933333333333334,
+          "shots": 300
+        }
+      ]
+    }
+  },
+  "elapsed_s": 4770.513972520828,
+  "summary": {
+    "interior_abs_gap": -0.8820000000000001,
+    "interior_verdict": "DEPTH_WIN",
+    "retention_verdict": "NO_TARGET_SIGNAL",
+    "cells_winning": 25,
+    "cells_median_gap": 0.7599999999999999,
+    "endorsable": false,
+    "stamp_status": "HOLD"
+  }
+}
