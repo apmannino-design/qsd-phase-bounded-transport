@@ -17,7 +17,13 @@ USAGE:
   python3 examples/qsd_stabilization_campaign.py sweep    --backend ibm_fez --budget mini
   python3 examples/qsd_stabilization_campaign.py fullchip --backend ibm_fez --budget mini --nowait
   python3 examples/qsd_stabilization_campaign.py collect --budget mini
+  python3 examples/qsd_stabilization_campaign.py report-cells
   python3 examples/qsd_stabilization_campaign.py analyze
+
+Full-budget D3/D4 (reuses mini sweep + fullchip + control):
+  python3 examples/qsd_stabilization_campaign.py full-depth --backend ibm_fez --nowait
+  python3 examples/qsd_stabilization_campaign.py collect --budget full
+  python3 examples/qsd_stabilization_campaign.py analyze --budget full
 
 ZERO-COST PLUMBING TEST:
   python3 examples/qsd_stabilization_campaign.py all --backend aer --budget mini
@@ -141,10 +147,17 @@ BUDGETS = {
         sweep_shots=2000,
         sweep_cells=5,
         chip_shots=5000,
-        depth_layers=[1, 8, 16, 32],
-        sun=[(5, 7), (20, 7), (15, 3)],
+        depth_layers=[1, 16, 32, 64],
+        sun=[(5, 7), (20, 7), (40, 7)],  # 35/140/280 layers — targets D3 depth>=250
     ),
 }
+
+
+def _phase_key(phase: str, budget: str) -> str:
+    """State/job key — full-budget depth/sunscreen kept separate from mini."""
+    if budget == "full" and phase in ("depth", "sunscreen"):
+        return f"{phase}_full"
+    return phase
 
 
 # ---------------------------------------------------------------- state I/O
@@ -634,7 +647,7 @@ def cmd_depth(args):
         make_chip_circuit(nq, cells, [cal] * len(cells), BRIDGE_DEG, TRIM_DEG, L, legacy=legacy)
         for L in layers
     ]
-    counts = run_pubs(backend, mode, circs, B["chip_shots"], "depth", nowait=args.nowait)
+    counts = run_pubs(backend, mode, circs, B["chip_shots"], _phase_key("depth", args.budget), nowait=args.nowait)
     if counts is None:
         return
     rows = []
@@ -644,7 +657,7 @@ def cmd_depth(args):
         rows.append(dict(layers=L, depth=qc.depth(), median=float(np.median(z)), mean=float(z.mean())))
         print(f"  {L:3d} layers (depth {qc.depth():4d}): median ZZZ={np.median(z):+.3f}")
     st = state()
-    st["depth"] = dict(rows=rows, t=now())
+    st[_phase_key("depth", args.budget)] = dict(rows=rows, t=now(), budget=args.budget)
     save_state(st)
 
 
@@ -664,7 +677,7 @@ def cmd_sunscreen(args):
         )
         for (k, l) in cfgs
     ]
-    counts = run_pubs(backend, mode, circs, B["chip_shots"], "sunscreen", nowait=args.nowait)
+    counts = run_pubs(backend, mode, circs, B["chip_shots"], _phase_key("sunscreen", args.budget), nowait=args.nowait)
     if counts is None:
         return
     rows = []
@@ -688,7 +701,7 @@ def cmd_sunscreen(args):
             f"median ZZZ={np.median(z):+.3f}  >=0.50: {rows[-1]['ge50']}/{len(cells)}"
         )
     st = state()
-    st["sunscreen"] = dict(rows=rows, t=now())
+    st[_phase_key("sunscreen", args.budget)] = dict(rows=rows, t=now(), budget=args.budget)
     save_state(st)
 
 
@@ -709,25 +722,25 @@ def _finish_chip_tag(counts, tag, ncells):
     save_state(st)
 
 
-def _finish_depth(counts, layers, ncells):
+def _finish_depth(counts, layers, ncells, budget="mini"):
     st = state()
     sgn = st["sweep"].get("sign", 1)
     rows = []
     for L, ct in zip(layers, counts):
         z = sgn * zzz_per_cell_from_counts(ct, ncells)
         rows.append(dict(layers=L, median=float(np.median(z)), mean=float(z.mean())))
-    st["depth"] = dict(rows=rows, t=now())
+    st[_phase_key("depth", budget)] = dict(rows=rows, t=now(), budget=budget)
     save_state(st)
 
 
-def _finish_sunscreen(counts, cfgs, ncells):
+def _finish_sunscreen(counts, cfgs, ncells, budget="mini"):
     st = state()
     sgn = st["sweep"].get("sign", 1)
     rows = []
     for (k, l), ct in zip(cfgs, counts):
         z = sgn * zzz_per_cell_from_counts(ct, ncells)
         rows.append(dict(cycles=k, per_cycle=l, total_layers=k * l, median=float(np.median(z)), ncells=ncells))
-    st["sunscreen"] = dict(rows=rows, t=now())
+    st[_phase_key("sunscreen", budget)] = dict(rows=rows, t=now(), budget=budget)
     save_state(st)
 
 
@@ -751,10 +764,12 @@ def cmd_collect(args):
             _finish_sweep(counts, B["deltas"], n_champ)
         elif tag in ("fullchip", "control"):
             _finish_chip_tag(counts, tag, n_all)
-        elif tag == "depth":
-            _finish_depth(counts, B["depth_layers"], n_all)
-        elif tag == "sunscreen":
-            _finish_sunscreen(counts, B["sun"], n_all)
+        elif tag == "depth" or tag == "depth_full":
+            budget = "full" if tag.endswith("_full") else args.budget
+            _finish_depth(counts, BUDGETS[budget]["depth_layers"], n_all, budget=budget)
+        elif tag == "sunscreen" or tag == "sunscreen_full":
+            budget = "full" if tag.endswith("_full") else args.budget
+            _finish_sunscreen(counts, BUDGETS[budget]["sun"], n_all, budget=budget)
         print(f"  {tag} done.")
 
 
@@ -767,7 +782,7 @@ def cmd_status(args):
         print(f"sweep DONE — calibrated_src_deg={sw.get('calibrated_src_deg'):.2f}  Delta={sw.get('best_delta'):+d}")
     else:
         print("sweep PENDING — need calibrated angle before fullchip/depth/sunscreen")
-    for tag in ("fullchip", "control", "depth", "sunscreen"):
+    for tag in ("fullchip", "control", "depth", "sunscreen", "depth_full", "sunscreen_full"):
         if tag in st:
             print(f"{tag} DONE")
         elif tag in st.get("jobs", {}):
@@ -776,14 +791,84 @@ def cmd_status(args):
             print(f"{tag} not submitted")
 
 
+def cmd_report_cells(args):
+    """Per-cell ZZZ breakdown: optimized vs control, gap map."""
+    st = state()
+    cells = st.get("cells", [])
+    fc = st.get("fullchip", {})
+    ctrl = st.get("control", {})
+    if not fc.get("per_cell") or not ctrl.get("per_cell"):
+        sys.exit("need fullchip + control in state (run collect first)")
+
+    fc_z = np.array(fc["per_cell"])
+    ctrl_z = np.array(ctrl["per_cell"])
+    gaps = fc_z - ctrl_z
+    n = len(cells)
+
+    rows = []
+    for i, (cell, opt, rnd, gap) in enumerate(zip(cells, fc_z, ctrl_z, gaps)):
+        rows.append(
+            dict(
+                cell_id=i,
+                line=cell,
+                zzz_optimized=float(opt),
+                zzz_control=float(rnd),
+                gap=float(gap),
+                win=bool(gap > 0),
+            )
+        )
+
+    rows.sort(key=lambda r: -r["gap"])
+    wins = sum(1 for r in rows if r["win"])
+    ge50 = sum(1 for z in fc_z if z >= 0.50)
+
+    report = dict(
+        n_cells=n,
+        calibrated_src_deg=st.get("sweep", {}).get("calibrated_src_deg"),
+        best_delta=st.get("sweep", {}).get("best_delta"),
+        fullchip_median=fc.get("median"),
+        control_median=ctrl.get("median"),
+        d1_gap=float(np.median(gaps)),
+        cells_winning=wins,
+        cells_ge50_optimized=ge50,
+        top10=rows[:10],
+        bottom10=rows[-10:],
+        all_cells=rows,
+        t=now(),
+    )
+    out_path = os.path.join(RESULTS, "cell_report.json")
+    _save(out_path, report)
+
+    print("=== Per-cell ZZZ report ===")
+    print(f"cells: {n}  calibrated_src: {report['calibrated_src_deg']:.2f}°  Δ={report['best_delta']:+d}")
+    print(f"D1 median gap: {report['d1_gap']:+.3f}  wins: {wins}/{n}  optimized >=0.50: {ge50}/{n}")
+    print("\nTop 10 cells (optimized - control):")
+    for r in rows[:10]:
+        print(f"  {r['line']}  opt={r['zzz_optimized']:+.3f}  ctrl={r['zzz_control']:+.3f}  gap={r['gap']:+.3f}")
+    print(f"\nWrote {out_path}")
+
+
+def cmd_full_depth(args):
+    """Submit full-budget depth + sunscreen only (reuses mini sweep/fullchip/control)."""
+    args.budget = "full"
+    print("=== Full-budget depth + sunscreen (D3/D4 targets) ===")
+    print(f"depth layers: {BUDGETS['full']['depth_layers']}")
+    print(f"sunscreen cfgs: {BUDGETS['full']['sun']}")
+    _ensure_sweep_calibrated(args)
+    cmd_depth(args)
+    cmd_sunscreen(args)
+
+
 # ---------------------------------------------------------------- Phase 8
 def cmd_analyze(args):
     p = prereg_check()
     st = state()
-    need = ["sweep", "fullchip", "control", "depth", "sunscreen"]
+    depth_key = _phase_key("depth", args.budget)
+    sun_key = _phase_key("sunscreen", args.budget)
+    need = ["sweep", "fullchip", "control", depth_key, sun_key]
     missing = [k for k in need if k not in st]
     if missing:
-        sys.exit(f"missing phases: {missing}")
+        sys.exit(f"missing phases: {missing}  (for budget={args.budget})")
     R = p["rules"]
     out = {}
 
@@ -799,8 +884,13 @@ def cmd_analyze(args):
         passed=bool(contrast >= R["D2_basin_structure"]["threshold"] and sw["interior"]),
     )
 
-    deep_sun = max(st["sunscreen"]["rows"], key=lambda r: r.get("depth", r["total_layers"] * 10))
-    base = min(st["depth"]["rows"], key=lambda r: abs(r.get("depth", r["layers"] * 10) - deep_sun.get("depth", 0)))
+    depth_data = st[depth_key]
+    sun_data = st[sun_key]
+    deep_sun = max(sun_data["rows"], key=lambda r: r.get("depth", r["total_layers"] * 10))
+    base = min(
+        depth_data["rows"],
+        key=lambda r: abs(r.get("depth", r.get("layers", 0) * 10) - deep_sun.get("depth", 0)),
+    )
     FLOOR = 0.05
     if abs(deep_sun["median"]) < FLOOR and abs(base["median"]) < FLOOR:
         out["D3"] = dict(
@@ -817,7 +907,7 @@ def cmd_analyze(args):
             passed=bool(deep_sun.get("depth", 0) >= 250 and ratio >= R["D3_stabilization"]["threshold"]),
         )
 
-    sun = sorted(st["sunscreen"]["rows"], key=lambda r: r.get("depth", r["total_layers"]))
+    sun = sorted(sun_data["rows"], key=lambda r: r.get("depth", r["total_layers"]))
     if abs(sun[0]["median"]) < FLOOR:
         out["D4"] = dict(passed=False, not_evaluable=True, note="shallow sunscreen median ~0")
     else:
@@ -832,6 +922,7 @@ def cmd_analyze(args):
     report = {
         "verdict": verdict,
         "rules": out,
+        "budget": args.budget,
         "prereg_sha256": p["sha256"],
         "backend": st.get("backend"),
         "mode": st.get("mode"),
@@ -851,16 +942,20 @@ def cmd_analyze(args):
     print(f"\n  platform-calibrated source angle: {st['sweep']['calibrated_src_deg']:.2f} deg")
     print(f"  theory constant (unchanged):      {THETA_STAR_DEG} deg = pi/8 exactly")
     print(f"  report -> {RESULTS}/campaign_report.json")
-    _plots(st)
+    _plots(st, budget=args.budget)
 
 
-def _plots(st):
+def _plots(st, budget="mini"):
     try:
         import matplotlib
 
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
     except Exception:
+        return
+    depth_key = _phase_key("depth", budget)
+    sun_key = _phase_key("sunscreen", budget)
+    if depth_key not in st or sun_key not in st:
         return
     NAVY, TEAL, RED = "#0D3B66", "#006D77", "#B3403A"
     fig, axs = plt.subplots(1, 3, figsize=(10, 2.8))
@@ -870,12 +965,12 @@ def _plots(st):
     axs[0].set_title("Basin sweep")
     axs[0].set_xlabel("Delta (deg)")
     axs[0].set_ylabel("mean ZZZ")
-    dp = st["depth"]["rows"]
+    dp = st[depth_key]["rows"]
     axs[1].plot([r.get("depth", r["layers"]) for r in dp], [r["median"] for r in dp], "s-", color=NAVY, label="no reset")
-    sn = st["sunscreen"]["rows"]
+    sn = st[sun_key]["rows"]
     axs[1].plot([r.get("depth", r["total_layers"]) for r in sn], [r["median"] for r in sn], "^-", color=TEAL, label="sunscreen")
     axs[1].legend(fontsize=7)
-    axs[1].set_title("Depth scaling")
+    axs[1].set_title(f"Depth scaling ({budget})")
     axs[1].set_xlabel("circuit depth")
     axs[2].bar(["optimized", "random ctrl"], [st["fullchip"]["median"], st["control"]["median"]], color=[NAVY, RED])
     axs[2].set_title("Angle specificity (D1)")
@@ -897,7 +992,7 @@ def main():
         "phase",
         choices=[
             "prereg", "discover", "sweep", "fullchip", "control", "depth", "sunscreen",
-            "collect", "status", "analyze", "all",
+            "full-depth", "collect", "status", "report-cells", "analyze", "all",
         ],
     )
     ap.add_argument("--backend", default="ibm_fez", help="ibm_fez | ibm_marrakesh | ibm_torino | aer")
@@ -917,8 +1012,10 @@ def main():
         "control": cmd_control,
         "depth": cmd_depth,
         "sunscreen": cmd_sunscreen,
+        "full-depth": cmd_full_depth,
         "collect": cmd_collect,
         "status": cmd_status,
+        "report-cells": cmd_report_cells,
         "analyze": cmd_analyze,
         "all": cmd_all,
     }[args.phase](args)

@@ -19,7 +19,7 @@ if [[ "${NOWAIT}" == "1" ]]; then
 fi
 
 case "${PHASE}" in
-  prereg|discover|sweep|fullchip|control|depth|sunscreen|collect|analyze|all)
+  prereg|discover|sweep|fullchip|control|depth|sunscreen|full-depth|collect|status|report-cells|analyze|all)
     PYTHONUNBUFFERED=1 python3 examples/qsd_stabilization_campaign.py \
       "${PHASE}" --backend "${BACKEND}" --budget "${BUDGET}" "${EXTRA[@]}" "${@:2}"
     ;;
@@ -34,7 +34,17 @@ case "${PHASE}" in
       echo "=== ${p} ==="
       NOWAIT=1 BACKEND="${BACKEND}" BUDGET=mini "$0" "${p}"
     done
-    echo "Submitted. When queue clears:  ./run_ibm_campaign.sh collect"
+    echo "Submitted. When queue clears:"
+    echo "  ./run_ibm_campaign.sh collect"
+    echo "  ./run_ibm_campaign.sh report-cells"
+    echo "  ./run_ibm_campaign.sh analyze"
+    ;;
+  hw-full-depth)
+    # After mini campaign collected: submit D3/D4 full-budget depth + sunscreen only
+    NOWAIT=1 BACKEND="${BACKEND}" BUDGET=full "$0" full-depth
+    echo "Submitted depth_full + sunscreen_full. When queue clears:"
+    echo "  BUDGET=full ./run_ibm_campaign.sh collect"
+    echo "  BUDGET=full ./run_ibm_campaign.sh analyze"
     ;;
   help|*)
     cat <<EOF
@@ -50,7 +60,13 @@ Quick Aer plumbing test (no IBM minutes):
 Real hardware (mini budget, queue-safe):
   BACKEND=ibm_fez ./run_ibm_campaign.sh hw-mini
   BACKEND=ibm_fez ./run_ibm_campaign.sh collect
+  ./run_ibm_campaign.sh report-cells
   ./run_ibm_campaign.sh analyze
+
+Full-budget D3/D4 (after mini collected):
+  BACKEND=ibm_fez ./run_ibm_campaign.sh hw-full-depth
+  BUDGET=full BACKEND=ibm_fez ./run_ibm_campaign.sh collect
+  BUDGET=full ./run_ibm_campaign.sh analyze
 
 Phase by phase:
   ./run_ibm_campaign.sh prereg
