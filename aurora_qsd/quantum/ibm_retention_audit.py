@@ -53,6 +53,14 @@ try:
 except ImportError:
     QiskitRuntimeService = None  # type: ignore[misc, assignment]
 
+# Corridor wall angle (preregistered operating point near π/8)
+THETA_WALL_DEG = 22.28
+
+# Fine θ calibration grid around design constant (1-layer, campaign-comparable)
+DEFAULT_CALIB_THETAS_DEG = [
+    20.0, 21.0, 22.0, 22.2, 22.28, 22.35, 22.5, 22.65, 23.0, 24.0, 25.0,
+]
+
 
 def _require_qiskit() -> None:
     if QuantumCircuit is None:
@@ -466,6 +474,159 @@ def run_ibm_retention_benchmark(
     out.notes = notes
     out.elapsed_s = time.time() - t0
     return out
+
+
+@dataclass
+class IBMThetaCalibrationResult:
+    task: str = "qsd_ibm_theta_calibration"
+    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat(timespec="seconds"))
+    backend: str = ""
+    qubits: list[int] = field(default_factory=list)
+    layers: int = 1
+    shots: int = 0
+    theory_constant_deg: float = THETA_STAR_DEG
+    theta_wall_deg: float = THETA_WALL_DEG
+    calib_thetas_deg: list[float] = field(default_factory=list)
+    points: list[dict] = field(default_factory=list)
+    peak_theta_deg: float = 0.0
+    peak_zzz: float = 0.0
+    peak_abs_zzz: float = 0.0
+    wall_theta_deg: float = THETA_WALL_DEG
+    wall_zzz: float | None = None
+    wall_ideal_zzz: float | None = None
+    wall_gap_vs_wrong: float | None = None
+    elapsed_s: float = 0.0
+    notes: str = ""
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+
+def run_ibm_theta_calibration(
+    backend_name: str = "ibm_fez",
+    qubits: tuple[int, int, int] = (0, 1, 2),
+    calib_thetas_deg: list[float] | None = None,
+    layers: int = 1,
+    shots: int = 2048,
+    wrong_offset_deg: float = 70.0,
+    theta_wall_deg: float = THETA_WALL_DEG,
+) -> IBMThetaCalibrationResult:
+    """
+    Hardware θ calibration at 1 layer (same depth as stabilization campaign D1/D2).
+
+    Sweeps θ, measures ⟨ZZZ⟩, reports peak and explicit wall-point @ theta_wall_deg.
+    """
+    t0 = time.time()
+    physical_qubits = _normalize_physical_qubits(qubits)
+    thetas = calib_thetas_deg or DEFAULT_CALIB_THETAS_DEG
+    if theta_wall_deg not in thetas:
+        thetas = sorted(set(thetas) | {theta_wall_deg})
+
+    backend, mode = _resolve_backend(backend_name)
+    out = IBMThetaCalibrationResult(
+        backend=backend_name,
+        qubits=list(physical_qubits),
+        layers=layers,
+        shots=shots,
+        calib_thetas_deg=list(thetas),
+        theta_wall_deg=theta_wall_deg,
+        wall_theta_deg=theta_wall_deg,
+    )
+
+    print(
+        f"[calibrate] {backend_name} qubits={physical_qubits} layers={layers} "
+        f"shots={shots} n_theta={len(thetas)}",
+        flush=True,
+    )
+
+    for td in thetas:
+        c = build_qsd_sunscreen_circuit(LOGICAL_QUBITS, td, layers=layers, relock_interval=5, measure=True)
+        c_ideal = build_qsd_sunscreen_circuit(LOGICAL_QUBITS, td, layers=layers, relock_interval=5, measure=False)
+        ideal = ideal_zzz_qiskit(c_ideal)["ideal_zzz"]
+
+        hw = run_circuit_zzz(c, backend_name, shots, physical_qubits=physical_qubits, backend=backend, mode=mode)
+        zzz = zzz_correlator(hw["counts"], n_qubits=3)
+
+        c_wrong = build_qsd_sunscreen_circuit(
+            LOGICAL_QUBITS, td + wrong_offset_deg, layers=layers, relock_interval=5, measure=True
+        )
+        hw_wrong = run_circuit_zzz(
+            c_wrong, backend_name, shots, physical_qubits=physical_qubits, backend=backend, mode=mode
+        )
+        zzz_wrong = zzz_correlator(hw_wrong["counts"], n_qubits=3)
+
+        row = {
+            "theta_deg": td,
+            "measured_zzz": zzz,
+            "ideal_zzz": ideal,
+            "wrong_theta_deg": td + wrong_offset_deg,
+            "wrong_measured_zzz": zzz_wrong,
+            "gap_vs_wrong": float(zzz - zzz_wrong),
+            "abs_gap_vs_wrong": float(abs(zzz - zzz_wrong)),
+            "job_id": hw.get("job_id"),
+        }
+        out.points.append(row)
+        print(
+            f"  θ={td:5.2f}°  ZZZ={zzz:+.3f}  ideal={ideal:+.3f}  "
+            f"gap_vs_wrong={row['gap_vs_wrong']:+.3f}",
+            flush=True,
+        )
+
+        if td == theta_wall_deg:
+            out.wall_zzz = zzz
+            out.wall_ideal_zzz = ideal
+            out.wall_gap_vs_wrong = row["gap_vs_wrong"]
+
+    peak = max(out.points, key=lambda p: abs(p["measured_zzz"]))
+    out.peak_theta_deg = float(peak["theta_deg"])
+    out.peak_zzz = float(peak["measured_zzz"])
+    out.peak_abs_zzz = float(abs(peak["measured_zzz"]))
+    out.elapsed_s = time.time() - t0
+    out.notes = (
+        f"Peak |ZZZ| @ θ={out.peak_theta_deg:.2f}° (ZZZ={out.peak_zzz:+.3f}). "
+        f"Wall θ={theta_wall_deg:.2f}°: ZZZ={out.wall_zzz:+.3f} "
+        f"(ideal {out.wall_ideal_zzz:+.3f}). Theory constant π/8={THETA_STAR_DEG}° unchanged."
+    )
+    return out
+
+
+def run_calibrate_then_wall_retention(
+    backend_name: str = "ibm_fez",
+    qubits: tuple[int, int, int] = (0, 1, 2),
+    theta_wall_deg: float = THETA_WALL_DEG,
+    calib_shots: int = 2048,
+    retention_shots: int = 4096,
+    retention_layers: int = 1,
+    run_retention_sweep: bool = False,
+    calib_thetas_deg: list[float] | None = None,
+) -> dict:
+    """Phase 1: θ calibration @ 1L. Phase 2: retention audit @ wall angle."""
+    cal = run_ibm_theta_calibration(
+        backend_name=backend_name,
+        qubits=qubits,
+        calib_thetas_deg=calib_thetas_deg,
+        layers=1,
+        shots=calib_shots,
+        theta_wall_deg=theta_wall_deg,
+    )
+    print(f"\n[wall] retention @ θ={theta_wall_deg}° layers={retention_layers}", flush=True)
+    ret = run_ibm_retention_benchmark(
+        backend_name=backend_name,
+        qubits=qubits,
+        theta_star_deg=theta_wall_deg,
+        layers=retention_layers,
+        shots=retention_shots,
+        run_sweep=run_retention_sweep,
+        ideals_only=False,
+    )
+    return {
+        "task": "qsd_ibm_calibrate_then_wall",
+        "theory_constant_deg": THETA_STAR_DEG,
+        "theta_wall_deg": theta_wall_deg,
+        "calibration": cal.to_dict(),
+        "retention": ret.to_dict(),
+        "endorsable": False,
+    }
 
 
 def _rank_champion_cells(backend, n: int = 3) -> list[tuple[int, int, int]]:

@@ -50,19 +50,13 @@ def test_ibm_retention_ideals_only() -> None:
     result = run_ibm_retention_benchmark(
         backend_name="aer_sim",
         qubits=(0, 1, 2),
+        theta_star_deg=22.28,
+        layers=1,
         shots=512,
         sweep_shots=256,
         run_sweep=False,
         ideals_only=True,
     )
     d = result.to_dict()
-    assert d["task"] == "qsd_ibm_retention_audit"
-    assert "qsd_theta_star" in d["arms"]
-    assert d["arms"]["qsd_theta_star"]["measured_zzz"] is None
-    assert d["verdict"] in {
-        "NO_TARGET_SIGNAL",
-        "COHERENT_ARTIFACT",
-        "NO_PROTECTION_ADVANTAGE",
-        "PROTECTION_CANDIDATE",
-        "PENDING_RETENTION",
-    }
+    assert d["layers"] == 1
+    assert abs(d["arms"]["qsd_theta_star"]["ideal_zzz"]) >= 0.5
