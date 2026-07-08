@@ -1,0 +1,85 @@
+============================================================
+PHASE 1: SO(2) Projector Sweep at Peak Merger
+============================================================
+
+--- OPTIMAL GEOMETRIC ALIGNMENT FOUND ---
+Projector Rotation (α) : 17.90°
+Structural Ratio (ΔL/ΔX) : 2.2005 (Target: 2.1974)
+Partition Angle (θ)    : 27.61°
+VERDICT: MERGER_LOCK
+
+============================================================
+PHASE 2: Willow θ head-to-head (platform vs merger)
+============================================================
+[theta_compare] platform_theta_star θ=22.49° interior ...
+[theta_compare] platform_theta_star cell 1/32 ['q(0,6)', 'q(0,7)', 'q(0,8)']
+[theta_compare] platform_theta_star cell 2/32 ['q(1,5)', 'q(2,5)', 'q(3,5)']
+[theta_compare] platform_theta_star cell 3/32 ['q(1,6)', 'q(1,7)', 'q(1,8)']
+[theta_compare] platform_theta_star cell 4/32 ['q(2,4)', 'q(3,4)', 'q(4,4)']
+[theta_compare] platform_theta_star cell 5/32 ['q(2,6)', 'q(2,7)', 'q(2,8)']
+[theta_compare] platform_theta_star cell 6/32 ['q(2,9)', 'q(3,9)', 'q(4,9)']
+[theta_compare] platform_theta_star cell 7/32 ['q(2,10)', 'q(3,10)', 'q(4,10)']
+[theta_compare] platform_theta_star cell 8/32 ['q(3,3)', 'q(4,3)', 'q(5,3)']
+[theta_compare] platform_theta_star cell 9/32 ['q(3,6)', 'q(3,7)', 'q(3,8)']
+[theta_compare] platform_theta_star cell 10/32 ['q(4,2)', 'q(5,2)', 'q(6,2)']
+[theta_compare] platform_theta_star cell 11/32 ['q(4,5)', 'q(4,6)', 'q(4,7)']
+[theta_compare] platform_theta_star cell 12/32 ['q(4,8)', 'q(5,8)', 'q(6,8)']
+[theta_compare] platform_theta_star cell 13/32 ['q(4,11)', 'q(5,11)', 'q(6,11)']
+[theta_compare] platform_theta_star cell 14/32 ['q(4,12)', 'q(5,12)', 'q(6,12)']
+[theta_compare] platform_theta_star cell 15/32 ['q(5,4)', 'q(6,4)', 'q(7,4)']
+[theta_compare] platform_theta_star cell 16/32 ['q(5,5)', 'q(5,6)', 'q(5,7)']
+[theta_compare] platform_theta_star cell 17/32 ['q(5,9)', 'q(6,9)', 'q(7,9)']
+[theta_compare] platform_theta_star cell 18/32 ['q(5,10)', 'q(6,10)', 'q(7,10)']
+[theta_compare] platform_theta_star cell 19/32 ['q(6,3)', 'q(7,3)', 'q(8,3)']
+[theta_compare] platform_theta_star cell 20/32 ['q(6,5)', 'q(7,5)', 'q(8,5)']
+[theta_compare] platform_theta_star cell 21/32 ['q(6,6)', 'q(7,6)', 'q(8,6)']
+[theta_compare] platform_theta_star cell 22/32 ['q(6,7)', 'q(7,7)', 'q(8,7)']
+[theta_compare] platform_theta_star cell 23/32 ['q(7,8)', 'q(8,8)', 'q(9,8)']
+[theta_compare] platform_theta_star cell 24/32 ['q(7,11)', 'q(7,12)', 'q(7,13)']
+[theta_compare] platform_theta_star cell 25/32 ['q(8,4)', 'q(9,4)', 'q(10,4)']
+[theta_compare] platform_theta_star cell 26/32 ['q(8,9)', 'q(8,10)', 'q(8,11)']
+[theta_compare] platform_theta_star cell 27/32 ['q(9,5)', 'q(9,6)', 'q(9,7)']
+[theta_compare] platform_theta_star cell 28/32 ['q(9,9)', 'q(9,10)', 'q(9,11)']
+[theta_compare] platform_theta_star cell 29/32 ['q(10,5)', 'q(10,6)', 'q(10,7)']
+[theta_compare] platform_theta_star cell 30/32 ['q(10,8)', 'q(10,9)', 'q(10,10)']
+[theta_compare] platform_theta_star cell 31/32 ['q(11,6)', 'q(11,7)', 'q(11,8)']
+[theta_compare] platform_theta_star cell 32/32 ['q(12,6)', 'q(12,7)', 'q(12,8)']
+[theta_compare] merger_partition_theta θ=27.61° interior ...
+[theta_compare] merger_partition_theta cell 1/32 ['q(0,6)', 'q(0,7)', 'q(0,8)']
+[theta_compare] merger_partition_theta cell 2/32 ['q(1,5)', 'q(2,5)', 'q(3,5)']
+[theta_compare] merger_partition_theta cell 3/32 ['q(1,6)', 'q(1,7)', 'q(1,8)']
+[theta_compare] merger_partition_theta cell 4/32 ['q(2,4)', 'q(3,4)', 'q(4,4)']
+[theta_compare] merger_partition_theta cell 5/32 ['q(2,6)', 'q(2,7)', 'q(2,8)']
+[theta_compare] merger_partition_theta cell 6/32 ['q(2,9)', 'q(3,9)', 'q(4,9)']
+[theta_compare] merger_partition_theta cell 7/32 ['q(2,10)', 'q(3,10)', 'q(4,10)']
+[theta_compare] merger_partition_theta cell 8/32 ['q(3,3)', 'q(4,3)', 'q(5,3)']
+[theta_compare] merger_partition_theta cell 9/32 ['q(3,6)', 'q(3,7)', 'q(3,8)']
+[theta_compare] merger_partition_theta cell 10/32 ['q(4,2)', 'q(5,2)', 'q(6,2)']
+[theta_compare] merger_partition_theta cell 11/32 ['q(4,5)', 'q(4,6)', 'q(4,7)']
+[theta_compare] merger_partition_theta cell 12/32 ['q(4,8)', 'q(5,8)', 'q(6,8)']
+[theta_compare] merger_partition_theta cell 13/32 ['q(4,11)', 'q(5,11)', 'q(6,11)']
+[theta_compare] merger_partition_theta cell 14/32 ['q(4,12)', 'q(5,12)', 'q(6,12)']
+[theta_compare] merger_partition_theta cell 15/32 ['q(5,4)', 'q(6,4)', 'q(7,4)']
+[theta_compare] merger_partition_theta cell 16/32 ['q(5,5)', 'q(5,6)', 'q(5,7)']
+[theta_compare] merger_partition_theta cell 17/32 ['q(5,9)', 'q(6,9)', 'q(7,9)']
+[theta_compare] merger_partition_theta cell 18/32 ['q(5,10)', 'q(6,10)', 'q(7,10)']
+[theta_compare] merger_partition_theta cell 19/32 ['q(6,3)', 'q(7,3)', 'q(8,3)']
+[theta_compare] merger_partition_theta cell 20/32 ['q(6,5)', 'q(7,5)', 'q(8,5)']
+[theta_compare] merger_partition_theta cell 21/32 ['q(6,6)', 'q(7,6)', 'q(8,6)']
+[theta_compare] merger_partition_theta cell 22/32 ['q(6,7)', 'q(7,7)', 'q(8,7)']
+[theta_compare] merger_partition_theta cell 23/32 ['q(7,8)', 'q(8,8)', 'q(9,8)']
+[theta_compare] merger_partition_theta cell 24/32 ['q(7,11)', 'q(7,12)', 'q(7,13)']
+[theta_compare] merger_partition_theta cell 25/32 ['q(8,4)', 'q(9,4)', 'q(10,4)']
+[theta_compare] merger_partition_theta cell 26/32 ['q(8,9)', 'q(8,10)', 'q(8,11)']
+[theta_compare] merger_partition_theta cell 27/32 ['q(9,5)', 'q(9,6)', 'q(9,7)']
+[theta_compare] merger_partition_theta cell 28/32 ['q(9,9)', 'q(9,10)', 'q(9,11)']
+[theta_compare] merger_partition_theta cell 29/32 ['q(10,5)', 'q(10,6)', 'q(10,7)']
+[theta_compare] merger_partition_theta cell 30/32 ['q(10,8)', 'q(10,9)', 'q(10,10)']
+[theta_compare] merger_partition_theta cell 31/32 ['q(11,6)', 'q(11,7)', 'q(11,8)']
+[theta_compare] merger_partition_theta cell 32/32 ['q(12,6)', 'q(12,7)', 'q(12,8)']
+
+WINNER: platform_theta_star @ 22.49°
+VERDICT: THETA_WIN
+NOTES:   platform_theta_star wins: median |Δ|=0.717 vs merger_partition_theta 0.657 (margin 0.060); interior 0.854 vs 0.567.
+
+Saved: results/willow_merger_all.json
