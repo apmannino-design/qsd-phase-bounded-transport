@@ -472,6 +472,35 @@ def _legacy_flag(args):
     return bool(getattr(args, "legacy_circuits", False) or st.get("legacy_circuits"))
 
 
+def _ensure_sweep_calibrated(args, auto_collect: bool = True) -> float:
+    """Return platform-calibrated source angle; optionally fetch pending sweep job."""
+    st = state()
+    cal = st.get("sweep", {}).get("calibrated_src_deg")
+    if cal is not None:
+        return float(cal)
+
+    sweep_job = st.get("jobs", {}).get("sweep")
+    if auto_collect and sweep_job:
+        print(f"[sweep] no calibrated angle in state — fetching job {sweep_job['id']} ...")
+        try:
+            counts = fetch_job("sweep")
+            _finish_sweep(counts, BUDGETS[args.budget]["deltas"], len(st["champions"]))
+            return float(state()["sweep"]["calibrated_src_deg"])
+        except Exception as exc:
+            sys.exit(
+                "sweep job not finished yet (or fetch failed). "
+                f"Wait for job {sweep_job['id']} then run:\n"
+                "  python3 examples/qsd_stabilization_campaign.py collect --budget mini\n"
+                f"Detail: {exc}"
+            )
+
+    sys.exit(
+        "run `sweep` first (needs calibrated angle).\n"
+        "If you used --nowait, wait for the sweep job to finish, then:\n"
+        "  python3 examples/qsd_stabilization_campaign.py collect --budget mini"
+    )
+
+
 # ---------------------------------------------------------------- Phase 2
 def cmd_sweep(args):
     prereg_check()
@@ -556,9 +585,7 @@ def _chip_run(args, tag, random_angles=False):
         rng = random.Random(42)
         srcs = [THETA_STAR_DEG + rng.uniform(-40, 80) for _ in cells]
     else:
-        cal = st.get("sweep", {}).get("calibrated_src_deg")
-        if cal is None:
-            sys.exit("run `sweep` first (needs calibrated angle)")
+        cal = _ensure_sweep_calibrated(args)
         srcs = [cal] * len(cells)
     qc = make_chip_circuit(nq, cells, srcs, BRIDGE_DEG, TRIM_DEG, layers=1, legacy=legacy)
     counts = run_pubs(backend, mode, [qc], B["chip_shots"], tag, nowait=args.nowait)
@@ -600,7 +627,7 @@ def cmd_depth(args):
     backend, mode = get_backend(st.get("backend", args.backend))
     cells = [tuple(c) for c in st["cells"]]
     nq = st.get("n_qubits", getattr(backend, "num_qubits", 3 * len(cells)) or 3 * len(cells))
-    cal = st["sweep"]["calibrated_src_deg"]
+    cal = _ensure_sweep_calibrated(args)
     layers = B["depth_layers"]
     legacy = _legacy_flag(args)
     circs = [
@@ -628,7 +655,7 @@ def cmd_sunscreen(args):
     backend, mode = get_backend(st.get("backend", args.backend))
     cells = [tuple(c) for c in st["cells"]]
     nq = st.get("n_qubits", getattr(backend, "num_qubits", 3 * len(cells)) or 3 * len(cells))
-    cal = st["sweep"]["calibrated_src_deg"]
+    cal = _ensure_sweep_calibrated(args)
     cfgs = B["sun"]
     legacy = _legacy_flag(args)
     circs = [
@@ -710,11 +737,16 @@ def cmd_collect(args):
     n_champ = len(st.get("champions", []))
     n_all = len(st.get("cells", []))
     for tag, info in list(st.get("jobs", {}).items()):
-        if tag in ("sweep", "fullchip", "control", "depth", "sunscreen") and tag in st:
-            if isinstance(st.get(tag), dict) and st[tag].get("t"):
-                continue
+        done_key = tag if tag != "sweep" else "sweep"
+        if done_key in st and isinstance(st.get(done_key), dict) and st[done_key].get("t"):
+            print(f"[{tag}] already in state — skip")
+            continue
         print(f"fetching {tag} ({info['id']}) ...")
-        counts = fetch_job(tag)
+        try:
+            counts = fetch_job(tag)
+        except Exception as exc:
+            print(f"  {tag} not ready: {exc}")
+            continue
         if tag == "sweep":
             _finish_sweep(counts, B["deltas"], n_champ)
         elif tag in ("fullchip", "control"):
@@ -724,6 +756,24 @@ def cmd_collect(args):
         elif tag == "sunscreen":
             _finish_sunscreen(counts, B["sun"], n_all)
         print(f"  {tag} done.")
+
+
+def cmd_status(args):
+    st = state()
+    print("=== QSD campaign status ===")
+    print(f"backend: {st.get('backend')}  cells: {len(st.get('cells', []))}")
+    if "sweep" in st:
+        sw = st["sweep"]
+        print(f"sweep DONE — calibrated_src_deg={sw.get('calibrated_src_deg'):.2f}  Delta={sw.get('best_delta'):+d}")
+    else:
+        print("sweep PENDING — need calibrated angle before fullchip/depth/sunscreen")
+    for tag in ("fullchip", "control", "depth", "sunscreen"):
+        if tag in st:
+            print(f"{tag} DONE")
+        elif tag in st.get("jobs", {}):
+            print(f"{tag} submitted — job {st['jobs'][tag]['id']}")
+        else:
+            print(f"{tag} not submitted")
 
 
 # ---------------------------------------------------------------- Phase 8
@@ -845,7 +895,10 @@ def main():
     ap = argparse.ArgumentParser(description="QSD stabilization campaign (IBM Quantum)")
     ap.add_argument(
         "phase",
-        choices=["prereg", "discover", "sweep", "fullchip", "control", "depth", "sunscreen", "collect", "analyze", "all"],
+        choices=[
+            "prereg", "discover", "sweep", "fullchip", "control", "depth", "sunscreen",
+            "collect", "status", "analyze", "all",
+        ],
     )
     ap.add_argument("--backend", default="ibm_fez", help="ibm_fez | ibm_marrakesh | ibm_torino | aer")
     ap.add_argument("--budget", default="mini", choices=["mini", "full"])
@@ -865,6 +918,7 @@ def main():
         "depth": cmd_depth,
         "sunscreen": cmd_sunscreen,
         "collect": cmd_collect,
+        "status": cmd_status,
         "analyze": cmd_analyze,
         "all": cmd_all,
     }[args.phase](args)
