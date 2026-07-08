@@ -254,8 +254,8 @@ def _resolve_backend(backend_name: str):
         return AerSimulator(), "aer"
     if name in ("aer_fez", "aer_fez_noisy"):
         try:
-            from qiskit_ibm_runtime import QiskitRuntimeService
-
+            if QiskitRuntimeService is None:
+                raise ImportError("no runtime")
             svc = QiskitRuntimeService()
             return AerSimulator.from_backend(svc.backend("ibm_fez")), "aer"
         except Exception:
