@@ -59,6 +59,9 @@ def _require_qiskit() -> None:
         raise ImportError("qiskit and qiskit-aer required")
 
 
+LOGICAL_QUBITS: tuple[int, int, int] = (0, 1, 2)
+
+
 def _xy4_single_qubit(qc: "QuantumCircuit", q: int) -> None:
     qc.x(q)
     qc.y(q)
@@ -72,85 +75,89 @@ def _xy4_body_layer(qc: "QuantumCircuit", qubits: tuple[int, int, int]) -> None:
         _xy4_single_qubit(qc, q)
 
 
-def _circuit_nq(qubits: tuple[int, int, int]) -> int:
-    return max(qubits) + 1
+def _normalize_physical_qubits(qubits: tuple[int, int, int]) -> tuple[int, int, int]:
+    """Physical hardware indices for transpile layout (may be sparse, e.g. 20,21,36)."""
+    if len(qubits) != 3:
+        raise ValueError("exactly 3 qubits required")
+    return tuple(int(q) for q in qubits)
 
 
 def build_qsd_sunscreen_circuit(
-    qubits: tuple[int, int, int],
-    theta_deg: float,
+    qubits: tuple[int, int, int] = LOGICAL_QUBITS,
+    theta_deg: float = 22.5,
     layers: int = OPTIMAL_SUNSCREEN_LAYERS,
     relock_interval: int = OPTIMAL_RELOCK_INTERVAL,
     measure: bool = True,
 ) -> "QuantumCircuit":
-    """QSD depth-sunscreen on physical qubit indices (fez_cells exact)."""
+    """QSD depth-sunscreen on logical qubits 0,1,2 (fez_cells exact). Map to hardware at transpile."""
     _require_qiskit()
+    logical = LOGICAL_QUBITS
     theta = float(np.radians(theta_deg))
-    n = _circuit_nq(qubits)
     cr = ClassicalRegister(3, "c")
-    qc = QuantumCircuit(n)
+    qc = QuantumCircuit(3)
     qc.add_register(cr)
 
     layers_done = 0
     while layers_done < layers:
         if layers_done > 0:
-            append_sunscreen_reset(qc, qubits, theta)
+            append_sunscreen_reset(qc, logical, theta)
         block = min(relock_interval, layers - layers_done)
         for j in range(block):
             _append_3q_qsd_layer(
                 qc,
-                qubits,
+                logical,
                 theta,
                 with_init=(layers_done == 0 and j == 0),
             )
         layers_done += block
 
     if measure:
-        qc.measure(list(qubits), cr)
+        qc.measure(list(logical), cr)
     return qc
 
 
 def build_xy4_matched_circuit(
-    qubits: tuple[int, int, int],
-    theta_deg: float,
+    qubits: tuple[int, int, int] = LOGICAL_QUBITS,
+    theta_deg: float = 22.5,
     layers: int = OPTIMAL_SUNSCREEN_LAYERS,
     relock_interval: int = OPTIMAL_RELOCK_INTERVAL,
     measure: bool = True,
 ) -> "QuantumCircuit":
-    """Matched-schedule XY4 DD control (same re-lock points as QSD)."""
+    """Matched-schedule XY4 DD control on logical qubits 0,1,2."""
     _require_qiskit()
     from aurora_qsd.quantum.fez_cells import _trilock_init
 
+    logical = LOGICAL_QUBITS
     theta = float(np.radians(theta_deg))
-    n = _circuit_nq(qubits)
     cr = ClassicalRegister(3, "c")
-    qc = QuantumCircuit(n)
+    qc = QuantumCircuit(3)
     qc.add_register(cr)
 
     layers_done = 0
     while layers_done < layers:
         if layers_done > 0:
-            _trilock_init(qc, qubits, theta)
-            _xy4_body_layer(qc, qubits)
+            _trilock_init(qc, logical, theta)
+            _xy4_body_layer(qc, logical)
         block = min(relock_interval, layers - layers_done)
         for j in range(block):
             if layers_done == 0 and j == 0:
-                _trilock_init(qc, qubits, theta)
-            _xy4_body_layer(qc, qubits)
+                _trilock_init(qc, logical, theta)
+            _xy4_body_layer(qc, logical)
         layers_done += block
 
     if measure:
-        qc.measure(list(qubits), cr)
+        qc.measure(list(logical), cr)
     return qc
 
 
-def verify_xy4_layer_qiskit(qubits: tuple[int, int, int] = (0, 1, 2)) -> dict:
-    """Verify repaired XY4 body is not degenerate I⊗I⊗Y."""
+def verify_xy4_layer_qiskit(qubits: tuple[int, int, int] = LOGICAL_QUBITS) -> dict:
+    """Verify repaired XY4 body is not degenerate I⊗I⊗Y (always 3-qubit logical space)."""
     _require_qiskit()
     from qiskit.quantum_info import Operator
 
-    qc = QuantumCircuit(_circuit_nq(qubits))
-    _xy4_body_layer(qc, qubits)
+    logical = LOGICAL_QUBITS
+    qc = QuantumCircuit(3)
+    _xy4_body_layer(qc, logical)
     u = Operator(qc).data
     y3 = np.kron(np.eye(2), np.kron(np.eye(2), np.array([[0, -1j], [1j, 0]], dtype=complex)))
     overlap_y = float(np.abs(np.trace(u.conj().T @ y3)) / u.size)
@@ -159,6 +166,8 @@ def verify_xy4_layer_qiskit(qubits: tuple[int, int, int] = (0, 1, 2)) -> dict:
         "overlap_with_IIIY": overlap_y,
         "degenerate_IIIY": overlap_y > 0.99,
         "passes": overlap_y < 0.99,
+        "checked_on_logical_qubits": list(logical),
+        "requested_physical_qubits": list(qubits),
     }
 
 
@@ -169,12 +178,13 @@ def _zzz_pauli_string(n_qubits: int, qubits: tuple[int, ...]) -> str:
     return "".join(reversed(label))
 
 
-def ideal_zzz_qiskit(circuit: "QuantumCircuit", qubits: tuple[int, int, int]) -> dict[str, float]:
+def ideal_zzz_qiskit(circuit: "QuantumCircuit", qubits: tuple[int, int, int] | None = None) -> dict[str, float]:
     """Noiseless ⟨ZZZ⟩ via statevector parity + density-matrix ZZZ operator."""
     _require_qiskit()
+    logical = LOGICAL_QUBITS
     qc = circuit.remove_final_measurements(inplace=False)
     n = qc.num_qubits
-    zzz_op = SparsePauliOp.from_list([(_zzz_pauli_string(n, qubits), 1.0)])
+    zzz_op = SparsePauliOp.from_list([(_zzz_pauli_string(n, logical), 1.0)])
 
     sv = Statevector.from_instruction(qc)
     ideal_sv = float(np.real(sv.expectation_value(zzz_op)))
@@ -191,12 +201,12 @@ def ideal_zzz_qiskit(circuit: "QuantumCircuit", qubits: tuple[int, int, int]) ->
 
 
 def gate_budget_metadata(
-    qubits: tuple[int, int, int],
     theta_deg: float,
     layers: int,
     relock: int,
 ) -> dict:
     _require_qiskit()
+    logical = LOGICAL_QUBITS
 
     def _count(qc: "QuantumCircuit") -> dict[str, int]:
         ops = qc.count_ops()
@@ -205,13 +215,13 @@ def gate_budget_metadata(
         return {"one_qubit": oneq, "two_qubit": twoq}
 
     theta = float(np.radians(theta_deg))
-    qsd = build_qsd_sunscreen_circuit(qubits, theta_deg, layers, relock, measure=False)
-    xy4 = build_xy4_matched_circuit(qubits, theta_deg, layers, relock, measure=False)
+    qsd = build_qsd_sunscreen_circuit(logical, theta_deg, layers, relock, measure=False)
+    xy4 = build_xy4_matched_circuit(logical, theta_deg, layers, relock, measure=False)
 
-    qsd_body = QuantumCircuit(_circuit_nq(qubits))
-    _append_3q_qsd_layer(qsd_body, qubits, theta, with_init=False)
-    xy4_body = QuantumCircuit(_circuit_nq(qubits))
-    _xy4_body_layer(xy4_body, qubits)
+    qsd_body = QuantumCircuit(3)
+    _append_3q_qsd_layer(qsd_body, logical, theta, with_init=False)
+    xy4_body = QuantumCircuit(3)
+    _xy4_body_layer(xy4_body, logical)
 
     return {
         "layers": layers,
@@ -220,9 +230,22 @@ def gate_budget_metadata(
         "xy4_body_per_layer": _count(xy4_body),
         "qsd_total": _count(qsd),
         "xy4_total": _count(xy4),
-        "xy4_layer_check": verify_xy4_layer_qiskit(qubits),
+        "xy4_layer_check": verify_xy4_layer_qiskit(logical),
         "note": "QSD: 4 two-qubit ops/body layer; XY4: 12 single-qubit pulses/body layer (repaired).",
     }
+
+
+def _transpile_for_run(
+    circuit: "QuantumCircuit",
+    backend,
+    mode: str,
+    physical_qubits: tuple[int, int, int],
+) -> "QuantumCircuit":
+    """Transpile logical 3Q circuit; map to sparse physical indices on hardware."""
+    if mode == "aer" and getattr(backend, "coupling_map", None) is None:
+        return circuit
+    layout = list(physical_qubits)
+    return transpile(circuit, backend, initial_layout=layout, optimization_level=1)
 
 
 def _resolve_backend(backend_name: str):
@@ -255,11 +278,13 @@ def run_circuit_zzz(
     circuit: "QuantumCircuit",
     backend_name: str,
     shots: int,
+    physical_qubits: tuple[int, int, int] = LOGICAL_QUBITS,
     backend=None,
     mode: str | None = None,
 ) -> dict[str, Any]:
     """Run circuit on Aer or IBM hardware; return counts + metadata."""
     _require_qiskit()
+    physical_qubits = _normalize_physical_qubits(physical_qubits)
     if backend is None or mode is None:
         backend, mode = _resolve_backend(backend_name)
 
@@ -267,16 +292,14 @@ def run_circuit_zzz(
         from qiskit_aer.primitives import SamplerV2 as AerSamplerV2
 
         sampler = AerSamplerV2()
-        isa = circuit if getattr(backend, "coupling_map", None) is None else transpile(
-            circuit, backend, optimization_level=1
-        )
+        isa = _transpile_for_run(circuit, backend, mode, physical_qubits)
         job = sampler.run([isa], shots=shots)
         pub = job.result()[0]
         counts = _counts_from_sampler_result(pub)
         return {"counts": counts, "shots": shots, "backend": backend_name, "job_id": None}
 
     sampler = SamplerV2(mode=Batch(backend=backend))
-    isa = transpile(circuit, backend, optimization_level=1)
+    isa = _transpile_for_run(circuit, backend, mode, physical_qubits)
     job = sampler.run([isa], shots=shots)
     pub = job.result()[0]
     jid = job.job_id() if callable(getattr(job, "job_id", None)) else getattr(job, "job_id", None)
@@ -289,7 +312,7 @@ def run_circuit_zzz(
 
 
 def _run_arm(
-    qubits: tuple[int, int, int],
+    physical_qubits: tuple[int, int, int],
     arm: str,
     theta_deg: float,
     layers: int,
@@ -300,20 +323,23 @@ def _run_arm(
     backend=None,
     mode: str | None = None,
 ) -> dict:
+    logical = LOGICAL_QUBITS
     if arm == "xy4":
-        c_noisy = build_xy4_matched_circuit(qubits, theta_deg, layers, relock, measure=True)
-        c_ideal = build_xy4_matched_circuit(qubits, theta_deg, layers, relock, measure=False)
+        c_noisy = build_xy4_matched_circuit(logical, theta_deg, layers, relock, measure=True)
+        c_ideal = build_xy4_matched_circuit(logical, theta_deg, layers, relock, measure=False)
     elif arm == "qsd":
-        c_noisy = build_qsd_sunscreen_circuit(qubits, theta_deg, layers, relock, measure=True)
-        c_ideal = build_qsd_sunscreen_circuit(qubits, theta_deg, layers, relock, measure=False)
+        c_noisy = build_qsd_sunscreen_circuit(logical, theta_deg, layers, relock, measure=True)
+        c_ideal = build_qsd_sunscreen_circuit(logical, theta_deg, layers, relock, measure=False)
     else:
         raise ValueError(arm)
 
-    ideal = ideal_zzz_qiskit(c_ideal, qubits)
+    ideal = ideal_zzz_qiskit(c_ideal)
     measured = None
     job_id = None
     if not ideals_only:
-        hw = run_circuit_zzz(c_noisy, backend_name, shots, backend=backend, mode=mode)
+        hw = run_circuit_zzz(
+            c_noisy, backend_name, shots, physical_qubits=physical_qubits, backend=backend, mode=mode
+        )
         measured = zzz_correlator(hw["counts"], n_qubits=3)
         job_id = hw.get("job_id")
 
@@ -370,17 +396,18 @@ def run_ibm_retention_benchmark(
 ) -> IBMRetentionResult:
     t0 = time.time()
     theta_wrong_deg = float(theta_star_deg + negative_offset_deg)
+    physical_qubits = _normalize_physical_qubits(qubits)
 
     backend, mode = _resolve_backend(backend_name)
 
     out = IBMRetentionResult(
         backend=backend_name,
-        qubits=list(qubits),
+        qubits=list(physical_qubits),
         theta_star_deg=theta_star_deg,
         layers=layers,
         relock_interval=relock_interval,
         shots=shots,
-        gate_budget=gate_budget_metadata(qubits, theta_star_deg, layers, relock_interval),
+        gate_budget=gate_budget_metadata(theta_star_deg, layers, relock_interval),
         preregistration={
             "min_target_signal": MIN_TARGET_SIGNAL,
             "retention_advantage_margin": RETENTION_ADVANTAGE_MARGIN,
@@ -389,9 +416,9 @@ def run_ibm_retention_benchmark(
         },
     )
 
-    xy4 = _run_arm(qubits, "xy4", theta_star_deg, layers, relock_interval, backend_name, shots, ideals_only, backend, mode)
-    qsd_star = _run_arm(qubits, "qsd", theta_star_deg, layers, relock_interval, backend_name, shots, ideals_only, backend, mode)
-    qsd_wrong = _run_arm(qubits, "qsd", theta_wrong_deg, layers, relock_interval, backend_name, shots, ideals_only, backend, mode)
+    xy4 = _run_arm(physical_qubits, "xy4", theta_star_deg, layers, relock_interval, backend_name, shots, ideals_only, backend, mode)
+    qsd_star = _run_arm(physical_qubits, "qsd", theta_star_deg, layers, relock_interval, backend_name, shots, ideals_only, backend, mode)
+    qsd_wrong = _run_arm(physical_qubits, "qsd", theta_wrong_deg, layers, relock_interval, backend_name, shots, ideals_only, backend, mode)
 
     out.arms = {"xy4_matched": xy4, "qsd_theta_star": qsd_star, "qsd_wrong_theta": qsd_wrong}
     out.job_ids = {
@@ -417,7 +444,7 @@ def run_ibm_retention_benchmark(
         sweep: list[dict] = []
         for td in _audit_theta_points(theta_star_deg):
             row = _run_arm(
-                qubits, "qsd", td, layers, relock_interval,
+                physical_qubits, "qsd", td, layers, relock_interval,
                 backend_name, sweep_shots, ideals_only, backend, mode,
             )
             sweep.append(row)
