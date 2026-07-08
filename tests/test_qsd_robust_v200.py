@@ -13,6 +13,7 @@ from aurora_qsd.quantum.robust_test_suite import (
     compute_ks_distance,
     compute_platform_independence_score,
     compute_relative_entropy_from_bloch,
+    disorder_from_counts,
     fit_contraction_rate,
     load_prereg_v200,
     relative_entropy_vs_mixed_qiskit,
@@ -52,27 +53,32 @@ def test_ks_distance_separates_distributions() -> None:
     assert compute_ks_distance([1, 2, 3], [1, 2, 3]) == 0.0
 
 
-def test_t1_ideal_tomography_runs() -> None:
+def test_t1_noisy_tomography_runs() -> None:
     pytest.importorskip("qiskit")
-    dec = run_t1_tomography(backend_name="aer_sim", depths=(2, 4, 6))
+    dec = run_t1_tomography(backend_name="aer_sim", depths=(2, 4, 6), noise="native", shots=512)
     assert dec.test == "T1"
     assert dec.decision in ("PASS", "FAIL")
+    assert dec.details["mode"] == "aer_native"
     assert len(dec.details["relative_entropies"]) == 3
 
 
-def test_t1_entropy_from_feZ_cells_circuit() -> None:
+def test_t1_ideal_is_inconclusive() -> None:
     pytest.importorskip("qiskit")
-    from aurora_qsd.quantum.ibm_retention_audit import build_qsd_sunscreen_circuit
+    dec = run_t1_tomography(backend_name="aer_sim", depths=(2, 4, 6), noise="ideal")
+    assert dec.decision == "INCONCLUSIVE"
 
-    c = build_qsd_sunscreen_circuit((0, 1, 2), 22.28, layers=1, relock_interval=5, measure=False)
-    d = relative_entropy_vs_mixed_qiskit(c)
-    assert d > 0.0
+
+def test_disorder_from_counts() -> None:
+    counts = {"000": 500, "001": 500, "010": 500, "011": 500}
+    d = disorder_from_counts(counts, n_qubits=3)
+    assert d < math.log(8)
 
 
 def test_t2_basin_sweep_runs() -> None:
-    dec = run_t2_basin_sweep(n_steps=7, n_null=10, shots=128, depth=1)
+    dec = run_t2_basin_sweep(n_steps=7, n_null=10, shots=128, depth=4)
     assert dec.test == "T2"
     assert "peak_angle_deg" in dec.details
+    assert "contrast" in dec.details
     assert dec.details["ks_stat"] >= 0.0
 
 

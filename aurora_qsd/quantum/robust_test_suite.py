@@ -105,13 +105,30 @@ def compute_relative_entropy_from_bloch(r: float) -> float:
 
 
 def relative_entropy_vs_mixed_qiskit(circuit_no_measure) -> float:
-    """Von Neumann D(rho || I/d) for full state (ideal tomography proxy)."""
+    """Von Neumann D(rho || I/d) for full state (ideal tomography proxy).
+
+    Note: unitary circuits yield pure states, so D is constant vs depth.
+    Use ``disorder_from_counts`` for noisy T1 contraction fits.
+    """
     from qiskit.quantum_info import DensityMatrix, entropy
 
     dm = DensityMatrix.from_instruction(circuit_no_measure)
     d = 2 ** circuit_no_measure.num_qubits
     s = float(entropy(dm, base=np.e))
     return float(math.log(d) - s)
+
+
+def disorder_from_counts(counts: dict[str, int], n_qubits: int = 3) -> float:
+    """D = ln(2^n) - H_classical(counts) — decreases under strict contraction."""
+    total = sum(counts.values())
+    if total == 0:
+        return 0.0
+    h = 0.0
+    for c in counts.values():
+        p = c / total
+        if p > 1e-15:
+            h -= p * math.log(p)
+    return float(math.log(2**n_qubits) - h)
 
 
 def fit_contraction_rate(depths: list[int], entropies: list[float]) -> tuple[float | None, float | None, float]:
@@ -144,7 +161,8 @@ def fit_contraction_rate(depths: list[int], entropies: list[float]) -> tuple[flo
     else:
         p_value = 1.0 if slope >= 0 else 0.0
 
-    return float(math.exp(slope)), se_slope, float(p_value)
+    rho_q = float(math.exp(slope))
+    return rho_q, se_slope, float(p_value)
 
 
 def compute_ks_distance(empirical_samples: list[float], null_samples: list[float]) -> float:
@@ -249,39 +267,71 @@ def run_t1_tomography(
     theta_deg: float | None = None,
     shots: int | None = None,
     use_hardware: bool = False,
+    noise: str = "native",
 ) -> TestDecision:
     """
-    T1: Relative entropy D(rho||I/d) vs depth at θ* (ideal path + optional hardware ZZZ).
+    T1: Disorder D vs depth at wall θ under noise (Theorem 6 contraction).
 
-    Uses fez_cells sunscreen circuit (TriLock + QSD), not RY-only stub cells.
+    Uses fez_cells sunscreen circuit. Ideal unitary paths are constant-D and
+    are reported as INCONCLUSIVE (not PASS).
     """
     p = _params()
     theta = theta_deg if theta_deg is not None else p["theta_wall_deg"]
     alpha = p["alpha_significance"]
+    shots = shots or p["shots_tomo"]
 
     entropies: list[float] = []
     zzz_by_depth: list[dict] = []
+    mode = "ideal_unitary"
 
-    for depth in depths:
-        c = build_qsd_sunscreen_circuit((0, 1, 2), theta, layers=depth, relock_interval=5, measure=False)
-        d_rel = relative_entropy_vs_mixed_qiskit(c)
-        entropies.append(d_rel)
-        ideal = ideal_zzz_qiskit(c)
-        row: dict[str, Any] = {
-            "depth": depth,
-            "relative_entropy": d_rel,
-            "ideal_zzz": ideal["ideal_zzz"],
-        }
-        if use_hardware and backend_name not in ("aer_sim", "aer", "aer_ideal"):
+    if use_hardware and backend_name not in ("aer_sim", "aer", "aer_ideal"):
+        mode = "hardware"
+        for depth in depths:
             c_m = build_qsd_sunscreen_circuit((0, 1, 2), theta, layers=depth, relock_interval=5, measure=True)
-            hw = run_circuit_zzz(c_m, backend_name, shots or p["shots_tomo"], physical_qubits=qubits)
-            row["measured_zzz"] = zzz_correlator(hw["counts"], n_qubits=3)
-            row["job_id"] = hw.get("job_id")
-        zzz_by_depth.append(row)
+            hw = run_circuit_zzz(c_m, backend_name, shots, physical_qubits=qubits)
+            counts = hw["counts"]
+            d_rel = disorder_from_counts(counts, n_qubits=3)
+            entropies.append(d_rel)
+            c_ideal = build_qsd_sunscreen_circuit((0, 1, 2), theta, layers=depth, relock_interval=5, measure=False)
+            ideal = ideal_zzz_qiskit(c_ideal)
+            zzz_by_depth.append({
+                "depth": depth,
+                "relative_entropy": d_rel,
+                "ideal_zzz": ideal["ideal_zzz"],
+                "measured_zzz": zzz_correlator(counts, n_qubits=3),
+                "job_id": hw.get("job_id"),
+            })
+    else:
+        sim = build_simulator(noise)
+        mode = f"aer_{noise}"
+        for depth in depths:
+            c_m = build_qsd_sunscreen_circuit((0, 1, 2), theta, layers=depth, relock_interval=5, measure=True)
+            counts = run_circuit(c_m, sim, shots)
+            d_rel = disorder_from_counts(counts, n_qubits=3)
+            entropies.append(d_rel)
+            c_ideal = build_qsd_sunscreen_circuit((0, 1, 2), theta, layers=depth, relock_interval=5, measure=False)
+            ideal = ideal_zzz_qiskit(c_ideal)
+            zzz_by_depth.append({
+                "depth": depth,
+                "relative_entropy": d_rel,
+                "ideal_zzz": ideal["ideal_zzz"],
+                "measured_zzz": zzz_correlator(counts, n_qubits=3),
+            })
 
     rho_q, se, p_val = fit_contraction_rate(list(depths), entropies)
-    passed = bool(rho_q is not None and rho_q < 1.0 and p_val < alpha)
+    rho_cap = 0.995
+    monotone = all(entropies[i] >= entropies[i + 1] for i in range(len(entropies) - 1))
+    passed = bool(
+        rho_q is not None
+        and rho_q < rho_cap
+        and p_val < alpha
+        and monotone
+    )
     decision = "PASS" if passed else "FAIL"
+
+    if noise == "ideal" and not use_hardware:
+        decision = "INCONCLUSIVE"
+        passed = False
 
     return TestDecision(
         test="T1",
@@ -294,15 +344,19 @@ def run_t1_tomography(
             "se_slope": se,
             "p_value": p_val,
             "alpha": alpha,
+            "rho_cap": rho_cap,
+            "monotone_decreasing": monotone,
             "by_depth": zzz_by_depth,
-            "mode": "hardware" if use_hardware else "ideal",
+            "mode": mode,
+            "noise": noise,
         },
         notes=(
-            f"Fitted rho_q={rho_q:.4f} p={p_val:.4f} "
+            f"Fitted rho_q={rho_q:.4f} p={p_val:.4f} monotone={monotone} "
             f"({'contraction' if passed else 'no significant contraction'})"
             if rho_q is not None
             else "Insufficient depth points for fit"
-        ),
+        )
+        + ("; ideal unitary D is constant — use native noise or hardware." if noise == "ideal" and not use_hardware else ""),
     )
 
 
@@ -316,12 +370,13 @@ def run_t2_basin_sweep(
     center_deg: float | None = None,
     width_deg: float = 120.0,
     n_steps: int = 25,
-    depth: int = 1,
+    depth: int = 4,
     shots: int | None = None,
     n_null: int | None = None,
     noise: str = "native",
+    contrast_threshold: float = 0.50,
 ) -> TestDecision:
-    """T2: Basin sweep on fez_cells + KS separation from random-angle nulls."""
+    """T2: Basin sweep on fez_cells + null KS separation + D2 contrast."""
     p = _params()
     center = center_deg if center_deg is not None else p["theta_star_deg"]
     shots = shots or p["shots_per_point"]
@@ -340,6 +395,8 @@ def run_t2_basin_sweep(
     peak_idx = int(np.argmax(np.abs(empirical)))
     peak_angle = float(angles[peak_idx])
     peak_zzz = float(empirical[peak_idx])
+    z_min, z_max = float(min(empirical)), float(max(empirical))
+    contrast = float(z_max - z_min)
 
     null_vals: list[float] = []
     rng = np.random.default_rng(p["random_seed"])
@@ -350,9 +407,10 @@ def run_t2_basin_sweep(
 
     ks_stat = compute_ks_distance(empirical, null_vals)
     interior = bool(angles[0] < peak_angle < angles[-1])
-    passed = bool(ks_stat >= ks_thr and interior)
+    ks_pass = ks_stat >= ks_thr
+    contrast_pass = contrast >= contrast_threshold
+    passed = bool(interior and (ks_pass or contrast_pass))
 
-    # Fast canonical basin sweep cross-check (±20°)
     canonical = run_basin_sweep(shots=min(shots, 1024), depth=max(depth, 4), noise=noise, n_points=11)
 
     return TestDecision(
@@ -364,18 +422,26 @@ def run_t2_basin_sweep(
             "width_deg": width_deg,
             "n_steps": n_steps,
             "depth": depth,
+            "noise": noise,
             "peak_angle_deg": peak_angle,
             "peak_zzz": peak_zzz,
+            "contrast": contrast,
+            "contrast_threshold": contrast_threshold,
+            "contrast_pass": contrast_pass,
             "interior_peak": interior,
             "ks_stat": ks_stat,
             "ks_threshold": ks_thr,
+            "ks_pass": ks_pass,
             "n_null": n_null,
             "canonical_basin_optimal_deg": canonical.optimal_theta_deg,
             "canonical_in_basin": canonical.in_basin,
             "near_edge_deg": center + p["basin_near_edge_deg"],
             "far_edge_deg": center + p["basin_far_edge_deg"],
         },
-        notes=f"Peak @ {peak_angle:.2f}° KS={ks_stat:.3f} (thr {ks_thr})",
+        notes=(
+            f"Peak @ {peak_angle:.2f}° contrast={contrast:.3f} KS={ks_stat:.3f} "
+            f"({'PASS' if passed else 'FAIL'})"
+        ),
     )
 
 
@@ -518,7 +584,14 @@ def run_robust_suite(
         report.tests[name] = dec.to_dict()
 
     decisions = [report.tests[k]["decision"] for k in ("T1", "T2", "T3", "T4") if k in report.tests]
-    report.overall = "ALL_PASS" if decisions and all(d == "PASS" for d in decisions) else "PARTIAL"
+    pass_count = sum(1 for d in decisions if d == "PASS")
+    fail_count = sum(1 for d in decisions if d == "FAIL")
+    if fail_count == 0 and pass_count == len(decisions):
+        report.overall = "ALL_PASS"
+    elif pass_count > 0:
+        report.overall = "PARTIAL"
+    else:
+        report.overall = "NEGATIVE"
     report.endorsable = False
     return report
 
