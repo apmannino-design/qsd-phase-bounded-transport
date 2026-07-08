@@ -26,17 +26,24 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from datetime import datetime
 from pathlib import Path
 
+# Allow running without `pip install -e .` when executed from repo clone
+_REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if _REPO_ROOT not in sys.path:
+    sys.path.insert(0, _REPO_ROOT)
+
 from aurora_qsd.core.constants import THETA_STAR_DEG, THETA_STAR_HW_DEG
-from aurora_qsd.quantum.willow_algorithm import OPTIMAL_RELOCK_INTERVAL, OPTIMAL_SUNSCREEN_LAYERS
 from aurora_qsd.quantum.ibm_retention_audit import (
+    run_diagnostic_retention,
     run_ibm_retention_benchmark,
     save_retention_result,
     verify_xy4_layer_qiskit,
 )
+from aurora_qsd.quantum.willow_algorithm import OPTIMAL_RELOCK_INTERVAL, OPTIMAL_SUNSCREEN_LAYERS
 
 RESULTS = Path("results")
 
