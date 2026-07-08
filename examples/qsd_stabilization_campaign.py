@@ -38,12 +38,86 @@ from datetime import datetime, timezone
 import numpy as np
 from qiskit import ClassicalRegister, QuantumCircuit, QuantumRegister
 
-from aurora_qsd.quantum.fez_cells import (
-    _append_3q_qsd_layer,
-    append_sunscreen_reset,
-    extract_zzz_triplets,
-    zzz_correlator,
-)
+# Allow running without `pip install -e .` when executed from repo clone
+_REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if _REPO_ROOT not in sys.path:
+    sys.path.insert(0, _REPO_ROOT)
+
+try:
+    from aurora_qsd.quantum.fez_cells import (
+        _append_3q_qsd_layer,
+        append_sunscreen_reset,
+        extract_zzz_triplets,
+        zzz_correlator,
+    )
+except ModuleNotFoundError:
+    from dataclasses import dataclass
+
+    @dataclass(frozen=True)
+    class ZZZCell:
+        qubits: tuple[int, int, int]
+        cell_id: int
+
+    def extract_zzz_triplets(coupling_map, max_cells=128):
+        edges = set()
+        for a, b in coupling_map:
+            edges.add((min(a, b), max(a, b)))
+        adj: dict[int, set[int]] = {}
+        for a, b in edges:
+            adj.setdefault(a, set()).add(b)
+            adj.setdefault(b, set()).add(a)
+        cells, used = [], set()
+        for a, b in sorted(edges):
+            for c in sorted(adj.get(b, ())):
+                if c == a:
+                    continue
+                if (a, b) in edges and (b, c) in edges:
+                    line = (a, b, c)
+                else:
+                    continue
+                if set(line) & used:
+                    continue
+                cells.append(ZZZCell(qubits=line, cell_id=len(cells)))
+                used.update(line)
+                if len(cells) >= max_cells:
+                    return cells
+        return cells
+
+    def zzz_correlator(counts, n_qubits=3):
+        total = sum(counts.values())
+        if total == 0:
+            return 0.0
+        acc = 0.0
+        for bitstring, count in counts.items():
+            acc += (1.0 if bitstring.count("1") % 2 == 0 else -1.0) * count
+        return float(acc / total)
+
+    def _trilock_init(qc, qubits, theta):
+        for i, q in enumerate(qubits):
+            qc.ry(2.0 * theta if i % 2 == 0 else 2.0 * (np.pi / 2.0 - theta), q)
+
+    def _append_2q_qsd_layer(qc, q0, q1, theta, with_init=True):
+        if with_init:
+            qc.ry(2.0 * theta, q0)
+            qc.ry(2.0 * (np.pi / 2.0 - theta), q1)
+        qc.cx(q0, q1)
+        qc.rz(theta, q0)
+        qc.rz(np.pi / 2.0 - theta, q1)
+        qc.cx(q1, q0)
+
+    def _append_3q_qsd_layer(qc, qubits, theta, with_init=True):
+        q0, q1, q2 = qubits
+        if with_init:
+            _trilock_init(qc, qubits, theta)
+        _append_2q_qsd_layer(qc, q0, q1, theta, with_init=False)
+        qc.cx(q1, q2)
+        qc.rz(theta if q2 % 2 == 0 else np.pi / 2.0 - theta, q2)
+        qc.cx(q1, q2)
+
+    def append_sunscreen_reset(qc, qubits, theta):
+        _append_3q_qsd_layer(qc, (qubits[0], qubits[1], qubits[2]), theta, with_init=True)
+
+    print("Note: aurora_qsd not installed — using bundled circuit fallbacks.", file=sys.stderr)
 
 # ---------------------------------------------------------------- constants
 THETA_STAR_DEG = 22.5          # THEORY: arctan(sqrt(2)-1) = pi/8 EXACT

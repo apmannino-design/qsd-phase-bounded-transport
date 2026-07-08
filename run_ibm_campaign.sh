@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-# IBM QSD stabilization campaign — submit phases to real hardware or Aer test
+# IBM QSD stabilization campaign
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 cd "$ROOT"
 
-pip install -e . -q
-pip install qiskit qiskit-aer qiskit-ibm-runtime matplotlib -q
+pip install -e . -q 2>/dev/null || pip3 install -e . -q
+pip install qiskit qiskit-aer qiskit-ibm-runtime matplotlib -q 2>/dev/null \
+  || pip3 install qiskit qiskit-aer qiskit-ibm-runtime matplotlib -q
 
 BACKEND="${BACKEND:-ibm_fez}"
 BUDGET="${BUDGET:-mini}"
