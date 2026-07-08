@@ -48,7 +48,8 @@ def _covariance_from_3q_counts(counts: dict[str, int]) -> np.ndarray:
 # Default micro-sweep offsets (degrees) for per-cell θ calibration
 DEFAULT_THETA_OFFSETS_DEG = (-4.0, -2.0, 0.0, 2.0, 4.0)
 # Fine grid for Ae → ∅ / Δσ → ∅ pass after angle-map placement
-DEFAULT_FINETUNE_OFFSETS_DEG = (-1.5, -1.0, -0.5, -0.25, 0.0, 0.25, 0.5, 1.0, 1.5)
+DEFAULT_FINETUNE_OFFSETS_DEG = (-1.0, -0.5, -0.25, 0.0, 0.25, 0.5, 1.0)
+FAST_FINETUNE_OFFSETS_DEG = (-0.5, -0.25, 0.0, 0.25, 0.5)
 
 
 @dataclass
@@ -153,7 +154,7 @@ class ChipStabilityController:
         calibrate_shots: int = 128,
         theta_offsets_deg: tuple[float, ...] = DEFAULT_THETA_OFFSETS_DEG,
         finetune_ae_sigma: bool = False,
-        finetune_offsets_deg: tuple[float, ...] = DEFAULT_FINETUNE_OFFSETS_DEG,
+        finetune_offsets_deg: tuple[float, ...] | None = None,
         finetune_relock_sweep: bool = False,
     ):
         self.theta_star = float(np.radians(theta_star_deg))
@@ -173,7 +174,7 @@ class ChipStabilityController:
         self.calibrate_shots = calibrate_shots
         self.theta_offsets_deg = theta_offsets_deg
         self.finetune_ae_sigma = finetune_ae_sigma
-        self.finetune_offsets_deg = finetune_offsets_deg
+        self.finetune_offsets_deg = finetune_offsets_deg or DEFAULT_FINETUNE_OFFSETS_DEG
         self.finetune_relock_sweep = finetune_relock_sweep
         self.analyzer = QuantumQSDAnalyzer(theta_target=self.theta_star, rho=rho, t2_us=t2_us)
         self._intervals: dict[int, int] = {}

@@ -13,7 +13,10 @@ import json
 import sys
 from pathlib import Path
 
-from aurora_qsd.quantum.chip_stability import run_chip_stability
+from aurora_qsd.quantum.chip_stability import (
+    FAST_FINETUNE_OFFSETS_DEG,
+    run_chip_stability,
+)
 
 RESULTS = Path("results")
 
@@ -27,15 +30,28 @@ def main() -> int:
     parser.add_argument("--ae-tol", type=float, default=5.0, help="|Ae| band for ∅ (deg)")
     parser.add_argument("--sigma-tol", type=float, default=0.15, help="σ band for ∅")
     parser.add_argument("--relock-sweep", action="store_true", help="Sweep relock in finetune pass")
-    parser.add_argument("--quick", action="store_true", help="8 cells, 400 shots")
+    parser.add_argument("--quick", action="store_true", help="8 cells, 400 shots, fast finetune grid")
+    parser.add_argument("--full", action="store_true", help="32 cells, 800 shots, fast finetune grid")
+    parser.add_argument("--fast-finetune", action="store_true", help="Use 5-point finetune grid")
+    parser.add_argument("--no-task-benchmark", action="store_true")
     parser.add_argument("--out", default="results/willow_ae_sigma_finetune.json")
     args = parser.parse_args()
 
     shots = args.shots
     max_cells = args.max_cells
+    cal_shots = args.cal_shots
+    finetune_offsets = None
     if args.quick:
         shots = 400
         max_cells = 8
+        cal_shots = 128
+        finetune_offsets = FAST_FINETUNE_OFFSETS_DEG
+    elif args.full:
+        shots = 800
+        cal_shots = 128
+        finetune_offsets = FAST_FINETUNE_OFFSETS_DEG
+    elif args.fast_finetune:
+        finetune_offsets = FAST_FINETUNE_OFFSETS_DEG
 
     RESULTS.mkdir(exist_ok=True)
 
@@ -50,10 +66,11 @@ def main() -> int:
         ae_tol_deg=args.ae_tol,
         sigma_tol=args.sigma_tol,
         calibrate_theta=True,
-        calibrate_shots=args.cal_shots,
+        calibrate_shots=cal_shots,
         finetune_ae_sigma=True,
+        finetune_offsets_deg=finetune_offsets,
         finetune_relock_sweep=args.relock_sweep,
-        run_task_benchmark=True,
+        run_task_benchmark=not args.no_task_benchmark,
     )
 
     out_path = Path(args.out)
