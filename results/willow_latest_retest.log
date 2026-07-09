@@ -1,0 +1,70 @@
+============================================================
+WILLOW LATEST RETEST — willow_pink QVM
+{
+  "theta_star_deg": 22.49,
+  "design_theta_deg": 22.5,
+  "depth_layers": 14,
+  "relock_interval": 5,
+  "line": "q(6,5)-q(6,6)-q(6,7)",
+  "processor": "willow_pink",
+  "verdict_policy": "COHERENT_ARTIFACT not ENDORSABLE; sim never endorses",
+  "retention_metric": "R = noisy/ideal per arm",
+  "xy4_control": "repaired 12-pulse/layer",
+  "submission_protocol": "Tridelta Trotter lattice 9Q patch (separate module)"
+}
+============================================================
+
+[0] XY4 layer OK: {'pulses_per_layer': 12, 'expected_pulses': 12, 'is_twelve_pulse_xy4': True, 'overlap_with_IIIY': 0.0, 'degenerate_IIIY': False, 'passes': True}
+
+[1] Interior depth sunscreen — 1000 shots @ θ*=22.49° 14L relock/5
+    |ΔZZZ|=-0.882  verdict=DEPTH_WIN
+
+[2] Retention audit — 1500 shots, sweep 400/θ
+    verdict=NO_TARGET_SIGNAL  endorsable=False
+    xy4_matched: ideal=+0.352  noisy=0.2813333333333333  R=0.7982374645309259
+    qsd_theta_star: ideal=-0.188  noisy=-0.308  R=1.6406105108454996
+    qsd_wrong_theta: ideal=+0.977  noisy=0.5186666666666667  R=0.5309099371145006
+
+[3] Prior-winning cells — 300 shots each
+[cells] using 25 prior winners from results/willow_max_qubits_96_depth_64.json
+[cells] ['q(0,6)', 'q(0,7)', 'q(0,8)'] (0)
+[cells] ['q(1,5)', 'q(2,5)', 'q(3,5)'] (1)
+[cells] ['q(2,4)', 'q(3,4)', 'q(4,4)'] (3)
+[cells] ['q(2,6)', 'q(2,7)', 'q(2,8)'] (4)
+[cells] ['q(2,10)', 'q(3,10)', 'q(4,10)'] (6)
+[cells] ['q(3,3)', 'q(4,3)', 'q(5,3)'] (7)
+[cells] ['q(3,6)', 'q(3,7)', 'q(3,8)'] (8)
+[cells] ['q(4,2)', 'q(5,2)', 'q(6,2)'] (9)
+[cells] ['q(4,5)', 'q(4,6)', 'q(4,7)'] (10)
+[cells] ['q(4,8)', 'q(5,8)', 'q(6,8)'] (11)
+[cells] ['q(4,11)', 'q(5,11)', 'q(6,11)'] (12)
+[cells] ['q(4,12)', 'q(5,12)', 'q(6,12)'] (13)
+[cells] ['q(5,4)', 'q(6,4)', 'q(7,4)'] (14)
+[cells] ['q(5,5)', 'q(5,6)', 'q(5,7)'] (15)
+[cells] ['q(5,9)', 'q(6,9)', 'q(7,9)'] (16)
+[cells] ['q(5,10)', 'q(6,10)', 'q(7,10)'] (17)
+[cells] ['q(6,5)', 'q(7,5)', 'q(8,5)'] (19)
+[cells] ['q(6,6)', 'q(7,6)', 'q(8,6)'] (20)
+[cells] ['q(7,8)', 'q(8,8)', 'q(9,8)'] (22)
+[cells] ['q(7,11)', 'q(7,12)', 'q(7,13)'] (23)
+[cells] ['q(9,5)', 'q(9,6)', 'q(9,7)'] (26)
+[cells] ['q(10,5)', 'q(10,6)', 'q(10,7)'] (28)
+[cells] ['q(10,8)', 'q(10,9)', 'q(10,10)'] (29)
+[cells] ['q(11,6)', 'q(11,7)', 'q(11,8)'] (30)
+[cells] ['q(12,6)', 'q(12,7)', 'q(12,8)'] (31)
+    25/25 win  median |Δ|=0.760
+
+[4] Tridelta submission not finished — run willow_tridelta_submission.py
+
+============================================================
+{
+  "interior_abs_gap": -0.8820000000000001,
+  "interior_verdict": "DEPTH_WIN",
+  "retention_verdict": "NO_TARGET_SIGNAL",
+  "cells_winning": 25,
+  "cells_median_gap": 0.7599999999999999,
+  "endorsable": false,
+  "stamp_status": "HOLD"
+}
+
+Saved: results/willow_latest_retest.json  (4771s)

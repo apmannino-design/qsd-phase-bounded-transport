@@ -1,0 +1,26 @@
+{
+  "date": "2026-07-07",
+  "processor": "willow_pink",
+  "theta_star_deg": 22.49,
+  "depth_layers": 14,
+  "relock_interval": 5,
+  "corrections": [
+    "platform \u03b8*=22.49\u00b0",
+    "optimal 14L relock/5 (gain sweep)",
+    "interior line q(6,5)-q(6,6)-q(6,7)",
+    "retention verdict HOLD \u2014 angle map not EC endorsement"
+  ],
+  "interior": {
+    "qubits": 3,
+    "abs_gap": 0.8585,
+    "verdict": "DEPTH_WIN"
+  },
+  "qubit_max": {
+    "qubits": 96,
+    "cells": 32,
+    "abs_gap_median": 0.749,
+    "cells_winning": 32,
+    "verdict": "MAX_WIN"
+  },
+  "elapsed_s": 12375.878306388855
+}

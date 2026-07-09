@@ -1,0 +1,766 @@
+
+============================================================
+PHASE: depth_1241_interior
+============================================================
+[willow_max] interior ['q(6,5)', 'q(6,6)', 'q(6,7)'] depth=1241L
+{
+  "processor": "willow_pink",
+  "theta_star_deg": 22.48,
+  "depth_layers": 1241,
+  "relock_interval": 3,
+  "shots": 150,
+  "n_cells": 0,
+  "n_qubits": 3,
+  "interior": {
+    "line": [
+      "q(6,5)",
+      "q(6,6)",
+      "q(6,7)"
+    ],
+    "qsd_theta_star": {
+      "zzz": -0.06666666666666667,
+      "n": 150,
+      "theta_deg": 22.48
+    },
+    "negative_theta": {
+      "zzz": -0.17333333333333334,
+      "n": 150,
+      "theta_deg": 92.48
+    },
+    "gap": 0.10666666666666667,
+    "abs_gap": 0.10666666666666667
+  },
+  "cells": [],
+  "aggregate": {},
+  "verdict": "DEPTH_WIN",
+  "notes": "Depth 1241L @ \u03b8*=22.48\u00b0: interior |\u0394ZZZ|=0.107.",
+  "elapsed_s": 5516.98792552948,
+  "phase": "depth_1241_interior"
+}
+
+VERDICT: DEPTH_WIN
+NOTES:   Depth 1241L @ θ*=22.48°: interior |ΔZZZ|=0.107.
+Saved:   results/willow_max_depth_1241_interior.json (5517s)
+
+============================================================
+PHASE: qubits_96_depth_64
+============================================================
+[willow_max] cell 1/32 ['q(0,6)', 'q(0,7)', 'q(0,8)'] depth=64L
+[willow_max] cell 2/32 ['q(1,5)', 'q(2,5)', 'q(3,5)'] depth=64L
+[willow_max] cell 3/32 ['q(1,6)', 'q(1,7)', 'q(1,8)'] depth=64L
+[willow_max] cell 4/32 ['q(2,4)', 'q(3,4)', 'q(4,4)'] depth=64L
+[willow_max] cell 5/32 ['q(2,6)', 'q(2,7)', 'q(2,8)'] depth=64L
+[willow_max] cell 6/32 ['q(2,9)', 'q(3,9)', 'q(4,9)'] depth=64L
+[willow_max] cell 7/32 ['q(2,10)', 'q(3,10)', 'q(4,10)'] depth=64L
+[willow_max] cell 8/32 ['q(3,3)', 'q(4,3)', 'q(5,3)'] depth=64L
+[willow_max] cell 9/32 ['q(3,6)', 'q(3,7)', 'q(3,8)'] depth=64L
+[willow_max] cell 10/32 ['q(4,2)', 'q(5,2)', 'q(6,2)'] depth=64L
+[willow_max] cell 11/32 ['q(4,5)', 'q(4,6)', 'q(4,7)'] depth=64L
+[willow_max] cell 12/32 ['q(4,8)', 'q(5,8)', 'q(6,8)'] depth=64L
+[willow_max] cell 13/32 ['q(4,11)', 'q(5,11)', 'q(6,11)'] depth=64L
+[willow_max] cell 14/32 ['q(4,12)', 'q(5,12)', 'q(6,12)'] depth=64L
+[willow_max] cell 15/32 ['q(5,4)', 'q(6,4)', 'q(7,4)'] depth=64L
+[willow_max] cell 16/32 ['q(5,5)', 'q(5,6)', 'q(5,7)'] depth=64L
+[willow_max] cell 17/32 ['q(5,9)', 'q(6,9)', 'q(7,9)'] depth=64L
+[willow_max] cell 18/32 ['q(5,10)', 'q(6,10)', 'q(7,10)'] depth=64L
+[willow_max] cell 19/32 ['q(6,3)', 'q(7,3)', 'q(8,3)'] depth=64L
+[willow_max] cell 20/32 ['q(6,5)', 'q(7,5)', 'q(8,5)'] depth=64L
+[willow_max] cell 21/32 ['q(6,6)', 'q(7,6)', 'q(8,6)'] depth=64L
+[willow_max] cell 22/32 ['q(6,7)', 'q(7,7)', 'q(8,7)'] depth=64L
+[willow_max] cell 23/32 ['q(7,8)', 'q(8,8)', 'q(9,8)'] depth=64L
+[willow_max] cell 24/32 ['q(7,11)', 'q(7,12)', 'q(7,13)'] depth=64L
+[willow_max] cell 25/32 ['q(8,4)', 'q(9,4)', 'q(10,4)'] depth=64L
+[willow_max] cell 26/32 ['q(8,9)', 'q(8,10)', 'q(8,11)'] depth=64L
+[willow_max] cell 27/32 ['q(9,5)', 'q(9,6)', 'q(9,7)'] depth=64L
+[willow_max] cell 28/32 ['q(9,9)', 'q(9,10)', 'q(9,11)'] depth=64L
+[willow_max] cell 29/32 ['q(10,5)', 'q(10,6)', 'q(10,7)'] depth=64L
+[willow_max] cell 30/32 ['q(10,8)', 'q(10,9)', 'q(10,10)'] depth=64L
+[willow_max] cell 31/32 ['q(11,6)', 'q(11,7)', 'q(11,8)'] depth=64L
+[willow_max] cell 32/32 ['q(12,6)', 'q(12,7)', 'q(12,8)'] depth=64L
+{
+  "processor": "willow_pink",
+  "theta_star_deg": 22.48,
+  "depth_layers": 64,
+  "relock_interval": 3,
+  "shots": 100,
+  "n_cells": 32,
+  "n_qubits": 96,
+  "interior": {},
+  "cells": [
+    {
+      "qsd_theta_star": {
+        "zzz": -0.1,
+        "n": 100,
+        "theta_deg": 22.48
+      },
+      "negative_theta": {
+        "zzz": 0.18,
+        "n": 100,
+        "theta_deg": 92.48
+      },
+      "gap": -0.28,
+      "abs_gap": 0.28,
+      "cell_id": 0,
+      "line": [
+        "q(0,6)",
+        "q(0,7)",
+        "q(0,8)"
+      ]
+    },
+    {
+      "qsd_theta_star": {
+        "zzz": -0.24,
+        "n": 100,
+        "theta_deg": 22.48
+      },
+      "negative_theta": {
+        "zzz": 0.18,
+        "n": 100,
+        "theta_deg": 92.48
+      },
+      "gap": -0.42,
+      "abs_gap": 0.42,
+      "cell_id": 1,
+      "line": [
+        "q(1,5)",
+        "q(2,5)",
+        "q(3,5)"
+      ]
+    },
+    {
+      "qsd_theta_star": {
+        "zzz": -0.08,
+        "n": 100,
+        "theta_deg": 22.48
+      },
+      "negative_theta": {
+        "zzz": -0.04,
+        "n": 100,
+        "theta_deg": 92.48
+      },
+      "gap": -0.04,
+      "abs_gap": 0.04,
+      "cell_id": 2,
+      "line": [
+        "q(1,6)",
+        "q(1,7)",
+        "q(1,8)"
+      ]
+    },
+    {
+      "qsd_theta_star": {
+        "zzz": 0.06,
+        "n": 100,
+        "theta_deg": 22.48
+      },
+      "negative_theta": {
+        "zzz": -0.08,
+        "n": 100,
+        "theta_deg": 92.48
+      },
+      "gap": 0.14,
+      "abs_gap": 0.14,
+      "cell_id": 3,
+      "line": [
+        "q(2,4)",
+        "q(3,4)",
+        "q(4,4)"
+      ]
+    },
+    {
+      "qsd_theta_star": {
+        "zzz": -0.06,
+        "n": 100,
+        "theta_deg": 22.48
+      },
+      "negative_theta": {
+        "zzz": -0.24,
+        "n": 100,
+        "theta_deg": 92.48
+      },
+      "gap": 0.18,
+      "abs_gap": 0.18,
+      "cell_id": 4,
+      "line": [
+        "q(2,6)",
+        "q(2,7)",
+        "q(2,8)"
+      ]
+    },
+    {
+      "qsd_theta_star": {
+        "zzz": -0.04,
+        "n": 100,
+        "theta_deg": 22.48
+      },
+      "negative_theta": {
+        "zzz": -0.04,
+        "n": 100,
+        "theta_deg": 92.48
+      },
+      "gap": 0.0,
+      "abs_gap": 0.0,
+      "cell_id": 5,
+      "line": [
+        "q(2,9)",
+        "q(3,9)",
+        "q(4,9)"
+      ]
+    },
+    {
+      "qsd_theta_star": {
+        "zzz": 0.16,
+        "n": 100,
+        "theta_deg": 22.48
+      },
+      "negative_theta": {
+        "zzz": -0.14,
+        "n": 100,
+        "theta_deg": 92.48
+      },
+      "gap": 0.30000000000000004,
+      "abs_gap": 0.30000000000000004,
+      "cell_id": 6,
+      "line": [
+        "q(2,10)",
+        "q(3,10)",
+        "q(4,10)"
+      ]
+    },
+    {
+      "qsd_theta_star": {
+        "zzz": 0.1,
+        "n": 100,
+        "theta_deg": 22.48
+      },
+      "negative_theta": {
+        "zzz": -0.28,
+        "n": 100,
+        "theta_deg": 92.48
+      },
+      "gap": 0.38,
+      "abs_gap": 0.38,
+      "cell_id": 7,
+      "line": [
+        "q(3,3)",
+        "q(4,3)",
+        "q(5,3)"
+      ]
+    },
+    {
+      "qsd_theta_star": {
+        "zzz": 0.06,
+        "n": 100,
+        "theta_deg": 22.48
+      },
+      "negative_theta": {
+        "zzz": -0.26,
+        "n": 100,
+        "theta_deg": 92.48
+      },
+      "gap": 0.32,
+      "abs_gap": 0.32,
+      "cell_id": 8,
+      "line": [
+        "q(3,6)",
+        "q(3,7)",
+        "q(3,8)"
+      ]
+    },
+    {
+      "qsd_theta_star": {
+        "zzz": 0.04,
+        "n": 100,
+        "theta_deg": 22.48
+      },
+      "negative_theta": {
+        "zzz": -0.28,
+        "n": 100,
+        "theta_deg": 92.48
+      },
+      "gap": 0.32,
+      "abs_gap": 0.32,
+      "cell_id": 9,
+      "line": [
+        "q(4,2)",
+        "q(5,2)",
+        "q(6,2)"
+      ]
+    },
+    {
+      "qsd_theta_star": {
+        "zzz": 0.04,
+        "n": 100,
+        "theta_deg": 22.48
+      },
+      "negative_theta": {
+        "zzz": -0.1,
+        "n": 100,
+        "theta_deg": 92.48
+      },
+      "gap": 0.14,
+      "abs_gap": 0.14,
+      "cell_id": 10,
+      "line": [
+        "q(4,5)",
+        "q(4,6)",
+        "q(4,7)"
+      ]
+    },
+    {
+      "qsd_theta_star": {
+        "zzz": -0.06,
+        "n": 100,
+        "theta_deg": 22.48
+      },
+      "negative_theta": {
+        "zzz": 0.1,
+        "n": 100,
+        "theta_deg": 92.48
+      },
+      "gap": -0.16,
+      "abs_gap": 0.16,
+      "cell_id": 11,
+      "line": [
+        "q(4,8)",
+        "q(5,8)",
+        "q(6,8)"
+      ]
+    },
+    {
+      "qsd_theta_star": {
+        "zzz": 0.28,
+        "n": 100,
+        "theta_deg": 22.48
+      },
+      "negative_theta": {
+        "zzz": -0.28,
+        "n": 100,
+        "theta_deg": 92.48
+      },
+      "gap": 0.56,
+      "abs_gap": 0.56,
+      "cell_id": 12,
+      "line": [
+        "q(4,11)",
+        "q(5,11)",
+        "q(6,11)"
+      ]
+    },
+    {
+      "qsd_theta_star": {
+        "zzz": -0.06,
+        "n": 100,
+        "theta_deg": 22.48
+      },
+      "negative_theta": {
+        "zzz": 0.0,
+        "n": 100,
+        "theta_deg": 92.48
+      },
+      "gap": -0.06,
+      "abs_gap": 0.06,
+      "cell_id": 13,
+      "line": [
+        "q(4,12)",
+        "q(5,12)",
+        "q(6,12)"
+      ]
+    },
+    {
+      "qsd_theta_star": {
+        "zzz": 0.1,
+        "n": 100,
+        "theta_deg": 22.48
+      },
+      "negative_theta": {
+        "zzz": 0.0,
+        "n": 100,
+        "theta_deg": 92.48
+      },
+      "gap": 0.1,
+      "abs_gap": 0.1,
+      "cell_id": 14,
+      "line": [
+        "q(5,4)",
+        "q(6,4)",
+        "q(7,4)"
+      ]
+    },
+    {
+      "qsd_theta_star": {
+        "zzz": 0.02,
+        "n": 100,
+        "theta_deg": 22.48
+      },
+      "negative_theta": {
+        "zzz": 0.16,
+        "n": 100,
+        "theta_deg": 92.48
+      },
+      "gap": -0.14,
+      "abs_gap": 0.14,
+      "cell_id": 15,
+      "line": [
+        "q(5,5)",
+        "q(5,6)",
+        "q(5,7)"
+      ]
+    },
+    {
+      "qsd_theta_star": {
+        "zzz": 0.24,
+        "n": 100,
+        "theta_deg": 22.48
+      },
+      "negative_theta": {
+        "zzz": -0.04,
+        "n": 100,
+        "theta_deg": 92.48
+      },
+      "gap": 0.27999999999999997,
+      "abs_gap": 0.27999999999999997,
+      "cell_id": 16,
+      "line": [
+        "q(5,9)",
+        "q(6,9)",
+        "q(7,9)"
+      ]
+    },
+    {
+      "qsd_theta_star": {
+        "zzz": -0.1,
+        "n": 100,
+        "theta_deg": 22.48
+      },
+      "negative_theta": {
+        "zzz": 0.1,
+        "n": 100,
+        "theta_deg": 92.48
+      },
+      "gap": -0.2,
+      "abs_gap": 0.2,
+      "cell_id": 17,
+      "line": [
+        "q(5,10)",
+        "q(6,10)",
+        "q(7,10)"
+      ]
+    },
+    {
+      "qsd_theta_star": {
+        "zzz": -0.16,
+        "n": 100,
+        "theta_deg": 22.48
+      },
+      "negative_theta": {
+        "zzz": -0.16,
+        "n": 100,
+        "theta_deg": 92.48
+      },
+      "gap": 0.0,
+      "abs_gap": 0.0,
+      "cell_id": 18,
+      "line": [
+        "q(6,3)",
+        "q(7,3)",
+        "q(8,3)"
+      ]
+    },
+    {
+      "qsd_theta_star": {
+        "zzz": 0.06,
+        "n": 100,
+        "theta_deg": 22.48
+      },
+      "negative_theta": {
+        "zzz": -0.18,
+        "n": 100,
+        "theta_deg": 92.48
+      },
+      "gap": 0.24,
+      "abs_gap": 0.24,
+      "cell_id": 19,
+      "line": [
+        "q(6,5)",
+        "q(7,5)",
+        "q(8,5)"
+      ]
+    },
+    {
+      "qsd_theta_star": {
+        "zzz": 0.18,
+        "n": 100,
+        "theta_deg": 22.48
+      },
+      "negative_theta": {
+        "zzz": 0.08,
+        "n": 100,
+        "theta_deg": 92.48
+      },
+      "gap": 0.09999999999999999,
+      "abs_gap": 0.09999999999999999,
+      "cell_id": 20,
+      "line": [
+        "q(6,6)",
+        "q(7,6)",
+        "q(8,6)"
+      ]
+    },
+    {
+      "qsd_theta_star": {
+        "zzz": 0.1,
+        "n": 100,
+        "theta_deg": 22.48
+      },
+      "negative_theta": {
+        "zzz": 0.14,
+        "n": 100,
+        "theta_deg": 92.48
+      },
+      "gap": -0.04000000000000001,
+      "abs_gap": 0.04000000000000001,
+      "cell_id": 21,
+      "line": [
+        "q(6,7)",
+        "q(7,7)",
+        "q(8,7)"
+      ]
+    },
+    {
+      "qsd_theta_star": {
+        "zzz": -0.06,
+        "n": 100,
+        "theta_deg": 22.48
+      },
+      "negative_theta": {
+        "zzz": 0.22,
+        "n": 100,
+        "theta_deg": 92.48
+      },
+      "gap": -0.28,
+      "abs_gap": 0.28,
+      "cell_id": 22,
+      "line": [
+        "q(7,8)",
+        "q(8,8)",
+        "q(9,8)"
+      ]
+    },
+    {
+      "qsd_theta_star": {
+        "zzz": -0.16,
+        "n": 100,
+        "theta_deg": 22.48
+      },
+      "negative_theta": {
+        "zzz": -0.08,
+        "n": 100,
+        "theta_deg": 92.48
+      },
+      "gap": -0.08,
+      "abs_gap": 0.08,
+      "cell_id": 23,
+      "line": [
+        "q(7,11)",
+        "q(7,12)",
+        "q(7,13)"
+      ]
+    },
+    {
+      "qsd_theta_star": {
+        "zzz": 0.04,
+        "n": 100,
+        "theta_deg": 22.48
+      },
+      "negative_theta": {
+        "zzz": 0.02,
+        "n": 100,
+        "theta_deg": 92.48
+      },
+      "gap": 0.02,
+      "abs_gap": 0.02,
+      "cell_id": 24,
+      "line": [
+        "q(8,4)",
+        "q(9,4)",
+        "q(10,4)"
+      ]
+    },
+    {
+      "qsd_theta_star": {
+        "zzz": -0.04,
+        "n": 100,
+        "theta_deg": 22.48
+      },
+      "negative_theta": {
+        "zzz": -0.02,
+        "n": 100,
+        "theta_deg": 92.48
+      },
+      "gap": -0.02,
+      "abs_gap": 0.02,
+      "cell_id": 25,
+      "line": [
+        "q(8,9)",
+        "q(8,10)",
+        "q(8,11)"
+      ]
+    },
+    {
+      "qsd_theta_star": {
+        "zzz": 0.08,
+        "n": 100,
+        "theta_deg": 22.48
+      },
+      "negative_theta": {
+        "zzz": -0.04,
+        "n": 100,
+        "theta_deg": 92.48
+      },
+      "gap": 0.12,
+      "abs_gap": 0.12,
+      "cell_id": 26,
+      "line": [
+        "q(9,5)",
+        "q(9,6)",
+        "q(9,7)"
+      ]
+    },
+    {
+      "qsd_theta_star": {
+        "zzz": -0.06,
+        "n": 100,
+        "theta_deg": 22.48
+      },
+      "negative_theta": {
+        "zzz": -0.08,
+        "n": 100,
+        "theta_deg": 92.48
+      },
+      "gap": 0.020000000000000004,
+      "abs_gap": 0.020000000000000004,
+      "cell_id": 27,
+      "line": [
+        "q(9,9)",
+        "q(9,10)",
+        "q(9,11)"
+      ]
+    },
+    {
+      "qsd_theta_star": {
+        "zzz": -0.08,
+        "n": 100,
+        "theta_deg": 22.48
+      },
+      "negative_theta": {
+        "zzz": 0.3,
+        "n": 100,
+        "theta_deg": 92.48
+      },
+      "gap": -0.38,
+      "abs_gap": 0.38,
+      "cell_id": 28,
+      "line": [
+        "q(10,5)",
+        "q(10,6)",
+        "q(10,7)"
+      ]
+    },
+    {
+      "qsd_theta_star": {
+        "zzz": 0.12,
+        "n": 100,
+        "theta_deg": 22.48
+      },
+      "negative_theta": {
+        "zzz": -0.06,
+        "n": 100,
+        "theta_deg": 92.48
+      },
+      "gap": 0.18,
+      "abs_gap": 0.18,
+      "cell_id": 29,
+      "line": [
+        "q(10,8)",
+        "q(10,9)",
+        "q(10,10)"
+      ]
+    },
+    {
+      "qsd_theta_star": {
+        "zzz": 0.2,
+        "n": 100,
+        "theta_deg": 22.48
+      },
+      "negative_theta": {
+        "zzz": -0.2,
+        "n": 100,
+        "theta_deg": 92.48
+      },
+      "gap": 0.4,
+      "abs_gap": 0.4,
+      "cell_id": 30,
+      "line": [
+        "q(11,6)",
+        "q(11,7)",
+        "q(11,8)"
+      ]
+    },
+    {
+      "qsd_theta_star": {
+        "zzz": -0.14,
+        "n": 100,
+        "theta_deg": 22.48
+      },
+      "negative_theta": {
+        "zzz": 0.06,
+        "n": 100,
+        "theta_deg": 92.48
+      },
+      "gap": -0.2,
+      "abs_gap": 0.2,
+      "cell_id": 31,
+      "line": [
+        "q(12,6)",
+        "q(12,7)",
+        "q(12,8)"
+      ]
+    }
+  ],
+  "aggregate": {
+    "zzz_theta_star_median": 0.03,
+    "zzz_negative_median": -0.04,
+    "abs_gap_median": 0.16999999999999998,
+    "abs_gap_mean": 0.190625,
+    "abs_gap_min": 0.0,
+    "cells_winning": 25,
+    "n_cells": 32
+  },
+  "verdict": "MAX_WIN",
+  "notes": "Max campaign: 96 qubits, 64L @ \u03b8*=22.48\u00b0 \u2014 median |\u0394ZZZ|=0.170, 25/32 cells win.",
+  "elapsed_s": 5687.461260318756,
+  "phase": "qubits_96_depth_64"
+}
+
+VERDICT: MAX_WIN
+NOTES:   Max campaign: 96 qubits, 64L @ θ*=22.48° — median |ΔZZZ|=0.170, 25/32 cells win.
+Saved:   results/willow_max_qubits_96_depth_64.json (5687s)
+
+SUMMARY written to results/willow_max_summary.json
+{
+  "depth_max": {
+    "qubits": 3,
+    "layers": 1241,
+    "abs_gap": 0.10666666666666667,
+    "verdict": "DEPTH_WIN"
+  },
+  "qubit_max": {
+    "qubits": 96,
+    "cells": 32,
+    "layers": 64,
+    "abs_gap_median": 0.16999999999999998,
+    "cells_winning": 25,
+    "verdict": "MAX_WIN"
+  }
+}

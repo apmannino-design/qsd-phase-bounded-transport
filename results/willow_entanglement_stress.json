@@ -1,0 +1,119 @@
+{
+  "processor": "willow_pink",
+  "line": [
+    "q(6,5)",
+    "q(6,6)",
+    "q(6,7)"
+  ],
+  "theta_star_deg": 22.49,
+  "shots": 2000,
+  "points": [
+    {
+      "el": 0,
+      "p_fail_qsd": 0.2265,
+      "p_fail_wrong": 0.9755,
+      "p_fail_bare": 0.4825,
+      "g_qsd_vs_bare": 2.130242825607064,
+      "g_qsd_vs_wrong": 4.306843267108168,
+      "shots": 2000
+    },
+    {
+      "el": 1,
+      "p_fail_qsd": 0.644,
+      "p_fail_wrong": 0.973,
+      "p_fail_bare": 0.4655,
+      "g_qsd_vs_bare": 0.7228260869565217,
+      "g_qsd_vs_wrong": 1.5108695652173911,
+      "shots": 2000
+    },
+    {
+      "el": 2,
+      "p_fail_qsd": 0.266,
+      "p_fail_wrong": 0.03,
+      "p_fail_bare": 0.4965,
+      "g_qsd_vs_bare": 1.8665413533834585,
+      "g_qsd_vs_wrong": 0.11278195488721804,
+      "shots": 2000
+    },
+    {
+      "el": 3,
+      "p_fail_qsd": 0.7085,
+      "p_fail_wrong": 0.964,
+      "p_fail_bare": 0.4615,
+      "g_qsd_vs_bare": 0.6513761467889908,
+      "g_qsd_vs_wrong": 1.3606210303458008,
+      "shots": 2000
+    },
+    {
+      "el": 4,
+      "p_fail_qsd": 0.2715,
+      "p_fail_wrong": 0.958,
+      "p_fail_bare": 0.5065,
+      "g_qsd_vs_bare": 1.8655616942909758,
+      "g_qsd_vs_wrong": 3.52854511970534,
+      "shots": 2000
+    },
+    {
+      "el": 5,
+      "p_fail_qsd": 0.5845,
+      "p_fail_wrong": 0.946,
+      "p_fail_bare": 0.447,
+      "g_qsd_vs_bare": 0.7647562018819504,
+      "g_qsd_vs_wrong": 1.6184773310521812,
+      "shots": 2000
+    },
+    {
+      "el": 6,
+      "p_fail_qsd": 0.2895,
+      "p_fail_wrong": 0.08,
+      "p_fail_bare": 0.485,
+      "g_qsd_vs_bare": 1.6753022452504318,
+      "g_qsd_vs_wrong": 0.2763385146804836,
+      "shots": 2000
+    },
+    {
+      "el": 7,
+      "p_fail_qsd": 0.622,
+      "p_fail_wrong": 0.934,
+      "p_fail_bare": 0.464,
+      "g_qsd_vs_bare": 0.7459807073954985,
+      "g_qsd_vs_wrong": 1.5016077170418007,
+      "shots": 2000
+    },
+    {
+      "el": 8,
+      "p_fail_qsd": 0.3365,
+      "p_fail_wrong": 0.948,
+      "p_fail_bare": 0.5455,
+      "g_qsd_vs_bare": 1.6210995542347695,
+      "g_qsd_vs_wrong": 2.817236255572065,
+      "shots": 2000
+    },
+    {
+      "el": 10,
+      "p_fail_qsd": 0.38,
+      "p_fail_wrong": 0.154,
+      "p_fail_bare": 0.4995,
+      "g_qsd_vs_bare": 1.3144736842105262,
+      "g_qsd_vs_wrong": 0.4052631578947368,
+      "shots": 2000
+    },
+    {
+      "el": 13,
+      "p_fail_qsd": 0.428,
+      "p_fail_wrong": 0.865,
+      "p_fail_bare": 0.3815,
+      "g_qsd_vs_bare": 0.891355140186916,
+      "g_qsd_vs_wrong": 2.0210280373831777,
+      "shots": 2000
+    }
+  ],
+  "g_peak": 1.8665413533834585,
+  "g_peak_el": 2,
+  "g_at_el0": 2.130242825607064,
+  "g_sustained_el_ge_1": 5,
+  "n_el_tested": 11,
+  "elapsed_s": 2093.1280841827393,
+  "verdict": "PARTIAL_G",
+  "notes": "Peak G=1.87 @ El=2 but not sustained; 5/10 depths G>1. G rises El=1\u21922 (phase propagates under entanglement)."
+}

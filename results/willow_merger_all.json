@@ -1,0 +1,1338 @@
+{
+  "phases": {
+    "so2_merger": {
+      "optimal_alpha_deg": 17.900000000000002,
+      "optimal_ratio_lx": 2.2004553460448117,
+      "optimal_theta_deg": 27.61,
+      "target_ratio_lx": 2.1974,
+      "target_theta_deg": 27.61,
+      "target_alpha_deg": 17.93,
+      "ratio_error": 0.0030553460448117242,
+      "theta_error_deg": 0.0,
+      "alpha_error_deg": 0.029999999999997584,
+      "points": [],
+      "verdict": "MERGER_LOCK",
+      "notes": "Peak merger: \u03b1=17.90\u00b0 \u0394L/\u0394X=2.2005 \u03b8=27.61\u00b0"
+    },
+    "theta_compare": {
+      "processor": "willow_pink",
+      "depth_layers": 14,
+      "relock_interval": 5,
+      "shots_interior": 4000,
+      "shots_cells": 1000,
+      "negative_offset_deg": 70.0,
+      "arms": [
+        {
+          "theta_deg": 22.49,
+          "label": "platform_theta_star",
+          "interior_abs_gap": 0.8535,
+          "cells_winning": 32,
+          "n_cells": 32,
+          "abs_gap_median": 0.717,
+          "abs_gap_mean": 0.705125,
+          "abs_gap_min": 0.396,
+          "cells": [
+            {
+              "qsd_theta_star": {
+                "zzz": -0.188,
+                "n": 1000,
+                "theta_deg": 22.49
+              },
+              "negative_theta": {
+                "zzz": 0.208,
+                "n": 1000,
+                "theta_deg": 92.49
+              },
+              "gap": -0.396,
+              "abs_gap": 0.396,
+              "cell_id": 0,
+              "line": [
+                "q(0,6)",
+                "q(0,7)",
+                "q(0,8)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": -0.022,
+                "n": 1000,
+                "theta_deg": 22.49
+              },
+              "negative_theta": {
+                "zzz": 0.59,
+                "n": 1000,
+                "theta_deg": 92.49
+              },
+              "gap": -0.612,
+              "abs_gap": 0.612,
+              "cell_id": 1,
+              "line": [
+                "q(1,5)",
+                "q(2,5)",
+                "q(3,5)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": 0.004,
+                "n": 1000,
+                "theta_deg": 22.49
+              },
+              "negative_theta": {
+                "zzz": 0.4,
+                "n": 1000,
+                "theta_deg": 92.49
+              },
+              "gap": -0.396,
+              "abs_gap": 0.396,
+              "cell_id": 2,
+              "line": [
+                "q(1,6)",
+                "q(1,7)",
+                "q(1,8)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": -0.124,
+                "n": 1000,
+                "theta_deg": 22.49
+              },
+              "negative_theta": {
+                "zzz": 0.54,
+                "n": 1000,
+                "theta_deg": 92.49
+              },
+              "gap": -0.664,
+              "abs_gap": 0.664,
+              "cell_id": 3,
+              "line": [
+                "q(2,4)",
+                "q(3,4)",
+                "q(4,4)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": -0.124,
+                "n": 1000,
+                "theta_deg": 22.49
+              },
+              "negative_theta": {
+                "zzz": 0.658,
+                "n": 1000,
+                "theta_deg": 92.49
+              },
+              "gap": -0.782,
+              "abs_gap": 0.782,
+              "cell_id": 4,
+              "line": [
+                "q(2,6)",
+                "q(2,7)",
+                "q(2,8)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": -0.182,
+                "n": 1000,
+                "theta_deg": 22.49
+              },
+              "negative_theta": {
+                "zzz": 0.69,
+                "n": 1000,
+                "theta_deg": 92.49
+              },
+              "gap": -0.8719999999999999,
+              "abs_gap": 0.8719999999999999,
+              "cell_id": 5,
+              "line": [
+                "q(2,9)",
+                "q(3,9)",
+                "q(4,9)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": -0.192,
+                "n": 1000,
+                "theta_deg": 22.49
+              },
+              "negative_theta": {
+                "zzz": 0.564,
+                "n": 1000,
+                "theta_deg": 92.49
+              },
+              "gap": -0.756,
+              "abs_gap": 0.756,
+              "cell_id": 6,
+              "line": [
+                "q(2,10)",
+                "q(3,10)",
+                "q(4,10)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": -0.078,
+                "n": 1000,
+                "theta_deg": 22.49
+              },
+              "negative_theta": {
+                "zzz": 0.646,
+                "n": 1000,
+                "theta_deg": 92.49
+              },
+              "gap": -0.724,
+              "abs_gap": 0.724,
+              "cell_id": 7,
+              "line": [
+                "q(3,3)",
+                "q(4,3)",
+                "q(5,3)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": -0.074,
+                "n": 1000,
+                "theta_deg": 22.49
+              },
+              "negative_theta": {
+                "zzz": 0.716,
+                "n": 1000,
+                "theta_deg": 92.49
+              },
+              "gap": -0.7899999999999999,
+              "abs_gap": 0.7899999999999999,
+              "cell_id": 8,
+              "line": [
+                "q(3,6)",
+                "q(3,7)",
+                "q(3,8)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": -0.302,
+                "n": 1000,
+                "theta_deg": 22.49
+              },
+              "negative_theta": {
+                "zzz": 0.658,
+                "n": 1000,
+                "theta_deg": 92.49
+              },
+              "gap": -0.96,
+              "abs_gap": 0.96,
+              "cell_id": 9,
+              "line": [
+                "q(4,2)",
+                "q(5,2)",
+                "q(6,2)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": -0.098,
+                "n": 1000,
+                "theta_deg": 22.49
+              },
+              "negative_theta": {
+                "zzz": 0.422,
+                "n": 1000,
+                "theta_deg": 92.49
+              },
+              "gap": -0.52,
+              "abs_gap": 0.52,
+              "cell_id": 10,
+              "line": [
+                "q(4,5)",
+                "q(4,6)",
+                "q(4,7)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": -0.302,
+                "n": 1000,
+                "theta_deg": 22.49
+              },
+              "negative_theta": {
+                "zzz": 0.708,
+                "n": 1000,
+                "theta_deg": 92.49
+              },
+              "gap": -1.01,
+              "abs_gap": 1.01,
+              "cell_id": 11,
+              "line": [
+                "q(4,8)",
+                "q(5,8)",
+                "q(6,8)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": -0.252,
+                "n": 1000,
+                "theta_deg": 22.49
+              },
+              "negative_theta": {
+                "zzz": 0.566,
+                "n": 1000,
+                "theta_deg": 92.49
+              },
+              "gap": -0.818,
+              "abs_gap": 0.818,
+              "cell_id": 12,
+              "line": [
+                "q(4,11)",
+                "q(5,11)",
+                "q(6,11)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": -0.262,
+                "n": 1000,
+                "theta_deg": 22.49
+              },
+              "negative_theta": {
+                "zzz": 0.636,
+                "n": 1000,
+                "theta_deg": 92.49
+              },
+              "gap": -0.898,
+              "abs_gap": 0.898,
+              "cell_id": 13,
+              "line": [
+                "q(4,12)",
+                "q(5,12)",
+                "q(6,12)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": -0.022,
+                "n": 1000,
+                "theta_deg": 22.49
+              },
+              "negative_theta": {
+                "zzz": 0.676,
+                "n": 1000,
+                "theta_deg": 92.49
+              },
+              "gap": -0.6980000000000001,
+              "abs_gap": 0.6980000000000001,
+              "cell_id": 14,
+              "line": [
+                "q(5,4)",
+                "q(6,4)",
+                "q(7,4)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": -0.304,
+                "n": 1000,
+                "theta_deg": 22.49
+              },
+              "negative_theta": {
+                "zzz": 0.544,
+                "n": 1000,
+                "theta_deg": 92.49
+              },
+              "gap": -0.8480000000000001,
+              "abs_gap": 0.8480000000000001,
+              "cell_id": 15,
+              "line": [
+                "q(5,5)",
+                "q(5,6)",
+                "q(5,7)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": 0.068,
+                "n": 1000,
+                "theta_deg": 22.49
+              },
+              "negative_theta": {
+                "zzz": 0.616,
+                "n": 1000,
+                "theta_deg": 92.49
+              },
+              "gap": -0.548,
+              "abs_gap": 0.548,
+              "cell_id": 16,
+              "line": [
+                "q(5,9)",
+                "q(6,9)",
+                "q(7,9)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": -0.306,
+                "n": 1000,
+                "theta_deg": 22.49
+              },
+              "negative_theta": {
+                "zzz": 0.522,
+                "n": 1000,
+                "theta_deg": 92.49
+              },
+              "gap": -0.8280000000000001,
+              "abs_gap": 0.8280000000000001,
+              "cell_id": 17,
+              "line": [
+                "q(5,10)",
+                "q(6,10)",
+                "q(7,10)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": -0.226,
+                "n": 1000,
+                "theta_deg": 22.49
+              },
+              "negative_theta": {
+                "zzz": 0.622,
+                "n": 1000,
+                "theta_deg": 92.49
+              },
+              "gap": -0.848,
+              "abs_gap": 0.848,
+              "cell_id": 18,
+              "line": [
+                "q(6,3)",
+                "q(7,3)",
+                "q(8,3)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": -0.052,
+                "n": 1000,
+                "theta_deg": 22.49
+              },
+              "negative_theta": {
+                "zzz": 0.584,
+                "n": 1000,
+                "theta_deg": 92.49
+              },
+              "gap": -0.636,
+              "abs_gap": 0.636,
+              "cell_id": 19,
+              "line": [
+                "q(6,5)",
+                "q(7,5)",
+                "q(8,5)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": -0.194,
+                "n": 1000,
+                "theta_deg": 22.49
+              },
+              "negative_theta": {
+                "zzz": 0.524,
+                "n": 1000,
+                "theta_deg": 92.49
+              },
+              "gap": -0.718,
+              "abs_gap": 0.718,
+              "cell_id": 20,
+              "line": [
+                "q(6,6)",
+                "q(7,6)",
+                "q(8,6)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": 0.034,
+                "n": 1000,
+                "theta_deg": 22.49
+              },
+              "negative_theta": {
+                "zzz": 0.576,
+                "n": 1000,
+                "theta_deg": 92.49
+              },
+              "gap": -0.5419999999999999,
+              "abs_gap": 0.5419999999999999,
+              "cell_id": 21,
+              "line": [
+                "q(6,7)",
+                "q(7,7)",
+                "q(8,7)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": -0.154,
+                "n": 1000,
+                "theta_deg": 22.49
+              },
+              "negative_theta": {
+                "zzz": 0.434,
+                "n": 1000,
+                "theta_deg": 92.49
+              },
+              "gap": -0.588,
+              "abs_gap": 0.588,
+              "cell_id": 22,
+              "line": [
+                "q(7,8)",
+                "q(8,8)",
+                "q(9,8)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": -0.216,
+                "n": 1000,
+                "theta_deg": 22.49
+              },
+              "negative_theta": {
+                "zzz": 0.472,
+                "n": 1000,
+                "theta_deg": 92.49
+              },
+              "gap": -0.688,
+              "abs_gap": 0.688,
+              "cell_id": 23,
+              "line": [
+                "q(7,11)",
+                "q(7,12)",
+                "q(7,13)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": -0.118,
+                "n": 1000,
+                "theta_deg": 22.49
+              },
+              "negative_theta": {
+                "zzz": 0.54,
+                "n": 1000,
+                "theta_deg": 92.49
+              },
+              "gap": -0.658,
+              "abs_gap": 0.658,
+              "cell_id": 24,
+              "line": [
+                "q(8,4)",
+                "q(9,4)",
+                "q(10,4)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": -0.074,
+                "n": 1000,
+                "theta_deg": 22.49
+              },
+              "negative_theta": {
+                "zzz": 0.426,
+                "n": 1000,
+                "theta_deg": 92.49
+              },
+              "gap": -0.5,
+              "abs_gap": 0.5,
+              "cell_id": 25,
+              "line": [
+                "q(8,9)",
+                "q(8,10)",
+                "q(8,11)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": -0.166,
+                "n": 1000,
+                "theta_deg": 22.49
+              },
+              "negative_theta": {
+                "zzz": 0.666,
+                "n": 1000,
+                "theta_deg": 92.49
+              },
+              "gap": -0.8320000000000001,
+              "abs_gap": 0.8320000000000001,
+              "cell_id": 26,
+              "line": [
+                "q(9,5)",
+                "q(9,6)",
+                "q(9,7)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": -0.136,
+                "n": 1000,
+                "theta_deg": 22.49
+              },
+              "negative_theta": {
+                "zzz": 0.504,
+                "n": 1000,
+                "theta_deg": 92.49
+              },
+              "gap": -0.64,
+              "abs_gap": 0.64,
+              "cell_id": 27,
+              "line": [
+                "q(9,9)",
+                "q(9,10)",
+                "q(9,11)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": -0.138,
+                "n": 1000,
+                "theta_deg": 22.49
+              },
+              "negative_theta": {
+                "zzz": 0.578,
+                "n": 1000,
+                "theta_deg": 92.49
+              },
+              "gap": -0.716,
+              "abs_gap": 0.716,
+              "cell_id": 28,
+              "line": [
+                "q(10,5)",
+                "q(10,6)",
+                "q(10,7)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": -0.086,
+                "n": 1000,
+                "theta_deg": 22.49
+              },
+              "negative_theta": {
+                "zzz": 0.654,
+                "n": 1000,
+                "theta_deg": 92.49
+              },
+              "gap": -0.74,
+              "abs_gap": 0.74,
+              "cell_id": 29,
+              "line": [
+                "q(10,8)",
+                "q(10,9)",
+                "q(10,10)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": -0.082,
+                "n": 1000,
+                "theta_deg": 22.49
+              },
+              "negative_theta": {
+                "zzz": 0.728,
+                "n": 1000,
+                "theta_deg": 92.49
+              },
+              "gap": -0.8099999999999999,
+              "abs_gap": 0.8099999999999999,
+              "cell_id": 30,
+              "line": [
+                "q(11,6)",
+                "q(11,7)",
+                "q(11,8)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": 0.006,
+                "n": 1000,
+                "theta_deg": 22.49
+              },
+              "negative_theta": {
+                "zzz": 0.534,
+                "n": 1000,
+                "theta_deg": 92.49
+              },
+              "gap": -0.528,
+              "abs_gap": 0.528,
+              "cell_id": 31,
+              "line": [
+                "q(12,6)",
+                "q(12,7)",
+                "q(12,8)"
+              ]
+            }
+          ]
+        },
+        {
+          "theta_deg": 27.61,
+          "label": "merger_partition_theta",
+          "interior_abs_gap": 0.5665,
+          "cells_winning": 32,
+          "n_cells": 32,
+          "abs_gap_median": 0.6569999999999999,
+          "abs_gap_mean": 0.63175,
+          "abs_gap_min": 0.302,
+          "cells": [
+            {
+              "qsd_theta_star": {
+                "zzz": -0.142,
+                "n": 1000,
+                "theta_deg": 27.61
+              },
+              "negative_theta": {
+                "zzz": 0.16,
+                "n": 1000,
+                "theta_deg": 97.61
+              },
+              "gap": -0.302,
+              "abs_gap": 0.302,
+              "cell_id": 0,
+              "line": [
+                "q(0,6)",
+                "q(0,7)",
+                "q(0,8)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": 0.012,
+                "n": 1000,
+                "theta_deg": 27.61
+              },
+              "negative_theta": {
+                "zzz": 0.596,
+                "n": 1000,
+                "theta_deg": 97.61
+              },
+              "gap": -0.584,
+              "abs_gap": 0.584,
+              "cell_id": 1,
+              "line": [
+                "q(1,5)",
+                "q(2,5)",
+                "q(3,5)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": -0.02,
+                "n": 1000,
+                "theta_deg": 27.61
+              },
+              "negative_theta": {
+                "zzz": 0.308,
+                "n": 1000,
+                "theta_deg": 97.61
+              },
+              "gap": -0.328,
+              "abs_gap": 0.328,
+              "cell_id": 2,
+              "line": [
+                "q(1,6)",
+                "q(1,7)",
+                "q(1,8)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": -0.108,
+                "n": 1000,
+                "theta_deg": 27.61
+              },
+              "negative_theta": {
+                "zzz": 0.474,
+                "n": 1000,
+                "theta_deg": 97.61
+              },
+              "gap": -0.582,
+              "abs_gap": 0.582,
+              "cell_id": 3,
+              "line": [
+                "q(2,4)",
+                "q(3,4)",
+                "q(4,4)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": -0.208,
+                "n": 1000,
+                "theta_deg": 27.61
+              },
+              "negative_theta": {
+                "zzz": 0.692,
+                "n": 1000,
+                "theta_deg": 97.61
+              },
+              "gap": -0.8999999999999999,
+              "abs_gap": 0.8999999999999999,
+              "cell_id": 4,
+              "line": [
+                "q(2,6)",
+                "q(2,7)",
+                "q(2,8)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": -0.15,
+                "n": 1000,
+                "theta_deg": 27.61
+              },
+              "negative_theta": {
+                "zzz": 0.628,
+                "n": 1000,
+                "theta_deg": 97.61
+              },
+              "gap": -0.778,
+              "abs_gap": 0.778,
+              "cell_id": 5,
+              "line": [
+                "q(2,9)",
+                "q(3,9)",
+                "q(4,9)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": -0.246,
+                "n": 1000,
+                "theta_deg": 27.61
+              },
+              "negative_theta": {
+                "zzz": 0.51,
+                "n": 1000,
+                "theta_deg": 97.61
+              },
+              "gap": -0.756,
+              "abs_gap": 0.756,
+              "cell_id": 6,
+              "line": [
+                "q(2,10)",
+                "q(3,10)",
+                "q(4,10)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": -0.05,
+                "n": 1000,
+                "theta_deg": 27.61
+              },
+              "negative_theta": {
+                "zzz": 0.616,
+                "n": 1000,
+                "theta_deg": 97.61
+              },
+              "gap": -0.666,
+              "abs_gap": 0.666,
+              "cell_id": 7,
+              "line": [
+                "q(3,3)",
+                "q(4,3)",
+                "q(5,3)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": -0.2,
+                "n": 1000,
+                "theta_deg": 27.61
+              },
+              "negative_theta": {
+                "zzz": 0.624,
+                "n": 1000,
+                "theta_deg": 97.61
+              },
+              "gap": -0.8240000000000001,
+              "abs_gap": 0.8240000000000001,
+              "cell_id": 8,
+              "line": [
+                "q(3,6)",
+                "q(3,7)",
+                "q(3,8)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": -0.276,
+                "n": 1000,
+                "theta_deg": 27.61
+              },
+              "negative_theta": {
+                "zzz": 0.612,
+                "n": 1000,
+                "theta_deg": 97.61
+              },
+              "gap": -0.888,
+              "abs_gap": 0.888,
+              "cell_id": 9,
+              "line": [
+                "q(4,2)",
+                "q(5,2)",
+                "q(6,2)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": -0.16,
+                "n": 1000,
+                "theta_deg": 27.61
+              },
+              "negative_theta": {
+                "zzz": 0.356,
+                "n": 1000,
+                "theta_deg": 97.61
+              },
+              "gap": -0.516,
+              "abs_gap": 0.516,
+              "cell_id": 10,
+              "line": [
+                "q(4,5)",
+                "q(4,6)",
+                "q(4,7)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": -0.29,
+                "n": 1000,
+                "theta_deg": 27.61
+              },
+              "negative_theta": {
+                "zzz": 0.62,
+                "n": 1000,
+                "theta_deg": 97.61
+              },
+              "gap": -0.9099999999999999,
+              "abs_gap": 0.9099999999999999,
+              "cell_id": 11,
+              "line": [
+                "q(4,8)",
+                "q(5,8)",
+                "q(6,8)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": -0.19,
+                "n": 1000,
+                "theta_deg": 27.61
+              },
+              "negative_theta": {
+                "zzz": 0.58,
+                "n": 1000,
+                "theta_deg": 97.61
+              },
+              "gap": -0.77,
+              "abs_gap": 0.77,
+              "cell_id": 12,
+              "line": [
+                "q(4,11)",
+                "q(5,11)",
+                "q(6,11)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": -0.16,
+                "n": 1000,
+                "theta_deg": 27.61
+              },
+              "negative_theta": {
+                "zzz": 0.502,
+                "n": 1000,
+                "theta_deg": 97.61
+              },
+              "gap": -0.662,
+              "abs_gap": 0.662,
+              "cell_id": 13,
+              "line": [
+                "q(4,12)",
+                "q(5,12)",
+                "q(6,12)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": 0.092,
+                "n": 1000,
+                "theta_deg": 27.61
+              },
+              "negative_theta": {
+                "zzz": 0.644,
+                "n": 1000,
+                "theta_deg": 97.61
+              },
+              "gap": -0.552,
+              "abs_gap": 0.552,
+              "cell_id": 14,
+              "line": [
+                "q(5,4)",
+                "q(6,4)",
+                "q(7,4)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": -0.272,
+                "n": 1000,
+                "theta_deg": 27.61
+              },
+              "negative_theta": {
+                "zzz": 0.536,
+                "n": 1000,
+                "theta_deg": 97.61
+              },
+              "gap": -0.808,
+              "abs_gap": 0.808,
+              "cell_id": 15,
+              "line": [
+                "q(5,5)",
+                "q(5,6)",
+                "q(5,7)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": 0.09,
+                "n": 1000,
+                "theta_deg": 27.61
+              },
+              "negative_theta": {
+                "zzz": 0.546,
+                "n": 1000,
+                "theta_deg": 97.61
+              },
+              "gap": -0.45600000000000007,
+              "abs_gap": 0.45600000000000007,
+              "cell_id": 16,
+              "line": [
+                "q(5,9)",
+                "q(6,9)",
+                "q(7,9)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": -0.24,
+                "n": 1000,
+                "theta_deg": 27.61
+              },
+              "negative_theta": {
+                "zzz": 0.364,
+                "n": 1000,
+                "theta_deg": 97.61
+              },
+              "gap": -0.604,
+              "abs_gap": 0.604,
+              "cell_id": 17,
+              "line": [
+                "q(5,10)",
+                "q(6,10)",
+                "q(7,10)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": -0.218,
+                "n": 1000,
+                "theta_deg": 27.61
+              },
+              "negative_theta": {
+                "zzz": 0.476,
+                "n": 1000,
+                "theta_deg": 97.61
+              },
+              "gap": -0.694,
+              "abs_gap": 0.694,
+              "cell_id": 18,
+              "line": [
+                "q(6,3)",
+                "q(7,3)",
+                "q(8,3)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": 0.042,
+                "n": 1000,
+                "theta_deg": 27.61
+              },
+              "negative_theta": {
+                "zzz": 0.5,
+                "n": 1000,
+                "theta_deg": 97.61
+              },
+              "gap": -0.458,
+              "abs_gap": 0.458,
+              "cell_id": 19,
+              "line": [
+                "q(6,5)",
+                "q(7,5)",
+                "q(8,5)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": -0.244,
+                "n": 1000,
+                "theta_deg": 27.61
+              },
+              "negative_theta": {
+                "zzz": 0.462,
+                "n": 1000,
+                "theta_deg": 97.61
+              },
+              "gap": -0.706,
+              "abs_gap": 0.706,
+              "cell_id": 20,
+              "line": [
+                "q(6,6)",
+                "q(7,6)",
+                "q(8,6)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": 0.064,
+                "n": 1000,
+                "theta_deg": 27.61
+              },
+              "negative_theta": {
+                "zzz": 0.512,
+                "n": 1000,
+                "theta_deg": 97.61
+              },
+              "gap": -0.448,
+              "abs_gap": 0.448,
+              "cell_id": 21,
+              "line": [
+                "q(6,7)",
+                "q(7,7)",
+                "q(8,7)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": -0.14,
+                "n": 1000,
+                "theta_deg": 27.61
+              },
+              "negative_theta": {
+                "zzz": 0.396,
+                "n": 1000,
+                "theta_deg": 97.61
+              },
+              "gap": -0.536,
+              "abs_gap": 0.536,
+              "cell_id": 22,
+              "line": [
+                "q(7,8)",
+                "q(8,8)",
+                "q(9,8)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": -0.228,
+                "n": 1000,
+                "theta_deg": 27.61
+              },
+              "negative_theta": {
+                "zzz": 0.35,
+                "n": 1000,
+                "theta_deg": 97.61
+              },
+              "gap": -0.578,
+              "abs_gap": 0.578,
+              "cell_id": 23,
+              "line": [
+                "q(7,11)",
+                "q(7,12)",
+                "q(7,13)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": -0.028,
+                "n": 1000,
+                "theta_deg": 27.61
+              },
+              "negative_theta": {
+                "zzz": 0.494,
+                "n": 1000,
+                "theta_deg": 97.61
+              },
+              "gap": -0.522,
+              "abs_gap": 0.522,
+              "cell_id": 24,
+              "line": [
+                "q(8,4)",
+                "q(9,4)",
+                "q(10,4)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": -0.012,
+                "n": 1000,
+                "theta_deg": 27.61
+              },
+              "negative_theta": {
+                "zzz": 0.328,
+                "n": 1000,
+                "theta_deg": 97.61
+              },
+              "gap": -0.34,
+              "abs_gap": 0.34,
+              "cell_id": 25,
+              "line": [
+                "q(8,9)",
+                "q(8,10)",
+                "q(8,11)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": -0.19,
+                "n": 1000,
+                "theta_deg": 27.61
+              },
+              "negative_theta": {
+                "zzz": 0.576,
+                "n": 1000,
+                "theta_deg": 97.61
+              },
+              "gap": -0.766,
+              "abs_gap": 0.766,
+              "cell_id": 26,
+              "line": [
+                "q(9,5)",
+                "q(9,6)",
+                "q(9,7)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": -0.042,
+                "n": 1000,
+                "theta_deg": 27.61
+              },
+              "negative_theta": {
+                "zzz": 0.418,
+                "n": 1000,
+                "theta_deg": 97.61
+              },
+              "gap": -0.45999999999999996,
+              "abs_gap": 0.45999999999999996,
+              "cell_id": 27,
+              "line": [
+                "q(9,9)",
+                "q(9,10)",
+                "q(9,11)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": -0.128,
+                "n": 1000,
+                "theta_deg": 27.61
+              },
+              "negative_theta": {
+                "zzz": 0.644,
+                "n": 1000,
+                "theta_deg": 97.61
+              },
+              "gap": -0.772,
+              "abs_gap": 0.772,
+              "cell_id": 28,
+              "line": [
+                "q(10,5)",
+                "q(10,6)",
+                "q(10,7)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": -0.072,
+                "n": 1000,
+                "theta_deg": 27.61
+              },
+              "negative_theta": {
+                "zzz": 0.584,
+                "n": 1000,
+                "theta_deg": 97.61
+              },
+              "gap": -0.6559999999999999,
+              "abs_gap": 0.6559999999999999,
+              "cell_id": 29,
+              "line": [
+                "q(10,8)",
+                "q(10,9)",
+                "q(10,10)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": -0.098,
+                "n": 1000,
+                "theta_deg": 27.61
+              },
+              "negative_theta": {
+                "zzz": 0.638,
+                "n": 1000,
+                "theta_deg": 97.61
+              },
+              "gap": -0.736,
+              "abs_gap": 0.736,
+              "cell_id": 30,
+              "line": [
+                "q(11,6)",
+                "q(11,7)",
+                "q(11,8)"
+              ]
+            },
+            {
+              "qsd_theta_star": {
+                "zzz": -0.062,
+                "n": 1000,
+                "theta_deg": 27.61
+              },
+              "negative_theta": {
+                "zzz": 0.596,
+                "n": 1000,
+                "theta_deg": 97.61
+              },
+              "gap": -0.6579999999999999,
+              "abs_gap": 0.6579999999999999,
+              "cell_id": 31,
+              "line": [
+                "q(12,6)",
+                "q(12,7)",
+                "q(12,8)"
+              ]
+            }
+          ]
+        }
+      ],
+      "winner_theta_deg": 22.49,
+      "winner_label": "platform_theta_star",
+      "margin_median_gap": 0.06000000000000005,
+      "elapsed_s": 67761.68863487244,
+      "verdict": "THETA_WIN",
+      "notes": "platform_theta_star wins: median |\u0394|=0.717 vs merger_partition_theta 0.657 (margin 0.060); interior 0.854 vs 0.567."
+    }
+  }
+}

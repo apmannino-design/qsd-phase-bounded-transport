@@ -1,0 +1,33 @@
+============================================================
+Willow entanglement stress — G(El) through CX depth
+============================================================
+[entangle_stress] El=0 (2000 shots)
+  p_fail qsd=0.227 bare=0.482 G_vs_bare=2.130
+[entangle_stress] El=1 (2000 shots)
+  p_fail qsd=0.644 bare=0.466 G_vs_bare=0.723
+[entangle_stress] El=2 (2000 shots)
+  p_fail qsd=0.266 bare=0.496 G_vs_bare=1.867
+[entangle_stress] El=3 (2000 shots)
+  p_fail qsd=0.709 bare=0.462 G_vs_bare=0.651
+[entangle_stress] El=4 (2000 shots)
+  p_fail qsd=0.272 bare=0.506 G_vs_bare=1.866
+[entangle_stress] El=5 (2000 shots)
+  p_fail qsd=0.585 bare=0.447 G_vs_bare=0.765
+[entangle_stress] El=6 (2000 shots)
+  p_fail qsd=0.289 bare=0.485 G_vs_bare=1.675
+[entangle_stress] El=7 (2000 shots)
+  p_fail qsd=0.622 bare=0.464 G_vs_bare=0.746
+[entangle_stress] El=8 (2000 shots)
+  p_fail qsd=0.337 bare=0.545 G_vs_bare=1.621
+[entangle_stress] El=10 (2000 shots)
+  p_fail qsd=0.380 bare=0.499 G_vs_bare=1.314
+[entangle_stress] El=13 (2000 shots)
+  p_fail qsd=0.428 bare=0.382 G_vs_bare=0.891
+
+--- SUMMARY ---
+Verdict: PARTIAL_G
+G peak: 1.867 @ El=2
+G@El=0: 2.130
+Sustained G>1: 5/10
+Notes: Peak G=1.87 @ El=2 but not sustained; 5/10 depths G>1. G rises El=1→2 (phase propagates under entanglement).
+Wrote results/willow_entanglement_stress.json

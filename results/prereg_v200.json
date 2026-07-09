@@ -1,0 +1,39 @@
+{
+  "protocol": "QSD_ROBUST_TEST_SUITE_v200",
+  "version": "2.0.0",
+  "locked_at": "2026-07-08T00:00:00Z",
+  "hash_note": "Frozen before v200 data lock — do not edit after hardware submission",
+  "parameters": {
+    "theta_star_deg": 22.5,
+    "theta_wall_deg": 22.28,
+    "basin_near_edge_deg": 67.5,
+    "basin_far_edge_deg": 90.0,
+    "kappa": 1.0,
+    "n_null": 100,
+    "shots_per_point": 2000,
+    "shots_tomo": 2000,
+    "random_seed": 42,
+    "alpha_significance": 0.05,
+    "bootstrap_B": 10000,
+    "z_threshold": 3.0,
+    "ks_threshold": 0.2,
+    "survival_tolerance": 0.25,
+    "min_survival_fraction": 0.5,
+    "sector_m": 0.3,
+    "sector_L": 0.8,
+    "K_eff": 0.45,
+    "sigma_r": 5.0,
+    "D_hw_estimate": 0.05,
+    "platform_independence_deg": 15.0
+  },
+  "decision_rules": {
+    "T1": "Reject Theorem 6 if fitted rho_q >= 1.0 at p < alpha (no contraction)",
+    "T2": "Reject basin structure if KS < ks_threshold on phase-null separation",
+    "T3": "Reject re-prep stability if min survival fraction < min_survival_fraction",
+    "T4": "Reject platform independence if basin peak spread > 15 deg across backends"
+  },
+  "verdicts": {
+    "ALL_PASS": "T1–T4 all PASS — control layer validated for engine handoff",
+    "PARTIAL": "One or more tests FAIL — physics risk flagged; see per-test decisions"
+  }
+}
