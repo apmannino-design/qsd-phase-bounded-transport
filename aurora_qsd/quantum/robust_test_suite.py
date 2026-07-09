@@ -34,6 +34,7 @@ from aurora_qsd.quantum.ibm_retention_audit import (
     build_qsd_sunscreen_circuit,
     ideal_zzz_qiskit,
     run_circuit_zzz,
+    run_ibm_theta_calibration,
 )
 from aurora_qsd.quantum.noise_models import build_simulator
 from aurora_qsd.quantum.runner import run_circuit
@@ -445,6 +446,56 @@ def run_t2_basin_sweep(
     )
 
 
+def run_t2_basin_hardware(
+    backend_name: str = "ibm_fez",
+    qubits: tuple[int, int, int] = (20, 21, 36),
+    shots: int | None = None,
+    contrast_threshold: float = 0.50,
+) -> TestDecision:
+    """T2 on IBM hardware: 1-layer θ calibration sweep (same depth as campaign D2)."""
+    p = _params()
+    shots = shots or p["shots_per_point"]
+    cal = run_ibm_theta_calibration(
+        backend_name=backend_name,
+        qubits=qubits,
+        layers=1,
+        shots=shots,
+        theta_wall_deg=p["theta_wall_deg"],
+    )
+    measured = [pt["measured_zzz"] for pt in cal.points]
+    thetas = [pt["theta_deg"] for pt in cal.points]
+    peak_idx = int(np.argmax(np.abs(measured)))
+    peak_angle = float(thetas[peak_idx])
+    peak_zzz = float(measured[peak_idx])
+    z_min, z_max = float(min(measured)), float(max(measured))
+    contrast = float(z_max - z_min)
+    interior = bool(thetas[0] < peak_angle < thetas[-1])
+    contrast_pass = contrast >= contrast_threshold
+    passed = bool(interior and contrast_pass)
+
+    return TestDecision(
+        test="T2",
+        decision="PASS" if passed else "FAIL",
+        details={
+            "backend": backend_name,
+            "qubits": list(qubits),
+            "mode": "ibm_hardware",
+            "depth": 1,
+            "shots": shots,
+            "peak_angle_deg": peak_angle,
+            "peak_zzz": peak_zzz,
+            "contrast": contrast,
+            "contrast_threshold": contrast_threshold,
+            "contrast_pass": contrast_pass,
+            "interior_peak": interior,
+            "wall_theta_deg": cal.wall_theta_deg,
+            "wall_zzz": cal.wall_zzz,
+            "calibration_points": cal.points,
+        },
+        notes=f"HW peak @ {peak_angle:.2f}° contrast={contrast:.3f} ({'PASS' if passed else 'FAIL'})",
+    )
+
+
 # ---------------------------------------------------------------------------
 # T3 — Re-preparation frequency robustness
 # ---------------------------------------------------------------------------
@@ -454,8 +505,9 @@ def run_t3_reprep_robustness(
     max_layers: int = 140,
     reset_intervals: tuple[int, ...] = (1, 3, 7, 14, 35),
     campaign_state_path: Path | None = None,
+    use_hardware: bool = False,
 ) -> TestDecision:
-    """T3: ISS bound + simulated survival + optional campaign D3/D4 read."""
+    """T3: ISS bound + simulated survival + campaign D3/D4 on hardware path."""
     p = _params()
     rho = p["rho_theoretical"]
     d_hw = p["D_hw_estimate"]
@@ -473,16 +525,30 @@ def run_t3_reprep_robustness(
     sim_pass = min_surv >= floor
 
     campaign: dict[str, Any] = {}
+    hw_pass: bool | None = None
     if campaign_state_path and campaign_state_path.is_file():
         st = json.loads(campaign_state_path.read_text())
+        analyze = st.get("analyze", {})
         campaign = {
-            "verdict": st.get("analyze", {}).get("verdict"),
-            "D3": st.get("analyze", {}).get("D3"),
-            "D4": st.get("analyze", {}).get("D4"),
+            "verdict": analyze.get("verdict"),
+            "D3": analyze.get("D3"),
+            "D4": analyze.get("D4"),
         }
+        d3 = analyze.get("D3", {})
+        d4 = analyze.get("D4", {})
+        if d3 and d4 and not d3.get("not_evaluable"):
+            hw_pass = bool(d3.get("passed")) and bool(d4.get("passed"))
 
-    # PASS if theoretical simulation meets floor; flag campaign D3/D4 if present
-    passed = sim_pass
+    if use_hardware and hw_pass is not None:
+        passed = hw_pass
+        mode_note = f"campaign D3/D4 hardware ({campaign.get('verdict')})"
+    else:
+        passed = sim_pass
+        mode_note = (
+            f"ISS steady bound {np.degrees(steady):.1f}°; min simulated survival {min_surv:.3f}"
+            + (f"; campaign={campaign.get('verdict')}" if campaign else "; no campaign state")
+        )
+
     return TestDecision(
         test="T3",
         decision="PASS" if passed else "FAIL",
@@ -494,11 +560,10 @@ def run_t3_reprep_robustness(
             "min_survival_fraction": min_surv,
             "floor": floor,
             "campaign": campaign,
+            "hardware_d3_d4": hw_pass,
+            "mode": "hardware_campaign" if use_hardware and hw_pass is not None else "theory_sim",
         },
-        notes=(
-            f"ISS steady bound {np.degrees(steady):.1f}°; min simulated survival {min_surv:.3f}"
-            + (f"; campaign={campaign.get('verdict')}" if campaign else "")
-        ),
+        notes=mode_note,
     )
 
 
@@ -572,8 +637,15 @@ def run_robust_suite(
 
     runners = {
         "T1": lambda: run_t1_tomography(backend_name, qubits, use_hardware=use_hardware),
-        "T2": lambda: run_t2_basin_sweep(backend_name),
-        "T3": lambda: run_t3_reprep_robustness(campaign_state_path=campaign_state),
+        "T2": lambda: (
+            run_t2_basin_hardware(backend_name, qubits)
+            if use_hardware
+            else run_t2_basin_sweep(backend_name)
+        ),
+        "T3": lambda: run_t3_reprep_robustness(
+            campaign_state_path=campaign_state,
+            use_hardware=use_hardware,
+        ),
         "T4": lambda: run_t4_cross_platform(),
     }
 
