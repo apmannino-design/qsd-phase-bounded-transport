@@ -1,0 +1,27 @@
+========================================================================
+ APOCALYPSE-MAX STRESS — IBM FakeFez Simulator
+ Backend: FakeFez (156Q) | Noise: T1=0.35 T2=0.45 1Q=0.3 2Q=0.55
+ θ* = 22.47° | Aurora: minimal thermo (re-lock /3)
+ σ(θ*) = 1.93e-03 (zero-dissipation lock)
+========================================================================
+
+ZZZ cell campaign: 43 cells × depth 1241
+  Median ZZZ @ θ*:  +0.5903
+  Negative control: +0.5801 (θ+70°)
+  Baseline (H):     +0.5962
+
+Depth scaling (median ZZZ across cells):
+   Depth |     Open |       /7 |       /3 | Aurora
+  ------------------------------------------------
+      32 |   0.5908 |   0.5957 |   0.4393 | OK
+     140 |   0.5913 |   0.5903 |   0.5898 | OK
+     311 |   0.5908 |   0.5918 |   0.5918 | OK
+    1241 |   0.5884 |   0.5933 |   0.5962 | OK
+
+29Q lattice depth 32 (re-lock /3): see depth_results
+ISS convergence: open 67.0° → closed 22.66°
+ISS mean ZZZ gain: +0.0050
+Total runtime: 925s
+
+VERDICT: ⚠️ PARTIAL LOCK — see depth table
+========================================================================

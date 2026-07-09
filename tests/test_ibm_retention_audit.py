@@ -1,0 +1,86 @@
+"""Tests for IBM Qiskit retention audit."""
+
+import math
+
+import pytest
+
+
+def test_xy4_layer_not_degenerate() -> None:
+    pytest.importorskip("qiskit")
+    from aurora_qsd.quantum.ibm_retention_audit import verify_xy4_layer_qiskit
+
+    check = verify_xy4_layer_qiskit((0, 1, 2))
+    assert check["passes"]
+    assert not check["degenerate_IIIY"]
+
+
+def test_qsd_circuit_gate_budget() -> None:
+    pytest.importorskip("qiskit")
+    from aurora_qsd.quantum.ibm_retention_audit import gate_budget_metadata
+
+    gb = gate_budget_metadata(22.5, layers=14, relock=5)
+    assert gb["qsd_body_per_layer"]["two_qubit"] == 4
+    assert gb["xy4_body_per_layer"]["one_qubit"] == 12
+    assert gb["xy4_layer_check"]["passes"]
+
+
+def test_verify_xy4_safe_for_sparse_physical_indices() -> None:
+    pytest.importorskip("qiskit")
+    from aurora_qsd.quantum.ibm_retention_audit import verify_xy4_layer_qiskit
+
+    check = verify_xy4_layer_qiskit((20, 21, 36))
+    assert check["passes"]
+    assert check["requested_physical_qubits"] == [20, 21, 36]
+
+
+def test_ideal_zzz_paths_agree() -> None:
+    pytest.importorskip("qiskit")
+    from aurora_qsd.quantum.ibm_retention_audit import build_qsd_sunscreen_circuit, ideal_zzz_qiskit
+
+    c = build_qsd_sunscreen_circuit((0, 1, 2), 22.5, layers=2, relock_interval=5, measure=False)
+    ideal = ideal_zzz_qiskit(c)
+    assert ideal["ideal_paths_agree"]
+    assert math.isfinite(ideal["ideal_zzz"])
+
+
+def test_ibm_retention_ideals_only() -> None:
+    pytest.importorskip("qiskit")
+    from aurora_qsd.quantum.ibm_retention_audit import run_ibm_retention_benchmark
+
+    result = run_ibm_retention_benchmark(
+        backend_name="aer_sim",
+        qubits=(0, 1, 2),
+        theta_star_deg=22.28,
+        layers=1,
+        shots=512,
+        sweep_shots=256,
+        run_sweep=False,
+        ideals_only=True,
+    )
+    d = result.to_dict()
+    assert d["layers"] == 1
+    assert abs(d["arms"]["qsd_theta_star"]["ideal_zzz"]) >= 0.5
+
+
+def test_legacy_flat_cli_parses() -> None:
+    from examples.qsd_ibm_retention_audit import _parse_legacy_retention_args
+
+    args = _parse_legacy_retention_args(["--backend", "aer_sim", "--ideals-only", "--layers", "1"])
+    assert args.backend == "aer_sim"
+    assert args.ideals_only is True
+    assert args.layers == 1
+
+
+def test_theta_star_at_one_layer_clears_signal_threshold() -> None:
+    pytest.importorskip("qiskit")
+    from aurora_qsd.quantum.ibm_retention_audit import (
+        THETA_WALL_DEG,
+        build_qsd_sunscreen_circuit,
+        ideal_zzz_qiskit,
+    )
+    from aurora_qsd.quantum.zzz_preservation import MIN_TARGET_SIGNAL
+
+    for theta in (22.5, THETA_WALL_DEG):
+        c = build_qsd_sunscreen_circuit((0, 1, 2), theta, layers=1, relock_interval=5, measure=False)
+        ideal = abs(ideal_zzz_qiskit(c)["ideal_zzz"])
+        assert ideal >= MIN_TARGET_SIGNAL - 0.01, f"|ideal|={ideal} at θ={theta}° @ 1L"

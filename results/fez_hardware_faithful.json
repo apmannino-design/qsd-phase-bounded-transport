@@ -1,0 +1,23 @@
+{
+  "noise": "native",
+  "n_cells": 20,
+  "basin_optimal_theta_deg": 42.47,
+  "baseline_zzz": -0.0205078125,
+  "negative_control_zzz": -0.2490234375,
+  "median_zzz_max_depth": -0.00732421875,
+  "depth_table": [
+    {
+      "depth": 32,
+      "open": 0.0126953125,
+      "sunscreen": -0.0615234375,
+      "delta": -0.07421875
+    },
+    {
+      "depth": 140,
+      "open": 0.0048828125,
+      "sunscreen": 0.001953125,
+      "delta": -0.0029296875
+    }
+  ],
+  "verdict": "PARTIAL"
+}

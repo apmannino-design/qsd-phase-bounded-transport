@@ -1,0 +1,34 @@
+{
+  "processor": "willow_pink",
+  "theta_star_deg": 22.48,
+  "depth_layers": 1241,
+  "relock_interval": 3,
+  "shots": 150,
+  "n_cells": 0,
+  "n_qubits": 3,
+  "interior": {
+    "line": [
+      "q(6,5)",
+      "q(6,6)",
+      "q(6,7)"
+    ],
+    "qsd_theta_star": {
+      "zzz": -0.06666666666666667,
+      "n": 150,
+      "theta_deg": 22.48
+    },
+    "negative_theta": {
+      "zzz": -0.17333333333333334,
+      "n": 150,
+      "theta_deg": 92.48
+    },
+    "gap": 0.10666666666666667,
+    "abs_gap": 0.10666666666666667
+  },
+  "cells": [],
+  "aggregate": {},
+  "verdict": "DEPTH_WIN",
+  "notes": "Depth 1241L @ \u03b8*=22.48\u00b0: interior |\u0394ZZZ|=0.107.",
+  "elapsed_s": 5516.98792552948,
+  "phase": "depth_1241_interior"
+}
