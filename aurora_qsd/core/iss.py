@@ -43,3 +43,26 @@ def return_time(rho: float, epsilon: float, e0: float) -> float:
     if e0 <= 0 or epsilon <= 0 or epsilon >= abs(e0):
         return 0.0
     return float(np.log(epsilon / abs(e0)) / np.log(rho))
+
+
+def one_step_iss_coverage(
+    error: np.ndarray,
+    rho: float,
+    d_step: float,
+) -> float:
+    """
+    Fraction of samples satisfying the Theorem 6 induction step:
+
+        |e_{t+1}| ≤ √ρ |e_t| + D
+
+    This is the non-unfolded certificate. The closed-form envelope
+    |e_t| ≤ ρ^{t/2}|e_0| + D/(1−√ρ) uses the same D at every step and is
+    often vacuous; this one-step test is the bound that can actually fail.
+    """
+    if not 0.0 <= rho < 1.0:
+        raise ValueError("rho must satisfy 0 <= rho < 1")
+    e = np.abs(np.asarray(error, dtype=float).reshape(-1))
+    if e.size < 2:
+        return 1.0
+    pred = np.sqrt(rho) * e[:-1] + abs(d_step)
+    return float(np.mean(e[1:] <= pred + 1e-15))

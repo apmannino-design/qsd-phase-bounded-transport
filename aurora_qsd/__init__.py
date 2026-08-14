@@ -11,10 +11,10 @@ control. See ``docs/SATELLITE_OPTICAL_LINK.md``.
 """
 
 from aurora_qsd.core.constants import THETA_STAR, THETA_STAR_DEG, PHI, TAN_THETA_STAR
-from aurora_qsd.core.iss import iss_bound, contraction_rate
+from aurora_qsd.core.iss import iss_bound, contraction_rate, one_step_iss_coverage
 from aurora_qsd.core.phase_potential import phase_potential, phase_force, basin_boundary
 
-__version__ = "0.2.0-optical"
+__version__ = "0.3.0-optical"
 __all__ = [
     "THETA_STAR",
     "THETA_STAR_DEG",
@@ -22,6 +22,7 @@ __all__ = [
     "TAN_THETA_STAR",
     "iss_bound",
     "contraction_rate",
+    "one_step_iss_coverage",
     "phase_potential",
     "phase_force",
     "basin_boundary",

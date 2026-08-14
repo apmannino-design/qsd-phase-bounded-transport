@@ -17,7 +17,9 @@ The July 7 2026 retention audit still stands: nothing here revives a ⟨ZZZ⟩-p
 | Pointing loss | exp(−2 (θ_err / θ_div)²) | Single-mode Gaussian |
 | Atmosphere | Beer-Lambert + HV-5/7 Rytov σ_I² + lognormal fades | Engineering approximation |
 | PAT plant | 2-axis 2nd-order FSM, 200 Hz, ζ=0.7 | No reaction-wheel harmonics, no gyro bias |
-| Modem | Uncoded OOK / BPSK BER from electrical SNR | No FEC, no CCSDS, no SDA |
+| Modem | Uncoded OOK / BPSK BER from electrical SNR; Hamming(7,4) optional | Not CCSDS, not SDA |
+| Optical PLL | Costas-rate (20 kHz) loop-referred phase: Wiener linewidth + residual Doppler | Not a 1550 nm field propagator |
+| Relay | LEO-A → LEO-B ISL, store-and-forward, LEO-B → OGS | Two hops, one plane |
 
 Default terminal: 1 W, 8 cm, 70% optical efficiency, 1 Gbps ISL / 10 Gbps downlink, PIN-class NEP. These are TESAT/Mynaric/TBIRD-family engineering numbers, not a specific flight unit.
 
@@ -37,8 +39,20 @@ Default terminal: 1 W, 8 cm, 70% optical efficiency, 1 Gbps ISL / 10 Gbps downli
 | T3 | Non-inferior availability vs PID | avail(QSD) ≥ avail(PID) − 2 percentage points |
 | T4 | Acquisition | QSD time-to-12 μrad hold (20 samples) ≤ PID; NULL if neither acquires |
 | T5 | Wrong well is worse | mean residual(QSD) < mean residual(wrong) |
+| T6 | One-step ISS | ≥95% of QSD samples satisfy \|e_{t+1}\| ≤ √ρ \|e_t\| + D (the induction step; T2 is the unfolded envelope) |
 
 NULL is a valid, publishable outcome. T3 in particular does **not** claim QSD beats industrial PAT; it asks whether the ISS law is non-inferior to a reasonably tuned PID on this plant.
+
+## v0.2 — PLL, FEC, two-hop relay (14 Aug 2026)
+
+The first campaign left T2 vacuous (unfolded envelope too loose) and had no actual carrier lock. v0.2 adds:
+
+1. **T6** — one-step ISS certificate (Theorem 6 induction step). This can fail; T2 still reports the unfolded envelope.
+2. **Optical PLL** at 20 kHz (loop-referred, Δν = 300 Hz) with Doppler feedforward. Pre-registered P1–P5. Negative control locks to the quadrature well (φ = π/2), which nulls BPSK.
+3. **Hamming(7,4)** on the packet interface.
+4. **Two-hop relay** LEO-A → LEO-B → OGS, store-and-forward, optional FEC per hop (R1–R3).
+
+On this PLL plant QSD beat PI on residual phase and cycle slips (P1–P2 PASS). That does **not** reverse the PAT finding that PI is the better 500 Hz fine-stage tracker. Different loop rate, different disturbance.
 
 ## Run
 
@@ -54,9 +68,10 @@ Artifacts land in `results/optical/` (`optical_link_summary.csv`, `optical_link_
 Packet demo:
 
 ```python
-from aurora_qsd.optical import OpticalTerminal
-term = OpticalTerminal()
+from aurora_qsd.optical import OpticalTerminal, TwoHopRelay
+term = OpticalTerminal(fec=True)
 print(term.ping("HELLO FROM LEO-1"))
+print(TwoHopRelay(fec=True).send(b"HELLO FROM LEO-1"))
 ```
 
 ## What this is not

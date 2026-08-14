@@ -38,6 +38,12 @@ def bit_error_rate(snr_elec: float, modulation: Modulation = Modulation.OOK) -> 
     return float(min(max(ber, 0.0), 0.5))
 
 
+def coherent_ber(snr_elec: float, phase_err_rad: float) -> float:
+    """BPSK BER with residual carrier phase: SNR_eff = SNR · cos²(φ)."""
+    snr_eff = max(float(snr_elec), 0.0) * (math.cos(phase_err_rad) ** 2)
+    return bit_error_rate(snr_eff, Modulation.BPSK)
+
+
 def flip_bits(
     payload: bytes,
     ber: float,

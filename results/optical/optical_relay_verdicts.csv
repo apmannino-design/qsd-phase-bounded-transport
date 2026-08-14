@@ -1,0 +1,4 @@
+test,passed,verdict,detail
+R1,True,PASS,QSD e2e BER FEC 0.00e+00 vs raw 0.00e+00
+R2,True,PASS,QSD FEC intact=True BER=0.00e+00 vs open intact=True BER=0.00e+00
+R3,True,PASS,QSD intact=True PID intact=True (PASS if either FEC hop-pair delivers)

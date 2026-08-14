@@ -44,4 +44,10 @@ HV_A = 1.7e-14  # ground-layer Cn², m^{-2/3}
 MIN_ELEVATION_DEG = 20.0
 SNR_OUTAGE_DB = 6.0  # electrical SNR below this is an outage
 AVAILABILITY_NONINFERIOR_PP = 2.0  # T3: QSD may trail PID by at most 2 pp
-ISS_COVERAGE_TARGET = 0.95  # T2: fraction of samples under the ISS bound
+ISS_COVERAGE_TARGET = 0.95  # T2/T6: fraction of samples under the ISS bound
+
+# --- Optical PLL (Costas-loop rate; not the 500 Hz PAT loop) ---
+DEFAULT_PLL_DT = 5.0e-5  # 20 kHz
+DEFAULT_LINEWIDTH_HZ = 300.0  # loop-referred NPRO-class
+DEFAULT_DOPPLER_RESIDUAL_HZ = 5.0e3  # no ephemeris feedforward
+DEFAULT_DOPPLER_FF_RESIDUAL_HZ = 50.0  # after range-rate feedforward

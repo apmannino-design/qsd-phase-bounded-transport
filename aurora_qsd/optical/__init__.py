@@ -20,9 +20,11 @@ from aurora_qsd.optical.channel import (
     link_budget,
     pointing_loss,
 )
+from aurora_qsd.optical.fec import decode, encode, transmit_protected
 from aurora_qsd.optical.modem import (
     Modulation,
     bit_error_rate,
+    coherent_ber,
     flip_bits,
     photons_per_bit,
 )
@@ -42,6 +44,8 @@ from aurora_qsd.optical.pat import (
     PIDController,
     QSDISSController,
 )
+from aurora_qsd.optical.pll import PLLResult, run_pll_campaign
+from aurora_qsd.optical.relay import RelayResult, TwoHopRelay, run_relay_campaign
 from aurora_qsd.optical.simulate import (
     OpticalLink,
     ScenarioName,
@@ -64,15 +68,21 @@ __all__ = [
     "OpticalTerminal",
     "PATPlant",
     "PIDController",
+    "PLLResult",
     "QSDISSController",
+    "RelayResult",
     "ScenarioName",
     "SimulationResult",
     "TerminalSpec",
+    "TwoHopRelay",
     "station_under",
     "atmospheric_transmittance",
     "bit_error_rate",
     "circular_orbit",
+    "coherent_ber",
+    "decode",
     "downlink_scintillation_index",
+    "encode",
     "flip_bits",
     "intersat_geometry",
     "leo_ground_geometry",
@@ -80,5 +90,8 @@ __all__ = [
     "photons_per_bit",
     "pointing_loss",
     "run_campaign",
+    "run_pll_campaign",
+    "run_relay_campaign",
     "run_scenario",
+    "transmit_protected",
 ]

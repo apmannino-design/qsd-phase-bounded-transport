@@ -1,0 +1,6 @@
+suite,test,passed,verdict,detail
+pll,P1,True,PASS,QSD RMS 0.906 rad vs open 1.716 rad
+pll,P2,True,PASS,QSD slips 8 vs PID 17
+pll,P3,True,PASS,one-step ISS coverage 0.978
+pll,P4,True,PASS,QSD BPSK BER 1.48e-02 vs quadrature-well 6.71e-02
+pll,P5,True,PASS,QSD RMS with FF 0.906 rad vs no-FF 1.579 rad

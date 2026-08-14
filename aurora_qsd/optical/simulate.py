@@ -9,7 +9,7 @@ from pathlib import Path
 import numpy as np
 
 from aurora_qsd.core.constants import DEFAULT_RHO
-from aurora_qsd.core.iss import iss_bound
+from aurora_qsd.core.iss import iss_bound, one_step_iss_coverage
 from aurora_qsd.optical.channel import (
     TerminalSpec,
     link_budget,
@@ -57,6 +57,7 @@ class ControllerRun:
     mean_ber: float
     mean_snr_db: float
     iss_coverage: float
+    one_step_iss: float
     acquisition_samples: int
 
 
@@ -82,6 +83,7 @@ class SimulationResult:
                     "mean_ber": run.mean_ber,
                     "mean_snr_db": run.mean_snr_db,
                     "iss_coverage": run.iss_coverage,
+                    "one_step_iss": run.one_step_iss,
                     "iss_bound_urad": float(run.iss_bound_urad[-1]) if len(run.iss_bound_urad) else 0.0,
                     "acquisition_samples": run.acquisition_samples,
                 }
@@ -186,9 +188,10 @@ def _run_controller(
     e0 = e0_urad * 1e-6
     bound = np.array([iss_bound(e0, i, rho, d_bound_rad) for i in range(n)])
     coverage = float(np.mean(radial <= bound + 1e-12))
+    one_step = one_step_iss_coverage(radial, rho, d_bound_rad)
 
     available = snr_db >= SNR_OUTAGE_DB
-    # Acquisition: first time radial error stays under 4 μrad for 20 samples
+    # Acquisition: first 20-sample hold under 12 μrad
     acq = n
     thresh = 12e-6
     hold = 20
@@ -212,6 +215,7 @@ def _run_controller(
         mean_ber=float(np.mean(ber)),
         mean_snr_db=float(np.mean(snr_db[np.isfinite(snr_db)])),
         iss_coverage=coverage,
+        one_step_iss=one_step,
         acquisition_samples=int(acq),
     )
 
@@ -235,6 +239,7 @@ def _verdicts(runs: dict[str, ControllerRun]) -> dict[str, dict]:
     )
     t4_pass = (not neither_acq) and (qsd_r.acquisition_samples <= pid_r.acquisition_samples)
     t5_pass = qsd_r.mean_err_urad < wrong_r.mean_err_urad
+    t6_pass = qsd_r.one_step_iss >= ISS_COVERAGE_TARGET
 
     def pack(name, passed, detail):
         return {
@@ -278,6 +283,11 @@ def _verdicts(runs: dict[str, ControllerRun]) -> dict[str, dict]:
             "T5",
             t5_pass,
             f"QSD mean {qsd_r.mean_err_urad:.3f} vs wrong-well {wrong_r.mean_err_urad:.3f} μrad",
+        ),
+        "T6_one_step_iss": pack(
+            "T6",
+            t6_pass,
+            f"one-step ISS coverage {qsd_r.one_step_iss:.3f} (target {ISS_COVERAGE_TARGET})",
         ),
     }
 
@@ -372,7 +382,7 @@ def run_scenario(
     verdicts = _verdicts(runs)
     n_pass = sum(1 for v in verdicts.values() if v["passed"])
     notes = (
-        f"{scenario.value}: {n_pass}/5 pre-registered tests PASS. "
+        f"{scenario.value}: {n_pass}/6 pre-registered tests PASS. "
         "Simulation only — not a hardware result. "
         "θ* is a control-Lyapunov coordinate, not a beam pointing offset."
     )

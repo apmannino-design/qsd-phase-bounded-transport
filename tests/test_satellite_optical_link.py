@@ -18,8 +18,8 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from aurora_qsd.core.constants import THETA_STAR, THETA_STAR_DEG
-from aurora_qsd.core.iss import contraction_rate, iss_bound
-from aurora_qsd.core.phase_potential import phase_force, phase_potential
+from aurora_qsd.core.iss import contraction_rate, iss_bound, one_step_iss_coverage
+from aurora_qsd.core.phase_potential import phase_force
 from aurora_qsd.optical.channel import (
     GaussianBeam,
     TerminalSpec,
@@ -28,9 +28,12 @@ from aurora_qsd.optical.channel import (
     pointing_loss,
 )
 from aurora_qsd.optical.constants import WAVELENGTH_C_BAND
-from aurora_qsd.optical.modem import Modulation, bit_error_rate, flip_bits
+from aurora_qsd.optical.fec import decode, encode
+from aurora_qsd.optical.modem import Modulation, bit_error_rate, coherent_ber, flip_bits
 from aurora_qsd.optical.orbits import circular_orbit, intersat_geometry, sample_geometry
 from aurora_qsd.optical.pat import PATPlant, PIDController, QSDISSController, colored_jitter
+from aurora_qsd.optical.pll import run_pll_campaign, wrap_pi
+from aurora_qsd.optical.relay import TwoHopRelay
 from aurora_qsd.optical.simulate import ScenarioName, run_scenario
 from aurora_qsd.optical.terminal import OpticalTerminal
 
@@ -185,6 +188,63 @@ class TestCampaign(unittest.TestCase):
         xfer = term.ping("HELLO")
         self.assertEqual(xfer.n_bits, 40)
         self.assertIsInstance(xfer.received, bytes)
+
+    def test_one_step_iss_on_qsd_run(self):
+        res = run_scenario(ScenarioName.ISL, duration_s=1.5, dt=0.002, seed=0)
+        self.assertGreaterEqual(res.runs["qsd"].one_step_iss, 0.0)
+        self.assertLessEqual(res.runs["qsd"].one_step_iss, 1.0)
+        self.assertIn("T6_one_step_iss", res.verdicts)
+
+
+class TestFEC(unittest.TestCase):
+    def test_hamming_roundtrip(self):
+        payload = b"QSD-ISL"
+        self.assertEqual(decode(encode(payload), len(payload))[0], payload)
+
+    def test_hamming_corrects_one_bit_per_word(self):
+        payload = b"A"
+        coded = bytearray(encode(payload))
+        coded[0] ^= 0x80  # flip MSB of first coded byte
+        rec, n_corr = decode(bytes(coded), len(payload))
+        self.assertEqual(rec, payload)
+        self.assertGreaterEqual(n_corr, 1)
+
+
+class TestPLL(unittest.TestCase):
+    def test_wrap(self):
+        self.assertAlmostEqual(float(wrap_pi(3.2)), 3.2 - 2 * math.pi, places=6)
+
+    def test_qsd_beats_open_phase(self):
+        res = run_pll_campaign(duration_s=0.08, seed=0, feedforward=True)
+        self.assertLess(res.runs["qsd"].rms_rad, res.runs["open"].rms_rad)
+        self.assertTrue(res.verdicts["P1_qsd_beats_open_phase"]["passed"])
+
+    def test_quadrature_well_worse_ber(self):
+        res = run_pll_campaign(duration_s=0.08, seed=2, feedforward=True)
+        self.assertLess(res.runs["qsd"].mean_bpsk_ber, res.runs["qsd_wrong"].mean_bpsk_ber)
+
+    def test_coherent_ber_zero_at_high_snr_zero_phase(self):
+        self.assertLess(coherent_ber(100.0, 0.0), 1e-12)
+        self.assertGreater(coherent_ber(100.0, math.pi / 2), 0.4)
+
+
+class TestRelay(unittest.TestCase):
+    def test_two_hop_returns_bytes(self):
+        relay = TwoHopRelay(seed=0, duration_s=1.0, fec=True)
+        res = relay.send(b"HELLO")
+        self.assertEqual(len(res.received), 5)
+        self.assertEqual(len(res.hops), 2)
+
+
+class TestOneStepISS(unittest.TestCase):
+    def test_exact_iss_sequence_has_full_coverage(self):
+        rho = 0.85
+        d = 0.01
+        e = [0.2]
+        for _ in range(40):
+            e.append(math.sqrt(rho) * e[-1] + 0.5 * d)
+        cov = one_step_iss_coverage(np.array(e), rho, d)
+        self.assertEqual(cov, 1.0)
 
 
 if __name__ == "__main__":

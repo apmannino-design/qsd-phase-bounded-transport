@@ -93,7 +93,7 @@ Poor fits, stated explicitly: Ising/TFIM ground-state energy (bare Trotter won),
 - Repaired matched-depth XY4 control + ideal-referenced retention scoring on QVM (done; this audit) → repeat on IBM hardware single line with pre-registered thresholds.
 - Basin sweep to distinguish attractor vs setpoint (dθ/d(perturb), r²).
 - θ-resolved chip-health probe characterization (reproducibility across lines/days).
-- Exploratory: satellite FSO PAT prototype (`aurora_qsd/optical`, simulation). First campaign 14 Aug 2026: QSD beats open-loop pointing; PID is the better fine tracker; stress-case availability vs PID is NULL. See `docs/SATELLITE_OPTICAL_LINK.md`.
+- Exploratory: satellite FSO PAT prototype (`aurora_qsd/optical`, simulation). First campaign 14 Aug 2026: QSD beats open-loop pointing; PID is the better fine tracker; stress-case availability vs PID is NULL. v0.2 adds a one-step ISS certificate (T6 PASS), a Costas-rate optical PLL (QSD beat PI on that plant), Hamming(7,4), and a two-hop LEO relay. See `docs/SATELLITE_OPTICAL_LINK.md`.
 
 ---
 

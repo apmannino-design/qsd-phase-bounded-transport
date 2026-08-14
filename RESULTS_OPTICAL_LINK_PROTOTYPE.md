@@ -31,3 +31,21 @@ This does **not** claim QSD replaces Tesat/Mynaric/SDA PAT, and it does not revi
 Reproduce: `python3 -m aurora_qsd.optical --all --seconds 4 --seed 0`
 
 Artifacts: `results/optical/`.
+
+## v0.2 — PLL + FEC + two-hop (same day)
+
+T6 (one-step ISS) **PASS** on ISL/downlink/stress (coverage 0.995–0.996). The unfolded T2 envelope remains NULL/vacuous; that is the distinction the test was added to make.
+
+**Optical PLL** (20 kHz, Δν = 300 Hz, Doppler feedforward on):
+
+| ctrl | RMS phase (rad) | cycle slips | BPSK BER |
+|---|---|---|---|
+| open | 1.72 | 93 | 3.7e-2 |
+| pid | 1.31 | 17 | 4.5e-2 |
+| qsd | **0.91** | **8** | **1.5e-2** |
+| quadrature well | 1.85 | 62 | 6.7e-2 |
+
+P1–P5 all PASS, including Doppler feedforward (0.91 rad with FF vs 1.58 rad without). On this Costas-rate plant QSD beat PI; that does not reverse the 500 Hz PAT result.
+
+**Two-hop relay** (LEO-A → LEO-B → OGS): PID and QSD delivered `HELLO FROM LEO-1` intact with or without Hamming; open-loop raw failed (e2e BER 2.3e-2) and was recovered by FEC. R1–R3 PASS.
+
