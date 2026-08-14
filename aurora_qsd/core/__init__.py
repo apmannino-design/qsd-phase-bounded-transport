@@ -5,6 +5,8 @@ from aurora_qsd.core.iss import (
     iss_trajectory,
     return_time,
     one_step_iss_coverage,
+    discrete_iss_gain,
+    matched_integrator_ki,
 )
 from aurora_qsd.core.phase_potential import (
     phase_potential,
@@ -23,6 +25,8 @@ __all__ = [
     "iss_trajectory",
     "return_time",
     "one_step_iss_coverage",
+    "discrete_iss_gain",
+    "matched_integrator_ki",
     "phase_potential",
     "phase_force",
     "phase_curvature",

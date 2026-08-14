@@ -49,3 +49,35 @@ P1–P5 all PASS, including Doppler feedforward (0.91 rad with FF vs 1.58 rad wi
 
 **Two-hop relay** (LEO-A → LEO-B → OGS): PID and QSD delivered `HELLO FROM LEO-1` intact with or without Hamming; open-loop raw failed (e2e BER 2.3e-2) and was recovered by FEC. R1–R3 PASS.
 
+## Matched-bandwidth follow-up (14 Aug 2026)
+
+Hypothesis: the PAT “PI wins” / PLL “QSD wins” split was `ki·dt` vs per-sample ISS step `k = 1−√ρ`, not basin geometry.
+
+Match: `kp = 0`, `ki = (1−√ρ)/dt` (PAT ki = 39.0 s⁻¹, PLL ki = 1561 s⁻¹). Stripped QSD turns off F(Θ) trim and re-lock. Seed 0, same plants as v0.1/v0.2.
+
+| Arm | PAT mean (μrad) | PLL RMS (rad) |
+|---|---|---|
+| open | 15.45 | 1.72 |
+| pid_orig (published gains) | **5.79** | 1.31 |
+| pid_matched | 8.30 | 1.11 |
+| qsd_stripped | 8.30 | 0.97 |
+| qsd_full | 7.63 | 0.91 |
+
+| ID | Result |
+|---|---|
+| G1 PAT gap shrinks after match | PASS (0.317 → 0.081) |
+| G2 PLL gap shrinks after match | PASS (0.308 → 0.182) |
+| G3 PAT decorations idle (≤15%) | PASS (8%) |
+| G4 PLL decorations idle (≤15%) | PASS (7%) |
+| G5a PAT QSD not >15% better than matched PI | PASS |
+| G5b PLL QSD not >15% better than matched PI | **NULL** (QSD 18% better: 0.91 vs 1.11 rad) |
+| G6a PAT stripped ISS ties matched PI | PASS (**rel gap 0.000**) |
+| G6b PLL stripped ISS ties matched PI | PASS (12%) |
+
+**Reading.** ISS-only QSD *is* matched PI on the PAT plant (identical 8.302 μrad). The published PAT win for PI was extra `kp`/`ki`, not a different law. The published PLL win for QSD shrinks a lot after matching; a leftover 18% on the full QSD arm is the decorations (relock + potential trim), and it is just outside the 15% tie. It is not evidence that θ* locks an optical carrier.
+
+Unmatched PI remains the best 500 Hz tracker (5.79 μrad). That is the controller to beat, not a QSD claim.
+
+Reproduce: `python3 -m aurora_qsd.optical --matched-only --seconds 4 --seed 0`
+
+

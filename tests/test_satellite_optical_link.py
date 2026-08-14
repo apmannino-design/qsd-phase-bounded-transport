@@ -18,7 +18,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from aurora_qsd.core.constants import THETA_STAR, THETA_STAR_DEG
-from aurora_qsd.core.iss import contraction_rate, iss_bound, one_step_iss_coverage
+from aurora_qsd.core.iss import contraction_rate, discrete_iss_gain, iss_bound, matched_integrator_ki, one_step_iss_coverage
 from aurora_qsd.core.phase_potential import phase_force
 from aurora_qsd.optical.channel import (
     GaussianBeam,
@@ -32,6 +32,7 @@ from aurora_qsd.optical.fec import decode, encode
 from aurora_qsd.optical.modem import Modulation, bit_error_rate, coherent_ber, flip_bits
 from aurora_qsd.optical.orbits import circular_orbit, intersat_geometry, sample_geometry
 from aurora_qsd.optical.pat import PATPlant, PIDController, QSDISSController, colored_jitter
+from aurora_qsd.optical.matched_bandwidth import run_matched_bandwidth_campaign
 from aurora_qsd.optical.pll import run_pll_campaign, wrap_pi
 from aurora_qsd.optical.relay import TwoHopRelay
 from aurora_qsd.optical.simulate import ScenarioName, run_scenario
@@ -245,6 +246,23 @@ class TestOneStepISS(unittest.TestCase):
             e.append(math.sqrt(rho) * e[-1] + 0.5 * d)
         cov = one_step_iss_coverage(np.array(e), rho, d)
         self.assertEqual(cov, 1.0)
+
+
+class TestMatchedBandwidth(unittest.TestCase):
+    def test_ki_dt_equals_iss_step(self):
+        rho = 0.85
+        k = discrete_iss_gain(rho)
+        self.assertAlmostEqual(k, 1.0 - math.sqrt(rho), places=12)
+        for dt in (0.002, 5e-5):
+            self.assertAlmostEqual(matched_integrator_ki(dt, rho) * dt, k, places=10)
+
+    def test_suite_runs(self):
+        res = run_matched_bandwidth_campaign(seed=0, pat_seconds=1.0, pll_seconds=0.06)
+        self.assertIn("G1_pat_matching_shrinks_gap", res["verdicts"])
+        self.assertIn("G6b_pll_stripped_ties_matched_pi", res["verdicts"])
+        self.assertAlmostEqual(
+            res["pat"]["ki_matched"] * 0.002, res["pat"]["k_iss"], places=8
+        )
 
 
 if __name__ == "__main__":

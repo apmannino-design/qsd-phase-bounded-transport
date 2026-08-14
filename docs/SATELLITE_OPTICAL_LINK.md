@@ -54,6 +54,14 @@ The first campaign left T2 vacuous (unfolded envelope too loose) and had no actu
 
 On this PLL plant QSD beat PI on residual phase and cycle slips (P1–P2 PASS). That does **not** reverse the PAT finding that PI is the better 500 Hz fine-stage tracker. Different loop rate, different disturbance.
 
+## Matched-bandwidth test
+
+`python -m aurora_qsd.optical --matched-only --seconds 4 --seed 0`
+
+Pre-registered G1–G6: set PI `kp = 0`, `ki·dt = 1−√ρ`, and compare to full QSD and stripped ISS (no F(Θ), no re-lock). Hypothesis: the PAT/PLL reversal was gain scaling.
+
+Result (seed 0): stripped ISS **equals** matched PI on PAT (8.302 μrad, G6a rel gap 0). PLL stripped vs matched PI within 15% (G6b). Full QSD still 18% better than matched PI on PLL (G5b NULL) — decorations, not θ*. Unmatched PI remains the best 500 Hz tracker. Details in `RESULTS_OPTICAL_LINK_PROTOTYPE.md`.
+
 ## Run
 
 ```bash

@@ -1,0 +1,9 @@
+test,passed,verdict,detail
+G1,True,PASS,"PAT |QSD−PI|/PI orig 0.317 → matched 0.081 (QSD 7.632, PI_orig 5.793, PI_matched 8.302 μrad)"
+G3,True,PASS,"PAT QSD full 7.632 vs stripped 8.302 μrad (rel gap 0.081, tie ≤ 0.15)"
+G5a,True,PASS,PAT QSD 7.632 vs matched-PI 8.302 μrad (PASS if QSD is not >15% better)
+G6a,True,PASS,PAT stripped ISS 8.302 vs matched-PI 8.302 μrad (rel gap 0.000)
+G2,True,PASS,"PLL |QSD−PI|/PI orig 0.308 → matched 0.182 (QSD 0.906, PI_orig 1.309, PI_matched 1.107 rad)"
+G4,True,PASS,"PLL QSD full 0.906 vs stripped 0.974 rad (rel gap 0.070, tie ≤ 0.15)"
+G5b,False,NULL,PLL QSD 0.906 vs matched-PI 1.107 rad (PASS if QSD is not >15% better — the Costas-rate ‘win’ dies)
+G6b,True,PASS,PLL stripped ISS 0.974 vs matched-PI 1.107 rad (rel gap 0.120)

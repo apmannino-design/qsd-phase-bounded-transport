@@ -125,17 +125,27 @@ def _carrier_phase(
     return np.cumsum(w + doppler)
 
 
+_AUTO = object()
+
+
 def _run_lock(
-    name: ControllerName,
+    name: ControllerName | str,
     phi_true: np.ndarray,
     dt: float,
     rho: float,
     d_step: float,
     snr_elec: float,
+    injected=_AUTO,
 ) -> PLLRun:
     n = phi_true.size
     t = np.arange(n) * dt
-    if name is ControllerName.OPEN:
+    if injected is not _AUTO:
+        ctrl = injected
+        if ctrl is not None:
+            ctrl.reset()
+    elif not isinstance(name, ControllerName):
+        raise TypeError("string PLL names require injected=...")
+    elif name is ControllerName.OPEN:
         ctrl = None
     elif name is ControllerName.PID:
         ctrl = PIPhaseLock(dt=dt)
@@ -146,6 +156,7 @@ def _run_lock(
     else:
         ctrl = QSDPhaseLock(dt=dt, lock_offset=0.0)
         ctrl.reset()
+    label = name.value if isinstance(name, ControllerName) else str(name)
 
     nco = 0.0
     err = np.zeros(n)
@@ -165,7 +176,7 @@ def _run_lock(
 
     bers = np.array([coherent_ber(snr_elec, float(ph)) for ph in err])
     return PLLRun(
-        name=name.value,
+        name=label,
         t=t,
         phase_err_rad=err,
         rms_rad=float(np.sqrt(np.mean(err**2))),

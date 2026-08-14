@@ -6,6 +6,7 @@ import argparse
 import csv
 from pathlib import Path
 
+from aurora_qsd.optical.matched_bandwidth import run_matched_bandwidth_campaign, write_matched_artifacts
 from aurora_qsd.optical.pat import ControllerName
 from aurora_qsd.optical.pll import compare_feedforward, run_pll_campaign
 from aurora_qsd.optical.relay import TwoHopRelay, run_relay_campaign
@@ -125,7 +126,29 @@ def main(argv: list[str] | None = None) -> int:
     )
     p.add_argument("--ping", type=str, default="HELLO FROM LEO-1", help="Packet demo payload")
     p.add_argument("--no-write", action="store_true")
+    p.add_argument(
+        "--matched-only",
+        action="store_true",
+        help="Run only the matched-bandwidth PI vs QSD suite",
+    )
     args = p.parse_args(argv)
+
+    if args.matched_only:
+        matched = run_matched_bandwidth_campaign(seed=args.seed, pat_seconds=args.seconds)
+        print(f"\n=== matched bandwidth ===")
+        print(matched["notes"])
+        print("  PAT:")
+        for name, run in matched["pat"]["runs"].items():
+            print(f"    {name:<14} mean {run.mean_err_urad:8.3f} μrad  avail {100*run.availability:5.1f}%")
+        print("  PLL:")
+        for name, run in matched["pll"]["runs"].items():
+            print(f"    {name:<14} rms {run.rms_rad:8.3f} rad  slips {run.cycle_slips:4d}")
+        for v in matched["verdicts"].values():
+            print(f"    {v['test']}: {v['verdict']} — {v['detail']}")
+        if not args.no_write:
+            write_matched_artifacts(matched, args.out)
+            print(f"\nWrote artifacts to {args.out.resolve()}")
+        return 0
 
     if args.scenario and not args.all:
         res = run_scenario(
@@ -156,6 +179,18 @@ def main(argv: list[str] | None = None) -> int:
     for v in relay["verdicts"].values():
         print(f"    {v['test']}: {v['verdict']} — {v['detail']}")
 
+    matched = run_matched_bandwidth_campaign(seed=args.seed, pat_seconds=args.seconds)
+    print(f"\n=== matched bandwidth ===")
+    print(matched["notes"])
+    print("  PAT:")
+    for name, run in matched["pat"]["runs"].items():
+        print(f"    {name:<14} mean {run.mean_err_urad:8.3f} μrad  avail {100*run.availability:5.1f}%")
+    print("  PLL:")
+    for name, run in matched["pll"]["runs"].items():
+        print(f"    {name:<14} rms {run.rms_rad:8.3f} rad  slips {run.cycle_slips:4d}")
+    for v in matched["verdicts"].values():
+        print(f"    {v['test']}: {v['verdict']} — {v['detail']}")
+
     if not args.no_write:
         args.out.mkdir(parents=True, exist_ok=True)
         write_campaign(results, args.out)
@@ -168,6 +203,7 @@ def main(argv: list[str] | None = None) -> int:
             w = csv.DictWriter(f, fieldnames=["test", "passed", "verdict", "detail"])
             w.writeheader()
             w.writerows(relay["verdicts"].values())
+        write_matched_artifacts(matched, args.out)
         print(f"\nWrote artifacts to {args.out.resolve()}")
 
     print("\n--- packet demo (on-station ISL, Hamming off/on) ---")

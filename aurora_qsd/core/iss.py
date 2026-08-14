@@ -5,6 +5,20 @@ from __future__ import annotations
 import numpy as np
 
 
+def discrete_iss_gain(rho: float) -> float:
+    """Per-sample type-1 step k = 1 − √ρ matching the homogeneous map e ← √ρ e."""
+    if not 0.0 <= rho < 1.0:
+        raise ValueError("rho must satisfy 0 <= rho < 1")
+    return float(1.0 - np.sqrt(rho))
+
+
+def matched_integrator_ki(dt: float, rho: float) -> float:
+    """PI I-gain such that ki·dt = 1 − √ρ (matched bandwidth vs ISS)."""
+    if dt <= 0:
+        raise ValueError("dt must be positive")
+    return discrete_iss_gain(rho) / dt
+
+
 def contraction_rate(rho: float) -> float:
     """Γ_lock = −½ ln(ρ), the QSD basin contraction rate (per step)."""
     if not 0.0 <= rho < 1.0:

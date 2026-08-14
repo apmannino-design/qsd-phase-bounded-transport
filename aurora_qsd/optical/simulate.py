@@ -91,6 +91,9 @@ class SimulationResult:
         return rows
 
 
+_AUTO = object()
+
+
 def _make_controller(name: ControllerName, dt: float):
     if name is ControllerName.OPEN:
         return None
@@ -124,7 +127,7 @@ def _geometry_series(
 
 
 def _run_controller(
-    name: ControllerName,
+    name: ControllerName | str,
     t: np.ndarray,
     geo_list,
     spec: TerminalSpec,
@@ -136,13 +139,20 @@ def _run_controller(
     rho: float,
     rng: np.random.Generator,
     sensor_noise_rad: float = 0.4e-6,
+    injected=_AUTO,
 ) -> ControllerRun:
     dt = float(t[1] - t[0]) if len(t) > 1 else DEFAULT_PAT_DT
     plant = PATPlant(dt=dt)
     plant.reset()
-    ctrl = _make_controller(name, dt)
+    if injected is _AUTO:
+        if not isinstance(name, ControllerName):
+            raise TypeError("string controller names require injected=...")
+        ctrl = _make_controller(name, dt)
+    else:
+        ctrl = injected
     if ctrl is not None:
         ctrl.reset()
+    label = name.value if isinstance(name, ControllerName) else str(name)
 
     n = len(t)
     err = np.zeros((n, 2))
@@ -202,7 +212,7 @@ def _run_controller(
             break
 
     return ControllerRun(
-        name=name.value,
+        name=label,
         t=t,
         err_urad=radial * 1e6,
         snr_db=snr_db,
