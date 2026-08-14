@@ -1,4 +1,4 @@
-.PHONY: all pipeline report paper clean help
+.PHONY: all pipeline report paper optical clean help
 
 all: pipeline report paper
 
@@ -19,6 +19,10 @@ paper:
 	pandoc reports/qsd_report.md -o reports/qsd_report.pdf
 	@echo "PDF report generated."
 
+optical:
+	python3 -m aurora_qsd.optical --all --seconds 4 --seed 0
+	python3 -m unittest tests.test_satellite_optical_link
+
 clean:
 	rm -rf results/*
 	rm -rf reports/*
@@ -30,4 +34,5 @@ help:
 	@echo "make pipeline  - run analysis only"
 	@echo "make report    - generate markdown report only"
 	@echo "make paper     - generate PDF report only"
+	@echo "make optical   - run satellite FSO prototype + unit tests"
 	@echo "make clean     - remove generated outputs"
