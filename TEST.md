@@ -28,4 +28,13 @@ The `tests/smoke_test.py` verifies:
 
 Full reproducibility checks are in `code/ligo_validation.py` and `code/validation_suite.py`.
 
-**All tests should pass** after `make pipeline`.
+Satellite optical-link prototype (simulation only):
+
+```
+python -m unittest tests.test_satellite_optical_link
+python -m aurora_qsd.optical --all
+```
+
+See `docs/SATELLITE_OPTICAL_LINK.md`.
+
+**All tests should pass** after `make pipeline`. Optical tests are independent of the GOES/LIGO pipeline.

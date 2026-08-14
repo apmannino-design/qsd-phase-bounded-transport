@@ -65,6 +65,7 @@ Poor fits, stated explicitly: Ising/TFIM ground-state energy (bare Trotter won),
 
 - `code/` — consolidated reference implementation of the paper's mathematical objects, with self-tests (29 passing).
 - `aurora_qsd/` (feature branches) — experiment package: Willow/cirq modules, IBM/Qiskit cell protocols, CLI tooling.
+- `aurora_qsd/optical/` — **exploratory** LEO free-space optical link prototype (simulation only). ISS pointing/phase-lock vs PID vs open-loop; see `docs/SATELLITE_OPTICAL_LINK.md`. Not a hardware result; θ* is a control-Lyapunov coordinate, not a beam angle.
 - `notebooks/`, `scripts/` — analysis and pipeline runners.
 - `data/` — instrument datasets used in early exploratory signal-processing pilots (GOES-16, DSCOVR, LIGO). These pilots are exploratory only and make no validated physical claims.
 - `paper/` — LaTeX sources.
@@ -78,6 +79,7 @@ Poor fits, stated explicitly: Ising/TFIM ground-state energy (bare Trotter won),
 2. `pip install -r requirements.txt`
 3. Willow QVM experiments additionally need: `pip install cirq-google qsimcirq` (QVM specs for `willow_pink` ship with cirq-google ≥ 1.7).
 4. Core self-tests: see `TEST.md`. Retention audit: `python3 -m aurora_qsd.quantum.retention_audit` (experiment branch).
+5. Optical-link prototype (simulation): `python3 -m aurora_qsd.optical --all` and `python3 -m unittest tests.test_satellite_optical_link`.
 
 ## Corrections & superseded claims
 
@@ -91,6 +93,7 @@ Poor fits, stated explicitly: Ising/TFIM ground-state energy (bare Trotter won),
 - Repaired matched-depth XY4 control + ideal-referenced retention scoring on QVM (done; this audit) → repeat on IBM hardware single line with pre-registered thresholds.
 - Basin sweep to distinguish attractor vs setpoint (dθ/d(perturb), r²).
 - θ-resolved chip-health probe characterization (reproducibility across lines/days).
+- Exploratory: satellite FSO PAT prototype (`aurora_qsd/optical`, simulation). First campaign 14 Aug 2026: QSD beats open-loop pointing; PID is the better fine tracker; stress-case availability vs PID is NULL. v0.2 adds a one-step ISS certificate (T6 PASS), a Costas-rate optical PLL, Hamming(7,4), and a two-hop LEO relay. Matched-bandwidth follow-up: stripped ISS equals matched PI on PAT (rel gap 0); the PLL “QSD win” was mostly `ki·dt` scaling. See `docs/SATELLITE_OPTICAL_LINK.md`.
 
 ---
 

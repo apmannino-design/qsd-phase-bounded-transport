@@ -1,0 +1,7 @@
+controller,fec,intact,e2e_empirical_ber,isl_ber,down_ber,isl_flips,down_flips,n_corrected,received
+open,False,False,0.0234375,0.006595373544264147,0.0,3,0,0,"JELLK FROM LEO1"
+pid,False,True,0.0,0.0,0.0,0,0,0,HELLO FROM LEO-1
+qsd,False,True,0.0,8.644072892357346e-249,0.0,0,0,0,HELLO FROM LEO-1
+open,True,True,0.0,0.006595373544264147,0.0,3,0,3,HELLO FROM LEO-1
+pid,True,True,0.0,0.0,0.0,0,0,0,HELLO FROM LEO-1
+qsd,True,True,0.0,8.644072892357346e-249,0.0,0,0,0,HELLO FROM LEO-1

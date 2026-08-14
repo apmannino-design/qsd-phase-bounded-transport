@@ -1,0 +1,19 @@
+scenario,test,passed,verdict,detail
+isl,T1,True,PASS,QSD mean 7.632 μrad vs open 15.450 μrad
+isl,T2,False,NULL,ISS coverage 1.000 (target 0.95); terminal bound 100.81 μrad [VACUOUS vs 2× open RMS]
+isl,T3,True,PASS,"QSD availability 0.996 vs PID 0.998 (Δ=-0.15 pp, floor −2.0 pp)"
+isl,T4,False,NULL,QSD acq 84 samples vs PID 25
+isl,T5,True,PASS,QSD mean 7.632 vs wrong-well 40.288 μrad
+isl,T6,True,PASS,one-step ISS coverage 0.995 (target 0.95)
+downlink,T1,True,PASS,QSD mean 7.632 μrad vs open 15.450 μrad
+downlink,T2,False,NULL,ISS coverage 1.000 (target 0.95); terminal bound 100.81 μrad [VACUOUS vs 2× open RMS]
+downlink,T3,True,PASS,"QSD availability 0.998 vs PID 0.999 (Δ=-0.10 pp, floor −2.0 pp)"
+downlink,T4,False,NULL,QSD acq 84 samples vs PID 25
+downlink,T5,True,PASS,QSD mean 7.632 vs wrong-well 40.288 μrad
+downlink,T6,True,PASS,one-step ISS coverage 0.995 (target 0.95)
+stress,T1,True,PASS,QSD mean 22.869 μrad vs open 49.561 μrad
+stress,T2,False,NULL,ISS coverage 1.000 (target 0.95); terminal bound 336.51 μrad [VACUOUS vs 2× open RMS]
+stress,T3,False,NULL,"QSD availability 0.552 vs PID 0.688 (Δ=-13.50 pp, floor −2.0 pp)"
+stress,T4,False,NULL,neither controller acquired (no 20-sample hold under 12 μrad)
+stress,T5,True,PASS,QSD mean 22.869 vs wrong-well 46.100 μrad
+stress,T6,True,PASS,one-step ISS coverage 0.996 (target 0.95)
