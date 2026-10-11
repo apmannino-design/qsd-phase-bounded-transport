@@ -135,7 +135,6 @@ def run_loop(
         loss_de=LOSS_DE,
         loss_len=LOSS_LEN,
         grace_s=LOCK_GRACE_S,
-        dt=DT,
         require_gap_for_track=True,
     )
 

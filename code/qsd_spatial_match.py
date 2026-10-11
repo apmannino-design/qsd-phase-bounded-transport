@@ -112,7 +112,6 @@ def run_loop(
         quiet_len=QUIET_LEN,
         loss_mult=8.0,
         grace_s=0.3,
-        dt=DT,
     )
     # If lock-then-track disabled, start already locked (legacy continuous track)
     if not lock_then_track:

@@ -5,7 +5,7 @@ Hard rules encoded here:
 - sector saturation sat_α
 - ΔE = log(1 + |r|/scale)
 - DT-scaled phase/control rates: u ← u + DT · ú
-- DT-scaled process noise (√DT Wiener)
+- DT-scaled process noise (√DT Wiener) — not measurement noise
 - quiet-window lock detector (lock first, then track)
 - richer sensing: lag + bias + dropouts
 - unified scorecard for every demo
@@ -13,10 +13,13 @@ Hard rules encoded here:
 
 from __future__ import annotations
 
+import csv
 import json
+import math
+from collections import deque
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Iterable, Sequence
+from typing import Any, Deque, Iterable, Sequence
 
 import numpy as np
 
@@ -31,13 +34,17 @@ def sat(x: float, alpha: float = 0.15) -> float:
 
 
 def delta_e(residual: float, scale: float = 1.0) -> float:
-    """ΔE = log(1 + |r|/scale)."""
+    """ΔE = log(1 + |r|/scale). NaN/inf residual → NaN."""
+    if not np.isfinite(residual):
+        return float("nan")
     return float(np.log1p(np.abs(residual) / max(scale, 1e-15)))
 
 
 def wrap_pi(phi: float) -> float:
     """Wrap angle to (−π, π]."""
-    return float((phi + np.pi) % (2.0 * np.pi) - np.pi)
+    w = float((phi + np.pi) % (2.0 * np.pi) - np.pi)
+    # (x+π)%(2π)−π yields [−π, π); map −π → +π for (−π, π]
+    return float(np.pi) if w == -np.pi else w
 
 
 def wrap_delta(a: float, b: float) -> float:
@@ -54,7 +61,7 @@ def dt_step(u: float, u_dot: float, dt: float, lo: float | None = None, hi: floa
 
 
 def wiener_noise(rng: np.random.Generator, sigma: float, dt: float) -> float:
-    """DT-scaled white noise: σ √dt · N(0,1)."""
+    """DT-scaled white process noise: σ √dt · N(0,1)."""
     return float(sigma * np.sqrt(max(dt, 0.0)) * rng.standard_normal())
 
 
@@ -64,13 +71,38 @@ def wiener_noise_array(
     return sigma * np.sqrt(max(dt, 0.0)) * rng.standard_normal(size)
 
 
+def _window_array(buf: Deque[float], n: int) -> np.ndarray:
+    """Last n samples of a deque as a float array (no copy of unused head)."""
+    if n <= 0 or len(buf) < n:
+        return np.empty(0, dtype=float)
+    # deque has no slicing; fromiter over reversed then flip is awkward — list once
+    return np.fromiter(list(buf)[-n:], dtype=float, count=n)
+
+
+def _nanmean(a: np.ndarray) -> float:
+    if a.size == 0 or not np.any(np.isfinite(a)):
+        return float("nan")
+    return float(np.nanmean(a))
+
+
+def _nanmax(a: np.ndarray) -> float:
+    if a.size == 0 or not np.any(np.isfinite(a)):
+        return float("nan")
+    return float(np.nanmax(a))
+
+
 # ---------------------------------------------------------------------------
 # Sensing
 # ---------------------------------------------------------------------------
 
 @dataclass
 class SensorModel:
-    """First-order lag + constant bias + random dropouts."""
+    """
+    First-order lag + constant bias + random dropouts.
+
+    Measurement noise is per-sample σ·N(0,1) (NOT √dt Wiener — that is for process noise).
+    Lag uses the exact discrete update: a = −expm1(−dt/τ).
+    """
 
     tau_s: float = 0.0
     bias: float = 0.0
@@ -91,18 +123,18 @@ class SensorModel:
         if not self._initialized:
             self.reset(truth)
 
-        # lag toward truth
+        # Exact discrete first-order lag (stable for any dt > 0)
         if self.tau_s > 1e-12:
-            self._state = self._state + (dt / self.tau_s) * (truth - self._state)
+            a = float(-np.expm1(-dt / self.tau_s))
+            self._state = self._state + a * (truth - self._state)
         else:
             self._state = float(truth)
 
         y = self._state + self.bias
         if self.noise_std > 0.0:
-            y += wiener_noise(rng, self.noise_std, dt)
+            y += self.noise_std * float(rng.standard_normal())
 
         if self.dropout_prob > 0.0 and rng.random() < self.dropout_prob:
-            # dropout: hold last good output or NaN
             return float(self._last_out) if self.hold_on_dropout else float("nan")
 
         self._last_out = float(y)
@@ -118,6 +150,7 @@ class QuietWindowLock:
     """
     Acquisition latch: require a quiet residual (and optional |v|) window
     before enabling outer tracking. Optional loss-of-lock on sustained ΔE.
+    NaN samples are ignored in window stats.
     """
 
     de_th: float = 0.02
@@ -125,50 +158,52 @@ class QuietWindowLock:
     quiet_len: int = 500
     loss_mult: float = 5.0
     grace_s: float = 0.2
-    dt: float = 0.001
 
     locked: bool = field(default=False, init=False)
     t_lock: float = field(default=float("nan"), init=False)
-    _de_buf: list[float] = field(default_factory=list, init=False)
-    _v_buf: list[float] = field(default_factory=list, init=False)
     drop_count: int = field(default=0, init=False)
+    _de_buf: Deque[float] = field(default_factory=deque, init=False, repr=False)
+    _v_buf: Deque[float] = field(default_factory=deque, init=False, repr=False)
+
+    def __post_init__(self) -> None:
+        self._de_buf = deque(maxlen=self.quiet_len)
+        self._v_buf = deque(maxlen=self.quiet_len)
 
     def reset(self) -> None:
         self.locked = False
         self.t_lock = float("nan")
+        self.drop_count = 0
         self._de_buf.clear()
         self._v_buf.clear()
-        self.drop_count = 0
 
     def update(self, t: float, de: float, v_abs: float = 0.0) -> bool:
         self._de_buf.append(float(de))
         self._v_buf.append(float(v_abs))
-        if len(self._de_buf) > self.quiet_len:
-            self._de_buf.pop(0)
-            self._v_buf.pop(0)
+
+        de_a = _window_array(self._de_buf, len(self._de_buf))
+        v_a = _window_array(self._v_buf, len(self._v_buf))
 
         if not self.locked:
             if len(self._de_buf) == self.quiet_len:
+                mean_de, max_de, max_v = _nanmean(de_a), _nanmax(de_a), _nanmax(v_a)
                 if (
-                    float(np.mean(self._de_buf)) < self.de_th
-                    and float(np.max(self._de_buf)) < self.de_th * 1.3
-                    and float(np.max(self._v_buf)) < self.v_max
+                    np.isfinite(mean_de)
+                    and mean_de < self.de_th
+                    and max_de < self.de_th * 1.3
+                    and max_v < self.v_max
                 ):
                     self.locked = True
                     self.t_lock = t
-                    self._de_buf.clear()
-                    self._v_buf.clear()
         else:
             if (
                 (t - self.t_lock) > self.grace_s
                 and len(self._de_buf) == self.quiet_len
-                and float(np.mean(self._de_buf)) > self.de_th * self.loss_mult
             ):
-                self.locked = False
-                self.drop_count += 1
-                self.t_lock = float("nan")
-                self._de_buf.clear()
-                self._v_buf.clear()
+                mean_de = _nanmean(de_a)
+                if np.isfinite(mean_de) and mean_de > self.de_th * self.loss_mult:
+                    self.locked = False
+                    self.drop_count += 1
+                    self.t_lock = float("nan")
 
         return self.locked
 
@@ -187,22 +222,23 @@ class TriDeltaLock:
       stage 2  armed    — quieter residual (ΔE₂); outer may slew in
       stage 3  track    — physical gap gate |y−y_ref|<ε and |v|<v* (plus residual)
 
-    Stage 2→3 uses physical gap/velocity, not a third log-ΔE scale.
-    Loss-of-lock uses a looser residual ΔE gate with hysteresis.
+    Buffers are continuous (not cleared on stage advance) so loss-of-lock can
+    fire after grace_s. Stage 3 also drops on sustained physical gap error.
+    NaN samples are ignored in window stats.
     """
 
-    de1: float = 0.020  # stage 0 → 1 (residual)
-    de2: float = 0.015  # stage 1 → 2 (confirm hold)
-    gap_err_max: float = 1.5e-4  # |y − y_ref| for stage 2 → 3
-    gap_v_max: float = 0.005  # |v| while checking gap gate
-    v_max: float = 0.005  # |v| for residual quiet windows
+    de1: float = 0.020
+    de2: float = 0.015
+    gap_err_max: float = 1.5e-4
+    gap_v_max: float = 0.005
+    v_max: float = 0.005
     quiet_len: int = 400
     hold_len: int = 300
     arm_len: int = 300
     loss_de: float = 0.12
     loss_len: int = 500
+    loss_gap_mult: float = 3.0  # mean |gap| > mult·ε ⇒ track loss
     grace_s: float = 0.15
-    dt: float = 0.001
     require_gap_for_track: bool = True
 
     stage: int = field(default=0, init=False)
@@ -210,9 +246,15 @@ class TriDeltaLock:
     t_lock: float = field(default=float("nan"), init=False)
     t_track: float = field(default=float("nan"), init=False)
     drop_count: int = field(default=0, init=False)
-    _de_buf: list[float] = field(default_factory=list, init=False)
-    _v_buf: list[float] = field(default_factory=list, init=False)
-    _gap_buf: list[float] = field(default_factory=list, init=False)
+    _de_buf: Deque[float] = field(default_factory=deque, init=False, repr=False)
+    _v_buf: Deque[float] = field(default_factory=deque, init=False, repr=False)
+    _gap_buf: Deque[float] = field(default_factory=deque, init=False, repr=False)
+
+    def __post_init__(self) -> None:
+        maxlen = max(self.quiet_len, self.hold_len, self.arm_len, self.loss_len)
+        self._de_buf = deque(maxlen=maxlen)
+        self._v_buf = deque(maxlen=maxlen)
+        self._gap_buf = deque(maxlen=maxlen)
 
     @property
     def locked(self) -> bool:
@@ -244,43 +286,44 @@ class TriDeltaLock:
         self._de_buf.append(float(de))
         self._v_buf.append(float(v_abs))
         self._gap_buf.append(float(gap_err_abs))
-        maxlen = max(self.quiet_len, self.hold_len, self.arm_len, self.loss_len)
-        if len(self._de_buf) > maxlen:
-            self._de_buf.pop(0)
-            self._v_buf.pop(0)
-            self._gap_buf.pop(0)
-
-    def _clear_bufs(self) -> None:
-        self._de_buf.clear()
-        self._v_buf.clear()
-        self._gap_buf.clear()
 
     def _residual_ok(self, th: float, n: int) -> bool:
         if len(self._de_buf) < n:
             return False
-        de_w = self._de_buf[-n:]
-        if float(np.mean(de_w)) >= th or float(np.max(de_w)) >= th * 1.3:
+        de_w = _window_array(self._de_buf, n)
+        v_w = _window_array(self._v_buf, n)
+        mean_de, max_de, max_v = _nanmean(de_w), _nanmax(de_w), _nanmax(v_w)
+        if not (np.isfinite(mean_de) and np.isfinite(max_de) and np.isfinite(max_v)):
             return False
-        if float(np.max(self._v_buf[-n:])) >= self.v_max:
-            return False
-        return True
+        return mean_de < th and max_de < th * 1.3 and max_v < self.v_max
 
     def _gap_ok(self, n: int) -> bool:
         if len(self._gap_buf) < n:
             return False
-        g = self._gap_buf[-n:]
-        v = self._v_buf[-n:]
+        g = _window_array(self._gap_buf, n)
+        v = _window_array(self._v_buf, n)
+        mean_g, max_g, max_v = _nanmean(g), _nanmax(g), _nanmax(v)
+        if not (np.isfinite(mean_g) and np.isfinite(max_g) and np.isfinite(max_v)):
+            return False
         return (
-            float(np.mean(g)) < self.gap_err_max
-            and float(np.max(g)) < self.gap_err_max * 1.5
-            and float(np.max(v)) < self.gap_v_max
+            mean_g < self.gap_err_max
+            and max_g < self.gap_err_max * 1.5
+            and max_v < self.gap_v_max
         )
 
-    def _loss(self, t: float) -> bool:
-        return (
-            (t - self.t_stage) > self.grace_s
-            and len(self._de_buf) >= self.loss_len
-            and float(np.mean(self._de_buf[-self.loss_len:])) > self.loss_de
+    def _residual_loss(self, t: float) -> bool:
+        if (t - self.t_stage) <= self.grace_s or len(self._de_buf) < self.loss_len:
+            return False
+        mean_de = _nanmean(_window_array(self._de_buf, self.loss_len))
+        return bool(np.isfinite(mean_de) and mean_de > self.loss_de)
+
+    def _gap_loss(self, t: float) -> bool:
+        """Sustained physical gap error while tracking."""
+        if (t - self.t_stage) <= self.grace_s or len(self._gap_buf) < self.loss_len:
+            return False
+        mean_g = _nanmean(_window_array(self._gap_buf, self.loss_len))
+        return bool(
+            np.isfinite(mean_g) and mean_g > self.gap_err_max * self.loss_gap_mult
         )
 
     def update(
@@ -288,27 +331,27 @@ class TriDeltaLock:
         t: float,
         de: float,
         v_abs: float = 0.0,
-        gap_err_abs: float = 0.0,
-        gap_de: float | None = None,  # deprecated alias; ignored if gap_err_abs set
+        gap_err_abs: float | None = None,
     ) -> int:
-        # Backward-compatible: old callers passed gap_de as 4th positional via gap_de=
-        if gap_de is not None and gap_err_abs == 0.0:
-            # Treat legacy gap_de as a soft proxy only when physical err not supplied
-            gap_err_abs = float(gap_de) * 0.001
-        self._push(de, v_abs, gap_err_abs)
+        """
+        Advance/drop lock stage.
+
+        gap_err_abs: physical |y − y_ref| (or None if not measured this step).
+        When None, gap checks are skipped for that sample (stored as NaN).
+        """
+        gap = float("nan") if gap_err_abs is None else float(gap_err_abs)
+        self._push(de, v_abs, gap)
 
         if self.stage == 0:
             if self._residual_ok(self.de1, self.quiet_len):
                 self.stage = 1
                 self.t_stage = t
                 self.t_lock = t
-                self._clear_bufs()
         elif self.stage == 1:
             if self._residual_ok(self.de2, self.hold_len):
                 self.stage = 2
                 self.t_stage = t
-                self._clear_bufs()
-            elif self._loss(t):
+            elif self._residual_loss(t):
                 self._drop(t)
         elif self.stage == 2:
             residual_ok = self._residual_ok(self.de2, self.arm_len)
@@ -317,11 +360,10 @@ class TriDeltaLock:
                 self.stage = 3
                 self.t_stage = t
                 self.t_track = t
-                self._clear_bufs()
-            elif self._loss(t):
+            elif self._residual_loss(t):
                 self._drop(t)
-        else:
-            if self._loss(t):
+        else:  # stage 3 track — residual OR physical gap can drop lock
+            if self._residual_loss(t) or self._gap_loss(t):
                 self._drop(t)
 
         return self.stage
@@ -332,7 +374,10 @@ class TriDeltaLock:
         self.t_stage = t
         self.t_lock = float("nan")
         self.t_track = float("nan")
-        self._clear_bufs()
+        # Clear so a fresh acquisition window is required
+        self._de_buf.clear()
+        self._v_buf.clear()
+        self._gap_buf.clear()
 
 
 # ---------------------------------------------------------------------------
@@ -400,16 +445,52 @@ def save_gain_schedule(path: Path, rows: Sequence[dict[str, Any]] | None = None)
     rows = list(rows) if rows is not None else default_gain_schedule()
     path.parent.mkdir(parents=True, exist_ok=True)
     keys = list(rows[0].keys())
-    lines = [",".join(keys)]
-    for r in rows:
-        lines.append(",".join(str(r[k]) for k in keys))
-    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    with path.open("w", encoding="utf-8", newline="") as fh:
+        writer = csv.DictWriter(fh, fieldnames=keys, lineterminator="\n")
+        writer.writeheader()
+        for r in rows:
+            writer.writerow({k: r[k] for k in keys})
     return path
 
 
 # ---------------------------------------------------------------------------
 # Unified scorecard
 # ---------------------------------------------------------------------------
+
+def _json_default(obj: Any) -> Any:
+    """JSON serializer for numpy scalars/arrays and NaN → None."""
+    if isinstance(obj, (np.floating, float)):
+        x = float(obj)
+        return None if not math.isfinite(x) else x
+    if isinstance(obj, (np.integer,)):
+        return int(obj)
+    if isinstance(obj, (np.bool_, bool)):
+        return bool(obj)
+    if isinstance(obj, np.ndarray):
+        return [_json_default(v) for v in obj.tolist()]
+    if isinstance(obj, dict):
+        return {str(k): _json_default(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_json_default(v) for v in obj]
+    raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
+
+
+def _sanitize_for_json(obj: Any) -> Any:
+    if isinstance(obj, dict):
+        return {str(k): _sanitize_for_json(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_sanitize_for_json(v) for v in obj]
+    if isinstance(obj, np.ndarray):
+        return _sanitize_for_json(obj.tolist())
+    if isinstance(obj, (np.floating, float)):
+        x = float(obj)
+        return None if not math.isfinite(x) else x
+    if isinstance(obj, (np.integer,)):
+        return int(obj)
+    if isinstance(obj, (np.bool_, bool)):
+        return bool(obj)
+    return obj
+
 
 @dataclass
 class Scorecard:
@@ -429,22 +510,31 @@ class Scorecard:
     @property
     def rms_ratio(self) -> float:
         """closed / open track RMS (lower is better; <1 means closed wins)."""
-        if self.open_loop_rms <= 0 or np.isnan(self.open_loop_rms):
+        if self.open_loop_rms <= 0 or not np.isfinite(self.open_loop_rms):
+            return float("nan")
+        if not np.isfinite(self.hold_or_track_rms):
             return float("nan")
         return float(self.hold_or_track_rms / self.open_loop_rms)
 
     def to_dict(self) -> dict[str, Any]:
         d = asdict(self)
         d["rms_ratio"] = self.rms_ratio
-        return d
+        return _sanitize_for_json(d)
 
     def row(self) -> str:
-        lock = f"{self.time_to_lock_s:.3f}s" if self.lock_in and not np.isnan(self.time_to_lock_s) else "no"
-        ratio = f"{self.rms_ratio:.3f}" if not np.isnan(self.rms_ratio) else "nan"
+        if self.lock_in:
+            if np.isfinite(self.time_to_lock_s):
+                lock = f"{self.time_to_lock_s:.3f}s"
+            else:
+                lock = "yes"  # locked but time unknown — not "no"
+        else:
+            lock = "no"
+        ratio = f"{self.rms_ratio:.3f}" if np.isfinite(self.rms_ratio) else "nan"
+        de = f"{self.final_delta_e:.4f}" if np.isfinite(self.final_delta_e) else "nan"
         return (
             f"{self.demo:18}  lock={lock:8}  corr={self.corridor_fraction:5.1%}  "
             f"ratio={ratio:6}  rms={self.hold_or_track_rms:.4g}  open={self.open_loop_rms:.4g}  "
-            f"ΔE∞={self.final_delta_e:.4f}  diverged={self.diverged}"
+            f"ΔE∞={de}  diverged={self.diverged}"
         )
 
 
@@ -462,7 +552,10 @@ def print_scorecard_table(cards: Sequence[Scorecard]) -> None:
 def save_scorecards(cards: Sequence[Scorecard], path: Path) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     payload = {"scorecards": [c.to_dict() for c in cards]}
-    path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    path.write_text(
+        json.dumps(payload, indent=2, allow_nan=False, default=_json_default) + "\n",
+        encoding="utf-8",
+    )
     return path
 
 
@@ -470,7 +563,10 @@ def rms(x: Iterable[float]) -> float:
     arr = np.asarray(list(x), dtype=float)
     if arr.size == 0:
         return float("nan")
-    return float(np.sqrt(np.mean(arr * arr)))
+    finite = arr[np.isfinite(arr)]
+    if finite.size == 0:
+        return float("nan")
+    return float(np.sqrt(np.mean(finite * finite)))
 
 
 def diverged_from_series(
@@ -478,8 +574,9 @@ def diverged_from_series(
     bound: float,
     frac: float = 0.05,
 ) -> bool:
-    """True if more than `frac` of samples exceed `bound` in magnitude."""
+    """True if more than `frac` of samples are non-finite or exceed `bound`."""
     arr = np.asarray(values, dtype=float)
     if arr.size == 0:
         return True
-    return float(np.mean(np.abs(arr) > bound)) > frac
+    bad = ~np.isfinite(arr) | (np.abs(arr) > bound)
+    return float(np.mean(bad)) > frac

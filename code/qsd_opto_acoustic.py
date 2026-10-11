@@ -63,12 +63,13 @@ def run_loop(
     rng = np.random.default_rng(seed)
     phi = 0.8
     p = 0.3
-    # Mild sensing imperfections: stiff K_PHI_RATE cannot tolerate large lag.
+    # Mild sensing imperfections (noise_std is per-sample σ, not √dt Wiener).
+    # Keep τ ≲ DT so the stiff K_PHI_RATE loop stays well damped.
     sensor = SensorModel(
-        tau_s=0.002 if rich_sensing else 0.0,
+        tau_s=0.001 if rich_sensing else 0.0,
         bias=0.002 if rich_sensing else 0.0,
         dropout_prob=0.005 if rich_sensing else 0.0,
-        noise_std=0.001 if rich_sensing else 0.0,
+        noise_std=1e-4 if rich_sensing else 0.0,
     )
     sensor.reset(p)
     log: list[dict[str, float]] = []

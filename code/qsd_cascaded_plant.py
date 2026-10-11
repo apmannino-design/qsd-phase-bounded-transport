@@ -138,7 +138,6 @@ def run_loop(
         loss_de=0.14,
         loss_len=600,
         grace_s=0.15,
-        dt=DT,
     )
     sensor = SensorModel(tau_s=0.001, bias=0.002 * MG, dropout_prob=0.005, noise_std=0.0005 * MG)
     sensor.reset(f_ac)
