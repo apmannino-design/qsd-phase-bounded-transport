@@ -41,7 +41,7 @@ MG = M * G
 C0_MAX = 6.0 * MG
 H0 = 0.0008
 TAU = 0.005
-B_DAMP = 2.0e-3  # light air damping (stabilizes force-lag plant)
+B_DAMP = 5.0e-3  # air damping; needed for force-lag + outer-loop stability
 
 DT = 5e-5
 N_STEPS = 20000
@@ -163,14 +163,10 @@ def run_loop(
                 ell = 1
                 phi_ref = phi
 
-            # Always residual-driven with DT-scaled rate. After lock, use the
-            # milder K_inner gain; φ_ref is recorded for diagnostics / spring
-            # optional blend but must not overpower F_ref tracking.
-            k_phi = K_LOCK if ell == 0 else K_INNER
-            phi_dot = -k_phi * e
-            if ell == 1:
-                phi_ref = float(np.clip(phi_ref, PHI_MIN, PHI_MAX))
-                phi_dot += -0.25 * LAM * (phi - phi_ref)
+            # Residual-driven phase rate (acquisition gains). Lock does not
+            # switch the law — φ_ref is diagnostic only. Switching to a
+            # φ_ref spring after lock was observed to grow gap oscillations.
+            phi_dot = -K_LOCK * e
             phi = float(np.clip(phi + DT * phi_dot, PHI_MIN, PHI_MAX))
         # else: open loop holds φ
 
@@ -351,8 +347,10 @@ def self_test(seed: int = 42) -> dict[str, Any]:
     assert csum["fraction_locked"] > 0.5
     # Hold quality while locked, and quieter than open loop on the tail.
     assert abs(csum["hold_mean_mm"] - Y_REF * 1000.0) < 0.35
-    assert csum["hold_rms_mm"] < 0.5
+    assert csum["hold_rms_mm"] < 0.1
     assert csum["gap_rms_last_0p1s_mm"] < osum["gap_rms_last_0p1s_mm"]
+    # No late divergence: last-0.1s gap RMS must stay near the locked hold RMS.
+    assert csum["gap_rms_last_0p1s_mm"] < max(0.08, 3.0 * csum["hold_rms_mm"])
 
     return {"ok": True, "closed": csum, "open": osum}
 

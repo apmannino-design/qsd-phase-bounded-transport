@@ -28,7 +28,7 @@ The `tests/smoke_test.py` verifies:
 
 Full reproducibility checks are in `code/ligo_validation.py` and `code/validation_suite.py`.
 
-NFAL physics + sector-bounded height regulation (Lee–Wang squeeze film):
+Conservative outer-loop + QSD sector phase law (gap-dependent force, lock-in):
 
 ```bash
 python3 code/qsd_sector_closed_loop.py --self-test

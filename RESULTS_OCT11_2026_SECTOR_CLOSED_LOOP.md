@@ -1,57 +1,37 @@
-# Cascaded NFAL Levitator: Outer Position + QSD Sector (Oct 11, 2026)
+# Conservative Outer Loop + QSD Sector Phase Law (Oct 11, 2026)
 
-**Scope:** Reduced-order scientific control study. Not hardware validation.
+**Scope:** Full classical physics sketch for simultaneous force-match + gap hold. Not a hardware claim.
 
-**Code:** `code/nfal_physics.py`, `code/qsd_sector_closed_loop.py`
+**Code:** `code/qsd_sector_closed_loop.py`  
+**Lee–Wang NFAL helpers (prior):** `code/nfal_physics.py`
 
 ## Architecture
 
-Inner residual/phase law unchanged in structure; improvements sit around it.
-
-**Plant (gap-dependent coupling):**
-\[
-C(\phi,h)=\frac{\gamma(\gamma+1)}{8}\frac{(a_{\max}\sin\phi)^{2}p_{0}}{h^{2}}A,\quad
-m\ddot h=C(\phi,h)-mg-b\dot h+d_{\mathrm{ext}}
-\]
-
-**Outer position/velocity loop** (stops force-only drift):
-\[
-r=( \hat F-mg)+K_p\,mg\,\frac{h-h^\*}{h^\*}+K_d\,mg\,\frac{v}{v_{\mathrm{scale}}}
-\]
-
-**Inner QSD sector** on \(r_n=r/mg\):
-\[
-\Delta E=\log(1+|r_n^{\mathrm{filt}}|),\quad
-\phi^{+}=\mathrm{clip}_{\mathrm{rate}}\bigl(\phi-K\,\mathrm{sat}_\alpha(r_n)\bigr)
-\]
-with back-calculation anti-windup.
-
-**Lock-in:** freeze φ when filtered ΔE and |v| are both small; unlock on corridor exit.
-
-**Safety:** gap floor/ceiling interlocks, hard phase-rate limit.
-
-**Disturbances:** thermal phase walk, gap/force sensor noise, mass step, impulse.
-
-## Nominal plant
-
-| Quantity | Value |
-|---|---|
-| Drive | 28 kHz |
-| Plate radius | 20 mm |
-| Mass | 12 g (+3 g @ 1–2.5 s) |
-| \(h^\*\) | 80 μm |
-| \(a_{\max}\) | ≈ 9.8 μm |
-| \(C_0/Mg\) margin | ≈ 6.8 |
+- **Monotonic phase branch** \(\phi\in[\phi_{\min},\pi/2]\)
+- **Timestep-scaled phase rates** \(\phi\leftarrow\phi+\Delta t\,\dot\phi\)
+- **Gap-dependent authority** \(A(y)=C_{0,\max}/(1+(y/h_0)^2)\), \(C=A\sin\phi\)
+- **Force lag** \(\tau\dot F_{\mathrm{ac}}=C-F_{\mathrm{ac}}+d(t)\) with **DT-scaled** Wiener noise
+- **Consistent \(F_{\mathrm{ref}}\) bounds** from available coupling
+- **Conservative outer loop** \(F_{\mathrm{ref}}=\mathrm{clip}(mg-K_p(y-y_{\mathrm{ref}})-K_d v)\)
+- **Inner residual** \(r=F_{\mathrm{ac}}-F_{\mathrm{ref}}\), \(e=\mathrm{sat}_\alpha(r/mg)\)
+- **Lock-in status** when corridor + low \(|v|\) + low gap error; milder \(K_{\mathrm{inner}}\) + soft \(\phi_{\mathrm{ref}}\) spring after lock
+- **Equilibrium initialization** at \((y_{\mathrm{ref}},\phi=\arcsin(mg/A(y_{\mathrm{ref}})))\)
 
 ## Reproduce
 
 ```bash
 python3 code/qsd_sector_closed_loop.py --self-test
-python3 code/qsd_sector_closed_loop.py --out-dir results --phi0 0.30
+python3 code/qsd_sector_closed_loop.py --out-dir results
 ```
 
-## Seeded metrics (seed=42, φ₀=0.30)
+## Seeded summary (seed=42)
 
-Closed loop (typical): time-to-lock ~0.2 s, hold RMS < 5 μm, step peak ~13 μm with ~10 ms recovery; open loop drifts to ~62 μm and does not lock.
+| Metric | Closed | Open |
+|---|---|---|
+| Lock-in | True @ 0.050 s | False |
+| Hold mean / RMS | 1.500 / 0.014 mm | — |
+| Final gap | 1.549 mm | 5.312 mm |
+| Gap RMS (last 0.1 s) | 0.032 mm | 1.738 mm |
+| Final \(\Delta E\) | 0.014 | 0.134 |
 
-See `results/qsd_sector_closed_loop_summary.json` for the full dump.
+Outputs: `results/qsd_sector_closed_loop.*`, `artifacts/conservative_outer.png`.
