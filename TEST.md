@@ -28,7 +28,7 @@ The `tests/smoke_test.py` verifies:
 
 Full reproducibility checks are in `code/ligo_validation.py` and `code/validation_suite.py`.
 
-Conservative outer-loop + QSD sector phase law (gap-dependent force, lock-in):
+Conservative outer-loop + QSD sector phase law (tri-ΔE 3-stage lock-in):
 
 ```bash
 python3 code/qsd_sector_closed_loop.py --self-test

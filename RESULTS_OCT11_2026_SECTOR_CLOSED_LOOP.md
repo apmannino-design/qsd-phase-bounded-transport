@@ -1,19 +1,19 @@
-# Real-Time Lock-In: Acquisition → Outer Loop (Oct 11, 2026)
+# Real-Time Lock-In: Tri-ΔE Three-Stage Lock (Oct 11, 2026)
 
 **Scope:** Classical real-time lock-in sketch. Not a hardware claim.
 
-**Code:** `code/qsd_sector_closed_loop.py` (via `qsd_control_core`)
+**Code:** `code/qsd_sector_closed_loop.py` + `TriDeltaLock` in `qsd_control_core.py`
 
-## Architecture
+## Stages
 
-1. **Acquisition** — inner residual/phase only, \(F_{\mathrm{ref}}=Mg\)
-2. **Quiet-window detector** — mean/max \(\Delta E\) and \(|v|\) (`QuietWindowLock`)
-3. **Lock** — freeze \(\phi_{\mathrm{ref}}\), enable outer PID on gap
-4. **Locked phase law** — \(\dot\phi=-K_{\mathrm{locked}}e-\lambda(\phi-\phi_{\mathrm{ref}})\)
-5. **Sensing** — lag/bias/dropout on force measurement
-6. **Loss-of-lock** — sustained high \(\Delta E\) after a short grace period
+| Stage | Name | Gate | Actuation |
+|---|---|---|---|
+| 0 | acquire | — | inner residual/phase, \(F_{\mathrm{ref}}=Mg\) |
+| 1 | hold | residual \(\Delta E_1\) + \|v\| | freeze \(\phi_{\mathrm{ref}}\), keep \(F_{\mathrm{ref}}=Mg\) |
+| 2 | armed | residual \(\Delta E_2\) | slew-limited outer PID begins |
+| 3 | track | gap \(\Delta E_3\) | full outer track; \(\phi_{\mathrm{ref}}=\arcsin(F_{\mathrm{ref}}/A(y))\) |
 
-Also: monotonic \(\phi\) branch, consistent \(F_{\mathrm{ref}}\) bounds from \(A(y)\sin\phi\), DT-scaled force noise, light damping.
+Loss-of-lock uses a looser residual ΔE gate with hysteresis. Force demand is rate-limited so outer moves do not re-break acquisition.
 
 ## Reproduce
 
@@ -26,9 +26,12 @@ python3 code/qsd_sector_closed_loop.py --out-dir results
 
 | Metric | Value |
 |---|---|
-| Lock-in | True @ 0.292 s |
-| Post-lock mean / RMS | ≈ 1.51 / 0.08 mm |
-| Final gap | ≈ 1.53 mm |
+| Hold (stage 1) | @ 0.264 s |
+| Track (stage 3) | @ 0.420 s |
+| Post-track mean / RMS | ≈ 1.500 / 0.018 mm |
+| Lock / track fraction | ≈ 0.82 / 0.72 |
+| Lock drops | 0 |
+| Final gap | ≈ 1.48 mm |
 | \(y_{\mathrm{ref}}\) | 1.50 mm |
 
-Artifact: `artifacts/realtime_lockin.png`
+Artifact: `artifacts/tri_delta_lockin.png`

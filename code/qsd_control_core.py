@@ -174,6 +174,172 @@ class QuietWindowLock:
 
 
 # ---------------------------------------------------------------------------
+# Three-stage tri-ΔE lock (acquire → hold → track)
+# ---------------------------------------------------------------------------
+
+@dataclass
+class TriDeltaLock:
+    """
+    Three-stage lock with three ΔE gates:
+
+      stage 0  acquisition   — residual loop only
+      stage 1  hold          — residual quiet (ΔE₁ + |v|); freeze φ, hold F_ref
+      stage 2  armed         — quieter hold (ΔE₂); outer may slew in
+      stage 3  track         — gap corridor (ΔE₃ on gap residual) or timed arm
+
+    Loss-of-lock uses a looser ΔE gate with hysteresis (does not drop on one burst).
+    """
+
+    de1: float = 0.020  # stage 0 → 1 (residual)
+    de2: float = 0.015  # stage 1 → 2 (confirm hold)
+    de3: float = 0.030  # stage 2 → 3 (gap ΔE or residual while armed)
+    v_max: float = 0.005
+    quiet_len: int = 500
+    hold_len: int = 400
+    arm_len: int = 400
+    loss_de: float = 0.12
+    loss_len: int = 500
+    grace_s: float = 0.15
+    dt: float = 0.001
+    # If True, stage 2→3 also requires gap ΔE < de3; else timed quiet residual
+    require_gap_for_track: bool = True
+
+    stage: int = field(default=0, init=False)
+    t_stage: float = field(default=0.0, init=False)
+    t_lock: float = field(default=float("nan"), init=False)  # first enter stage≥1
+    t_track: float = field(default=float("nan"), init=False)  # enter stage 3
+    drop_count: int = field(default=0, init=False)
+    _de_buf: list[float] = field(default_factory=list, init=False)
+    _v_buf: list[float] = field(default_factory=list, init=False)
+    _gap_buf: list[float] = field(default_factory=list, init=False)
+
+    @property
+    def locked(self) -> bool:
+        """True once residual quiet is confirmed (stage ≥ 1)."""
+        return self.stage >= 1
+
+    @property
+    def holding(self) -> bool:
+        return self.stage == 1
+
+    @property
+    def armed(self) -> bool:
+        return self.stage == 2
+
+    @property
+    def tracking(self) -> bool:
+        return self.stage >= 3
+
+    def reset(self) -> None:
+        self.stage = 0
+        self.t_stage = 0.0
+        self.t_lock = float("nan")
+        self.t_track = float("nan")
+        self.drop_count = 0
+        self._de_buf.clear()
+        self._v_buf.clear()
+        self._gap_buf.clear()
+
+    def _push(self, de: float, v_abs: float, gap_de: float) -> None:
+        self._de_buf.append(float(de))
+        self._v_buf.append(float(v_abs))
+        self._gap_buf.append(float(gap_de))
+        maxlen = max(self.quiet_len, self.hold_len, self.arm_len, self.loss_len)
+        if len(self._de_buf) > maxlen:
+            self._de_buf.pop(0)
+            self._v_buf.pop(0)
+            self._gap_buf.pop(0)
+
+    def _window_ok(self, th: float, n: int, use_v: bool = True, use_gap: bool = False) -> bool:
+        if len(self._de_buf) < n:
+            return False
+        de_w = self._de_buf[-n:]
+        if float(np.mean(de_w)) >= th or float(np.max(de_w)) >= th * 1.3:
+            return False
+        if use_v and float(np.max(self._v_buf[-n:])) >= self.v_max:
+            return False
+        if use_gap:
+            g_w = self._gap_buf[-n:]
+            if float(np.mean(g_w)) >= self.de3 or float(np.max(g_w)) >= self.de3 * 1.3:
+                return False
+        return True
+
+    def update(
+        self,
+        t: float,
+        de: float,
+        v_abs: float = 0.0,
+        gap_de: float = 0.0,
+    ) -> int:
+        self._push(de, v_abs, gap_de)
+
+        if self.stage == 0:
+            if self._window_ok(self.de1, self.quiet_len, use_v=True):
+                self.stage = 1
+                self.t_stage = t
+                self.t_lock = t
+                self._de_buf.clear()
+                self._v_buf.clear()
+                self._gap_buf.clear()
+        elif self.stage == 1:
+            if self._window_ok(self.de2, self.hold_len, use_v=True):
+                self.stage = 2
+                self.t_stage = t
+                self._de_buf.clear()
+                self._v_buf.clear()
+                self._gap_buf.clear()
+            elif (
+                (t - self.t_stage) > self.grace_s
+                and len(self._de_buf) >= self.loss_len
+                and float(np.mean(self._de_buf[-self.loss_len:])) > self.loss_de
+            ):
+                self._drop(t)
+        elif self.stage == 2:
+            ok = self._window_ok(
+                self.de2,
+                self.arm_len,
+                use_v=True,
+                use_gap=self.require_gap_for_track,
+            )
+            # If gap gate is on, residual must stay under de2 and gap under de3
+            if ok or (
+                not self.require_gap_for_track
+                and self._window_ok(self.de2, self.arm_len, use_v=True)
+            ):
+                self.stage = 3
+                self.t_stage = t
+                self.t_track = t
+                self._de_buf.clear()
+                self._v_buf.clear()
+                self._gap_buf.clear()
+            elif (
+                (t - self.t_stage) > self.grace_s
+                and len(self._de_buf) >= self.loss_len
+                and float(np.mean(self._de_buf[-self.loss_len:])) > self.loss_de
+            ):
+                self._drop(t)
+        else:  # stage 3 track
+            if (
+                (t - self.t_stage) > self.grace_s
+                and len(self._de_buf) >= self.loss_len
+                and float(np.mean(self._de_buf[-self.loss_len:])) > self.loss_de
+            ):
+                self._drop(t)
+
+        return self.stage
+
+    def _drop(self, t: float) -> None:
+        self.stage = 0
+        self.drop_count += 1
+        self.t_stage = t
+        self.t_lock = float("nan")
+        self.t_track = float("nan")
+        self._de_buf.clear()
+        self._v_buf.clear()
+        self._gap_buf.clear()
+
+
+# ---------------------------------------------------------------------------
 # Unified scorecard
 # ---------------------------------------------------------------------------
 
