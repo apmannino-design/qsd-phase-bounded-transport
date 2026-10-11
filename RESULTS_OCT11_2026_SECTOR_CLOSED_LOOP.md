@@ -1,32 +1,46 @@
-# QSD Sector-Bounded Closed Loop — Toy Acoustic Plant (Oct 11, 2026)
+# QSD Sector-Bounded Closed Loop — Acoustic Force Balance (Oct 11, 2026)
 
-**Scope:** Classical illustration only. Minimal first-order lag plant with sector-saturated feedback; not a hardware or acoustic-field claim.
+**Scope:** Classical illustration only. Matches the φ / F_ac sketch below; not a hardware or acoustic-field claim.
 
 **Script:** `code/qsd_sector_closed_loop.py`
 
-## What it demonstrates
+## Model
 
-- Design angle θ\* = π/8 = 22.5° (parameter context; plant update uses signed pressure residual).
-- Sector saturation `sat(e, α)` with α = 0.15.
-- Closed-loop recovery into a ΔE < 0.1 corridor after a load step (1.0–2.5 s) plus noise.
-- Open-loop control remains outside the corridor (negative control).
+\[
+C(\phi)=C_0\sin\phi,\quad
+\tau\dot F_{\mathrm{ac}}=C(\phi)-F_{\mathrm{ac}}+d(t),\quad
+r=F_{\mathrm{ac}}-Mg,\quad
+\Delta E=\log(1+|r|)
+\]
+
+\[
+\phi^+=\mathrm{clip}\bigl(\phi-K\,\mathrm{sat}_\alpha(r)\bigr)
+\]
+
+\[
+|r_t|\le\rho^{t/2}|r_0|+\frac{D}{1-\sqrt{\rho}},\quad\rho<1
+\]
+
+Discrete step uses the continuous-consistent Euler form
+\(F\leftarrow F+(\Delta t/\tau)(C_0\sin\phi-F+d)\)
+(load step on \(Mg\), process noise on \(d\)). Balanced load is
+\(Mg_{\mathrm{base}}=C_0\sin\theta^\*\) with \(\theta^\*=\pi/8\).
 
 ## Reproduce
 
 ```bash
 python3 code/qsd_sector_closed_loop.py --self-test
-python3 code/qsd_sector_closed_loop.py --out-dir results
+python3 code/qsd_sector_closed_loop.py --out-dir results --phi0 0.35
 ```
 
-## Seeded summary (seed=42)
+## Seeded summary (seed=42, φ₀=0.35)
 
-| Metric | Closed loop | Open loop |
+| Metric | Closed loop | Open loop (φ held) |
 |---|---|---|
-| Final ΔE | 0.0004 | 0.6953 |
-| Mean ΔE (last 1 s) | 0.0024 | 0.6931 |
-| Corridor fraction (all / tail) | 0.990 / 1.000 | 0.000 / 0.000 |
-| Final drive u | 1.012 | 0.000 |
-
-Plant note: disturbance enters as an equilibrium load bias on the drive (`u + d`), so the sector loop can reject the 1.0–2.5 s step instead of integrating an unscaled per-sample kick.
+| Final ΔE | 0.0004 | 0.0421 |
+| Mean ΔE (last 1 s) | 0.0024 | 0.0388 |
+| Corridor fraction (all / tail) | 0.998 / 1.000 | 0.625 / 1.000 |
+| Final φ | 23.32° | 20.05° |
+| \|r\| mean (tail) | 0.0024 | 0.0396 |
 
 Outputs: `results/qsd_sector_closed_loop.csv`, `results/qsd_sector_closed_loop_summary.json`, `results/qsd_sector_closed_loop.png`.
