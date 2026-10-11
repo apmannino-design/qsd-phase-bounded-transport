@@ -1,15 +1,12 @@
 """
 Spatial match on top of a frequency-matched residual loop.
 
-Two opposed sources form a standing-wave-like field. Relative phase φ
-shifts the pressure node; amplitude ratio adjusts contrast. A sector-
-bounded update drives the measured node to track a moving target.
+Two opposed equal-amplitude sources form a standing-wave pattern.
+Relative phase φ slides a pressure node; a sector-bounded residual
+loop tracks a moving target location.
 
-Fixes vs bare sketch (needed for stable tracking):
-- continuous node tracking (avoid jumping between zeros)
-- interpolated zero crossings
-- DT-scaled control rates
-- phase sign consistent with ∂x_node/∂φ < 0
+Control = analytic phase feedforward (from desired node) + sector feedback.
+Amplitude ratio stays near 1 (contrast), not the primary actuator.
 """
 
 from __future__ import annotations
@@ -30,18 +27,21 @@ WAVELENGTH = 0.4
 K_WAVE = 2 * np.pi / WAVELENGTH
 
 ALPHA = 0.15
-K_PHI = 130.0  # rad/s per unit sat(r)  (DT-scaled)
-K_RATIO = 5.0  # 1/s per unit sat(r)
-PHI_MIN, PHI_MAX = -np.pi, np.pi
-RATIO_MIN, RATIO_MAX = 0.4, 1.6
+K_PHI = 40.0  # feedback rate (rad/s per sat unit), DT-scaled
+FF_BLEND = 0.35  # fraction of phase error closed by feedforward each step
+RATIO = 1.0  # equal-amplitude standing wave (best node contrast)
 
-NOISE_STD = 0.015
-ERR_SCALE = 0.05  # in ΔE = log1p(|e|/ERR_SCALE)
-CORRIDOR = 0.25  # achievable with grid/noise; 0.1 ⇒ |e|<~0.005 (sub-cell)
+NOISE_STD = 0.01
+ERR_SCALE = 0.05
+CORRIDOR = 0.25  # ΔE gate; ≈ |e| < 0.014
 
 
 def sat(z: float, a: float = ALPHA) -> float:
     return float(np.clip(z, -a, a))
+
+
+def wrap_pi(phi: float) -> float:
+    return float((phi + np.pi) % (2 * np.pi) - np.pi)
 
 
 def field(phi: float, ratio: float, x: np.ndarray) -> np.ndarray:
@@ -49,11 +49,19 @@ def field(phi: float, ratio: float, x: np.ndarray) -> np.ndarray:
     return np.cos(K_WAVE * x) + ratio * np.cos(K_WAVE * x + phi)
 
 
-def all_node_locations(p: np.ndarray, x: np.ndarray) -> np.ndarray:
-    """Interpolated zero crossings of the pressure field."""
+def phi_from_target(x_des: float) -> float:
+    """
+    Equal-amplitude node map (one branch near mid-domain):
+        x ≈ (π/2 − φ/2) / k  ⇒  φ ≈ π − 2 k x
+    """
+    return float(np.pi - 2.0 * K_WAVE * x_des)
+
+
+def track_node(p: np.ndarray, x: np.ndarray, x_prev: float) -> float:
+    """Interpolated zero crossing nearest the previous node estimate."""
     crossings = np.where(np.diff(np.sign(p)))[0]
     if crossings.size == 0:
-        return np.array([x[len(x) // 2]])
+        return x_prev
     xs = []
     for idx in crossings:
         x0, x1 = x[idx], x[idx + 1]
@@ -62,17 +70,11 @@ def all_node_locations(p: np.ndarray, x: np.ndarray) -> np.ndarray:
             xs.append(x0)
         else:
             xs.append(float(x0 - p0 * (x1 - x0) / (p1 - p0)))
-    return np.asarray(xs, dtype=float)
-
-
-def track_node(p: np.ndarray, x: np.ndarray, x_prev: float) -> float:
-    """Follow one node continuously (nearest to previous estimate)."""
-    nodes = all_node_locations(p, x)
-    return float(nodes[np.argmin(np.abs(nodes - x_prev))])
+    xs = np.asarray(xs, dtype=float)
+    return float(xs[np.argmin(np.abs(xs - x_prev))])
 
 
 def target_node(t: np.ndarray | float) -> np.ndarray | float:
-    """Moving target node trajectory."""
     return 0.5 + 0.12 * np.sin(2 * np.pi * 0.15 * t)
 
 
@@ -84,30 +86,35 @@ def run_loop(
     rng = np.random.default_rng(seed)
     x = np.linspace(0.0, L, NX)
 
-    phi = 0.4
-    ratio = 0.9
-    p0 = field(phi, ratio, x)
-    x_node = track_node(p0, x, 0.5)
+    # Unwrapped phase state (field uses wrap_pi)
+    phi_u = phi_from_target(0.5)
+    ratio = RATIO
+    x_node = track_node(field(wrap_pi(phi_u), ratio, x), x, 0.5)
 
     log: list[dict[str, float]] = []
     for n in range(n_steps):
         t = n * DT
+        x_des = float(target_node(t))
+        phi = wrap_pi(phi_u)
         p = field(phi, ratio, x) + NOISE_STD * rng.standard_normal(NX)
         x_node = track_node(p, x, x_node)
-        x_des = float(target_node(t))
         r_spatial = x_node - x_des
         de = float(np.log1p(np.abs(r_spatial) / ERR_SCALE))
 
         if closed_loop:
+            # Feedforward toward analytic phase for x_des
+            phi_des = phi_from_target(x_des)
+            dff = wrap_pi(phi_des - wrap_pi(phi_u))
+            # Feedback: ∂x_node/∂φ < 0 ⇒ φ̇ = +K sat(r)
             e = sat(r_spatial)
-            # ∂x_node/∂φ < 0 ⇒ increase φ when node is too far right
-            phi = float(np.clip(phi + DT * K_PHI * e, PHI_MIN, PHI_MAX))
-            ratio = float(np.clip(ratio + DT * K_RATIO * e, RATIO_MIN, RATIO_MAX))
+            phi_u = phi_u + FF_BLEND * dff + DT * K_PHI * e
+        # else: hold initial phase
 
         log.append(
             {
                 "t": t,
-                "phi": phi,
+                "phi": wrap_pi(phi_u),
+                "phi_unwrapped": phi_u,
                 "ratio": ratio,
                 "x_node": x_node,
                 "x_des": x_des,
@@ -135,7 +142,7 @@ def compute_metrics(history: list[dict[str, float]]) -> dict[str, float]:
         "final_ratio": float(history[-1]["ratio"]),
         "target_amp": 0.12,
         "k_phi": float(K_PHI),
-        "k_ratio": float(K_RATIO),
+        "ff_blend": float(FF_BLEND),
     }
 
 
@@ -159,7 +166,8 @@ def save_outputs(
         "wavelength": WAVELENGTH,
         "k": K_WAVE,
         "K_phi": K_PHI,
-        "K_ratio": K_RATIO,
+        "ff_blend": FF_BLEND,
+        "ratio": RATIO,
         "alpha": ALPHA,
         "corridor": CORRIDOR,
         "noise_std": NOISE_STD,
@@ -178,7 +186,6 @@ def save_outputs(
         node = np.array([h["x_node"] for h in history])
         des = np.array([h["x_des"] for h in history])
         phi = np.array([h["phi"] for h in history])
-        ratio = np.array([h["ratio"] for h in history])
 
         fig, axs = plt.subplots(3, 1, figsize=(10, 8), sharex=True)
         axs[0].plot(t, de, lw=1.2)
@@ -194,7 +201,7 @@ def save_outputs(
         axs[1].grid(alpha=0.3)
 
         axs[2].plot(t, phi, label=r"$\phi$", color="orange", lw=1.2)
-        axs[2].plot(t, ratio, label="amplitude ratio", color="green", lw=1.2)
+        axs[2].axhline(RATIO, color="green", ls="--", alpha=0.5, label="ratio=1")
         axs[2].set_ylabel("Controls")
         axs[2].set_xlabel("Time (s)")
         axs[2].legend(frameon=False)
@@ -218,11 +225,10 @@ def self_test(seed: int = 42) -> dict[str, Any]:
 
     sat_vals = np.array([h["sat_e"] for h in closed])
     assert np.all(np.abs(sat_vals) <= ALPHA + 1e-12)
-    # Must beat open loop after acquisition (tail) and overall
-    assert csum["mean_abs_err_tail"] < 0.5 * osum["mean_abs_err_tail"]
-    assert csum["mean_abs_err_tail"] < 0.03
-    assert csum["mean_abs_err"] < osum["mean_abs_err"]
-    assert csum["corridor_fraction"] > 0.15
+    assert csum["mean_abs_err"] < 0.02
+    assert csum["mean_abs_err_tail"] < 0.01
+    assert csum["corridor_fraction"] > 0.9
+    assert csum["mean_abs_err"] < 0.25 * osum["mean_abs_err"]
 
     return {"ok": True, "closed": csum, "open": osum}
 

@@ -20,6 +20,11 @@ python3 code/qsd_spatial_match.py --out-dir results
 
 - Track one node continuously (don’t jump between zeros)
 - Interpolate zero crossings
-- Use DT-scaled rates and the phase sign that matches ∂x_node/∂φ < 0
+- Analytic phase feedforward \(\phi\approx\pi-2kx_{\mathrm{des}}\) plus sector feedback
+- Keep amplitude ratio ≈ 1 (best contrast); phase is the node actuator
+
+## Seeded (seed=42)
+
+Closed-loop mean |node error| ≈ 0.001 vs open-loop ≈ 0.08; corridor fraction ≳ 0.95.
 
 Artifact: `artifacts/spatial_match.png`

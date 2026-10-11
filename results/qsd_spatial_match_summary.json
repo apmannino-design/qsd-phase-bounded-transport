@@ -1,15 +1,15 @@
 {
   "summary": {
-    "final_delta_e": 0.10951883810026188,
-    "mean_abs_err": 0.06066398991128285,
-    "mean_abs_err_tail": 0.006328441520519987,
-    "corridor_fraction": 0.2155,
-    "corridor_fraction_strict": 0.0605,
-    "final_phi": 2.1255778528681213,
-    "final_ratio": 1.5609225076645494,
+    "final_delta_e": 0.021368411181348478,
+    "mean_abs_err": 0.00134326775349018,
+    "mean_abs_err_tail": 0.0014755311722735227,
+    "corridor_fraction": 0.98875,
+    "corridor_fraction_strict": 0.962,
+    "final_phi": 2.70411854140308,
+    "final_ratio": 1.0,
     "target_amp": 0.12,
-    "k_phi": 130.0,
-    "k_ratio": 5.0
+    "k_phi": 40.0,
+    "ff_blend": 0.35
   },
   "params": {
     "DT": 0.002,
@@ -18,10 +18,11 @@
     "nx": 201,
     "wavelength": 0.4,
     "k": 15.707963267948966,
-    "K_phi": 130.0,
-    "K_ratio": 5.0,
+    "K_phi": 40.0,
+    "ff_blend": 0.35,
+    "ratio": 1.0,
     "alpha": 0.15,
     "corridor": 0.25,
-    "noise_std": 0.015
+    "noise_std": 0.01
   }
 }
