@@ -25,7 +25,8 @@
       "fraction_locked": 0.98025,
       "track_rms": 0.0029581288052963786,
       "diverged": false
-    }
+    },
+    "rms_ratio": 0.035670466076609265
   },
   "params": {
     "DT": 0.002,

@@ -19,49 +19,47 @@
         "final_p": 0.6067956443851678,
         "final_phi": 0.7446803106518364,
         "diverged": false
-      }
+      },
+      "rms_ratio": 0.30953867236881366
     },
     {
       "demo": "lock_in",
       "lock_in": true,
-      "time_to_lock_s": 0.2637,
-      "corridor_fraction": 0.8932666666666667,
-      "hold_or_track_rms": 0.017906802866933327,
+      "time_to_lock_s": 0.2587,
+      "corridor_fraction": 0.8934666666666666,
+      "hold_or_track_rms": 0.017878005493893147,
       "open_loop_rms": 0.30027984065271085,
-      "final_delta_e": 0.0038716733611260943,
+      "final_delta_e": 0.008986409178800408,
       "diverged": false,
-      "notes": "tri-\u0394E 3-stage lock (acquire\u2192hold\u2192arm\u2192track); slew F_ref; \u03c6 from F/A(y)",
+      "notes": "tri-\u0394E + physical gap gate; stage-clock open baseline; slew F_ref",
       "extras": {
         "lock_in": true,
         "reached_track": true,
-        "time_to_lock_s": 0.2637,
-        "time_to_track_s": 0.42045000000000005,
-        "fraction_locked": 0.8242,
-        "fraction_tracking": 0.7197,
+        "time_to_lock_s": 0.2587,
+        "time_to_track_s": 0.40475,
+        "fraction_locked": 0.8275333333333333,
+        "fraction_tracking": 0.7301666666666666,
         "lock_drop_count": 0,
-        "final_r_over_mg": 0.003879177970440098,
-        "final_delta_e": 0.0038716733611260943,
-        "final_gap_mm": 1.481020843395304,
-        "final_abs_v": 0.0016779095369884702,
+        "final_r_over_mg": 0.009026908176383897,
+        "final_delta_e": 0.008986409178800408,
+        "final_gap_mm": 1.4933399688938358,
+        "final_abs_v": 0.002341809956480933,
         "final_stage": 3.0,
-        "hold_mean_mm": 1.4984212545141873,
-        "hold_rms_mm": 0.017872992553811667,
-        "post_lock_mean_mm": 1.4995117288252091,
-        "post_lock_rms_mm": 0.01790014469704309,
-        "track_rms_mm": 0.017906802866933327,
-        "gap_rms_tail_mm": 0.017878278989503095,
+        "hold_mean_mm": 1.499071641487009,
+        "hold_rms_mm": 0.017535445131753678,
+        "post_lock_mean_mm": 1.4988780508823278,
+        "post_lock_rms_mm": 0.0178427663386883,
+        "track_rms_mm": 0.017878005493893147,
+        "gap_rms_tail_mm": 0.017792654798774003,
         "y_ref_mm": 1.5,
-        "c0_over_mg": 6.0,
-        "kp": 4.0,
-        "kd": 0.12,
-        "ki": 0.15,
         "diverged": false,
-        "corridor_fraction": 0.8932666666666667,
-        "gap_err_rms_mm": 0.11302763497317433,
+        "corridor_fraction": 0.8934666666666666,
+        "gap_err_rms_mm": 0.11233010898873297,
         "de1": 0.02,
         "de2": 0.015,
-        "de3": 0.18
-      }
+        "gap_err_max_mm": 0.15
+      },
+      "rms_ratio": 0.05953781464327465
     },
     {
       "demo": "spatial_match",
@@ -89,7 +87,35 @@
         "fraction_locked": 0.98025,
         "track_rms": 0.0029581288052963786,
         "diverged": false
-      }
+      },
+      "rms_ratio": 0.035670466076609265
+    },
+    {
+      "demo": "cascaded",
+      "lock_in": true,
+      "time_to_lock_s": 0.25865,
+      "corridor_fraction": 0.8933333333333333,
+      "hold_or_track_rms": 0.08789013239752476,
+      "open_loop_rms": 1.543719650055555,
+      "final_delta_e": 0.00922729662605242,
+      "diverged": false,
+      "notes": "gap+\u03c6+spatial cascade; shared TriDeltaLock + disturbances",
+      "extras": {
+        "lock_in": true,
+        "reached_track": true,
+        "time_to_lock_s": 0.25865,
+        "time_to_track_s": 0.40405,
+        "fraction_tracking": 0.7306333333333334,
+        "lock_drop_count": 0,
+        "gap_track_rms_mm": 0.017584674418571627,
+        "node_track_rms": 0.0020653118508480884,
+        "combined_norm_rms": 0.08789013239752476,
+        "final_delta_e": 0.00922729662605242,
+        "final_gap_mm": 1.4948316050974229,
+        "corridor_fraction": 0.8933333333333333,
+        "diverged": false
+      },
+      "rms_ratio": 0.056933998601599575
     }
   ]
 }

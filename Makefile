@@ -17,6 +17,10 @@ pipeline:
 	python3 code/qsd_opto_acoustic.py --out-dir results
 	python3 code/qsd_spatial_match.py --self-test
 	python3 code/qsd_spatial_match.py --out-dir results
+	python3 code/qsd_cascaded_plant.py --self-test
+	python3 code/qsd_cascaded_plant.py --out-dir results
+	python3 code/run_qsd_disturbance_battery.py --self-test
+	python3 code/run_qsd_disturbance_battery.py --out-dir results
 	python3 code/run_qsd_scorecard.py --self-test
 	python3 code/run_qsd_scorecard.py --out-dir results
 

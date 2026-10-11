@@ -1,0 +1,27 @@
+{
+  "demo": "cascaded",
+  "lock_in": true,
+  "time_to_lock_s": 0.25865,
+  "corridor_fraction": 0.8933333333333333,
+  "hold_or_track_rms": 0.08789013239752476,
+  "open_loop_rms": 1.543719650055555,
+  "final_delta_e": 0.00922729662605242,
+  "diverged": false,
+  "notes": "gap+\u03c6+spatial cascade; shared TriDeltaLock + disturbances",
+  "extras": {
+    "lock_in": true,
+    "reached_track": true,
+    "time_to_lock_s": 0.25865,
+    "time_to_track_s": 0.40405,
+    "fraction_tracking": 0.7306333333333334,
+    "lock_drop_count": 0,
+    "gap_track_rms_mm": 0.017584674418571627,
+    "node_track_rms": 0.0020653118508480884,
+    "combined_norm_rms": 0.08789013239752476,
+    "final_delta_e": 0.00922729662605242,
+    "final_gap_mm": 1.4948316050974229,
+    "corridor_fraction": 0.8933333333333333,
+    "diverged": false
+  },
+  "rms_ratio": 0.056933998601599575
+}

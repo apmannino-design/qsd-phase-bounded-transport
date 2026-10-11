@@ -46,7 +46,14 @@ Spatial node-tracking match (two-source standing field):
 python3 code/qsd_spatial_match.py --self-test
 ```
 
-Unified scorecard (all three demos via `qsd_control_core`):
+Cascaded plant (gap + phase + spatial) and disturbance battery:
+
+```bash
+python3 code/qsd_cascaded_plant.py --self-test
+python3 code/run_qsd_disturbance_battery.py --self-test
+```
+
+Unified scorecard (headline: `rms_ratio = closed/open`):
 
 ```bash
 python3 code/run_qsd_scorecard.py --self-test

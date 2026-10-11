@@ -180,34 +180,35 @@ class QuietWindowLock:
 @dataclass
 class TriDeltaLock:
     """
-    Three-stage lock with three ΔE gates:
+    Three-stage lock:
 
-      stage 0  acquisition   — residual loop only
-      stage 1  hold          — residual quiet (ΔE₁ + |v|); freeze φ, hold F_ref
-      stage 2  armed         — quieter hold (ΔE₂); outer may slew in
-      stage 3  track         — gap corridor (ΔE₃ on gap residual) or timed arm
+      stage 0  acquire  — residual loop only
+      stage 1  hold     — residual quiet (ΔE₁ + |v|); freeze φ, hold F_ref
+      stage 2  armed    — quieter residual (ΔE₂); outer may slew in
+      stage 3  track    — physical gap gate |y−y_ref|<ε and |v|<v* (plus residual)
 
-    Loss-of-lock uses a looser ΔE gate with hysteresis (does not drop on one burst).
+    Stage 2→3 uses physical gap/velocity, not a third log-ΔE scale.
+    Loss-of-lock uses a looser residual ΔE gate with hysteresis.
     """
 
     de1: float = 0.020  # stage 0 → 1 (residual)
     de2: float = 0.015  # stage 1 → 2 (confirm hold)
-    de3: float = 0.030  # stage 2 → 3 (gap ΔE or residual while armed)
-    v_max: float = 0.005
-    quiet_len: int = 500
-    hold_len: int = 400
-    arm_len: int = 400
+    gap_err_max: float = 1.5e-4  # |y − y_ref| for stage 2 → 3
+    gap_v_max: float = 0.005  # |v| while checking gap gate
+    v_max: float = 0.005  # |v| for residual quiet windows
+    quiet_len: int = 400
+    hold_len: int = 300
+    arm_len: int = 300
     loss_de: float = 0.12
     loss_len: int = 500
     grace_s: float = 0.15
     dt: float = 0.001
-    # If True, stage 2→3 also requires gap ΔE < de3; else timed quiet residual
     require_gap_for_track: bool = True
 
     stage: int = field(default=0, init=False)
     t_stage: float = field(default=0.0, init=False)
-    t_lock: float = field(default=float("nan"), init=False)  # first enter stage≥1
-    t_track: float = field(default=float("nan"), init=False)  # enter stage 3
+    t_lock: float = field(default=float("nan"), init=False)
+    t_track: float = field(default=float("nan"), init=False)
     drop_count: int = field(default=0, init=False)
     _de_buf: list[float] = field(default_factory=list, init=False)
     _v_buf: list[float] = field(default_factory=list, init=False)
@@ -215,7 +216,6 @@ class TriDeltaLock:
 
     @property
     def locked(self) -> bool:
-        """True once residual quiet is confirmed (stage ≥ 1)."""
         return self.stage >= 1
 
     @property
@@ -240,90 +240,88 @@ class TriDeltaLock:
         self._v_buf.clear()
         self._gap_buf.clear()
 
-    def _push(self, de: float, v_abs: float, gap_de: float) -> None:
+    def _push(self, de: float, v_abs: float, gap_err_abs: float) -> None:
         self._de_buf.append(float(de))
         self._v_buf.append(float(v_abs))
-        self._gap_buf.append(float(gap_de))
+        self._gap_buf.append(float(gap_err_abs))
         maxlen = max(self.quiet_len, self.hold_len, self.arm_len, self.loss_len)
         if len(self._de_buf) > maxlen:
             self._de_buf.pop(0)
             self._v_buf.pop(0)
             self._gap_buf.pop(0)
 
-    def _window_ok(self, th: float, n: int, use_v: bool = True, use_gap: bool = False) -> bool:
+    def _clear_bufs(self) -> None:
+        self._de_buf.clear()
+        self._v_buf.clear()
+        self._gap_buf.clear()
+
+    def _residual_ok(self, th: float, n: int) -> bool:
         if len(self._de_buf) < n:
             return False
         de_w = self._de_buf[-n:]
         if float(np.mean(de_w)) >= th or float(np.max(de_w)) >= th * 1.3:
             return False
-        if use_v and float(np.max(self._v_buf[-n:])) >= self.v_max:
+        if float(np.max(self._v_buf[-n:])) >= self.v_max:
             return False
-        if use_gap:
-            g_w = self._gap_buf[-n:]
-            if float(np.mean(g_w)) >= self.de3 or float(np.max(g_w)) >= self.de3 * 1.3:
-                return False
         return True
+
+    def _gap_ok(self, n: int) -> bool:
+        if len(self._gap_buf) < n:
+            return False
+        g = self._gap_buf[-n:]
+        v = self._v_buf[-n:]
+        return (
+            float(np.mean(g)) < self.gap_err_max
+            and float(np.max(g)) < self.gap_err_max * 1.5
+            and float(np.max(v)) < self.gap_v_max
+        )
+
+    def _loss(self, t: float) -> bool:
+        return (
+            (t - self.t_stage) > self.grace_s
+            and len(self._de_buf) >= self.loss_len
+            and float(np.mean(self._de_buf[-self.loss_len:])) > self.loss_de
+        )
 
     def update(
         self,
         t: float,
         de: float,
         v_abs: float = 0.0,
-        gap_de: float = 0.0,
+        gap_err_abs: float = 0.0,
+        gap_de: float | None = None,  # deprecated alias; ignored if gap_err_abs set
     ) -> int:
-        self._push(de, v_abs, gap_de)
+        # Backward-compatible: old callers passed gap_de as 4th positional via gap_de=
+        if gap_de is not None and gap_err_abs == 0.0:
+            # Treat legacy gap_de as a soft proxy only when physical err not supplied
+            gap_err_abs = float(gap_de) * 0.001
+        self._push(de, v_abs, gap_err_abs)
 
         if self.stage == 0:
-            if self._window_ok(self.de1, self.quiet_len, use_v=True):
+            if self._residual_ok(self.de1, self.quiet_len):
                 self.stage = 1
                 self.t_stage = t
                 self.t_lock = t
-                self._de_buf.clear()
-                self._v_buf.clear()
-                self._gap_buf.clear()
+                self._clear_bufs()
         elif self.stage == 1:
-            if self._window_ok(self.de2, self.hold_len, use_v=True):
+            if self._residual_ok(self.de2, self.hold_len):
                 self.stage = 2
                 self.t_stage = t
-                self._de_buf.clear()
-                self._v_buf.clear()
-                self._gap_buf.clear()
-            elif (
-                (t - self.t_stage) > self.grace_s
-                and len(self._de_buf) >= self.loss_len
-                and float(np.mean(self._de_buf[-self.loss_len:])) > self.loss_de
-            ):
+                self._clear_bufs()
+            elif self._loss(t):
                 self._drop(t)
         elif self.stage == 2:
-            ok = self._window_ok(
-                self.de2,
-                self.arm_len,
-                use_v=True,
-                use_gap=self.require_gap_for_track,
-            )
-            # If gap gate is on, residual must stay under de2 and gap under de3
-            if ok or (
-                not self.require_gap_for_track
-                and self._window_ok(self.de2, self.arm_len, use_v=True)
-            ):
+            residual_ok = self._residual_ok(self.de2, self.arm_len)
+            gap_ok = self._gap_ok(self.arm_len) if self.require_gap_for_track else True
+            if residual_ok and gap_ok:
                 self.stage = 3
                 self.t_stage = t
                 self.t_track = t
-                self._de_buf.clear()
-                self._v_buf.clear()
-                self._gap_buf.clear()
-            elif (
-                (t - self.t_stage) > self.grace_s
-                and len(self._de_buf) >= self.loss_len
-                and float(np.mean(self._de_buf[-self.loss_len:])) > self.loss_de
-            ):
+                self._clear_bufs()
+            elif self._loss(t):
                 self._drop(t)
-        else:  # stage 3 track
-            if (
-                (t - self.t_stage) > self.grace_s
-                and len(self._de_buf) >= self.loss_len
-                and float(np.mean(self._de_buf[-self.loss_len:])) > self.loss_de
-            ):
+        else:
+            if self._loss(t):
                 self._drop(t)
 
         return self.stage
@@ -334,9 +332,79 @@ class TriDeltaLock:
         self.t_stage = t
         self.t_lock = float("nan")
         self.t_track = float("nan")
-        self._de_buf.clear()
-        self._v_buf.clear()
-        self._gap_buf.clear()
+        self._clear_bufs()
+
+
+# ---------------------------------------------------------------------------
+# Stage gain schedule
+# ---------------------------------------------------------------------------
+
+STAGE_NAMES = ("acquire", "hold", "armed", "track")
+
+
+def default_gain_schedule() -> list[dict[str, Any]]:
+    """Explicit stage-dependent gains (design table, not magic numbers)."""
+    return [
+        {
+            "stage": 0,
+            "name": "acquire",
+            "K_phi": 70.0,
+            "lam": 0.0,
+            "Kp": 0.0,
+            "Kd": 0.0,
+            "Ki": 0.0,
+            "F_slew_over_Mg": 8.0,
+            "F_ref": "Mg",
+            "gate": "—",
+        },
+        {
+            "stage": 1,
+            "name": "hold",
+            "K_phi": 35.0,
+            "lam": 0.4,
+            "Kp": 0.0,
+            "Kd": 0.0,
+            "Ki": 0.0,
+            "F_slew_over_Mg": 8.0,
+            "F_ref": "Mg",
+            "gate": "ΔE1 + |v|",
+        },
+        {
+            "stage": 2,
+            "name": "armed",
+            "K_phi": 35.0,
+            "lam": 0.4,
+            "Kp": 4.0,
+            "Kd": 0.12,
+            "Ki": 0.15,
+            "F_slew_over_Mg": 2.0,
+            "F_ref": "slew PID",
+            "gate": "ΔE2",
+        },
+        {
+            "stage": 3,
+            "name": "track",
+            "K_phi": 35.0,
+            "lam": 0.4,
+            "Kp": 4.0,
+            "Kd": 0.12,
+            "Ki": 0.15,
+            "F_slew_over_Mg": 2.0,
+            "F_ref": "slew PID",
+            "gate": "|y−yref|<ε & |v|",
+        },
+    ]
+
+
+def save_gain_schedule(path: Path, rows: Sequence[dict[str, Any]] | None = None) -> Path:
+    rows = list(rows) if rows is not None else default_gain_schedule()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    keys = list(rows[0].keys())
+    lines = [",".join(keys)]
+    for r in rows:
+        lines.append(",".join(str(r[k]) for k in keys))
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return path
 
 
 # ---------------------------------------------------------------------------
@@ -345,7 +413,7 @@ class TriDeltaLock:
 
 @dataclass
 class Scorecard:
-    """One honest scorecard for every demo."""
+    """One honest scorecard for every demo. Headline metric: rms_ratio."""
 
     demo: str
     lock_in: bool
@@ -358,28 +426,37 @@ class Scorecard:
     notes: str = ""
     extras: dict[str, Any] = field(default_factory=dict)
 
+    @property
+    def rms_ratio(self) -> float:
+        """closed / open track RMS (lower is better; <1 means closed wins)."""
+        if self.open_loop_rms <= 0 or np.isnan(self.open_loop_rms):
+            return float("nan")
+        return float(self.hold_or_track_rms / self.open_loop_rms)
+
     def to_dict(self) -> dict[str, Any]:
         d = asdict(self)
+        d["rms_ratio"] = self.rms_ratio
         return d
 
     def row(self) -> str:
         lock = f"{self.time_to_lock_s:.3f}s" if self.lock_in and not np.isnan(self.time_to_lock_s) else "no"
+        ratio = f"{self.rms_ratio:.3f}" if not np.isnan(self.rms_ratio) else "nan"
         return (
             f"{self.demo:18}  lock={lock:8}  corr={self.corridor_fraction:5.1%}  "
-            f"rms={self.hold_or_track_rms:.4g}  open_rms={self.open_loop_rms:.4g}  "
+            f"ratio={ratio:6}  rms={self.hold_or_track_rms:.4g}  open={self.open_loop_rms:.4g}  "
             f"ΔE∞={self.final_delta_e:.4f}  diverged={self.diverged}"
         )
 
 
 def print_scorecard_table(cards: Sequence[Scorecard]) -> None:
-    print("=" * 88)
-    print("QSD SCORECARD")
-    print("=" * 88)
+    print("=" * 96)
+    print("QSD SCORECARD  (headline: ratio = closed_rms / open_rms)")
+    print("=" * 96)
     for c in cards:
         print(c.row())
         if c.notes:
             print(f"  note: {c.notes}")
-    print("=" * 88)
+    print("=" * 96)
 
 
 def save_scorecards(cards: Sequence[Scorecard], path: Path) -> Path:
