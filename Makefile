@@ -11,6 +11,8 @@ pipeline:
 	python3 code/surrogate_validation.py
 	python3 code/spectral_null_validation.py
 	python3 code/master_summary.py
+	python3 code/qsd_sector_closed_loop.py --self-test
+	python3 code/qsd_sector_closed_loop.py --out-dir results
 
 report:
 	python3 code/build_report.py
