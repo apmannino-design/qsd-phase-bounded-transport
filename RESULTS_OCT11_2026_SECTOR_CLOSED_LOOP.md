@@ -1,46 +1,61 @@
-# QSD Sector-Bounded Closed Loop — Acoustic Force Balance (Oct 11, 2026)
+# QSD Sector Control on Near-Field Acoustic Levitation (Oct 11, 2026)
 
-**Scope:** Classical illustration only. Matches the φ / F_ac sketch below; not a hardware or acoustic-field claim.
+**Scope:** Reduced-order **scientific** NFAL plant + sector-bounded φ control. Not a hardware claim.
 
-**Script:** `code/qsd_sector_closed_loop.py`
+**Code:** `code/nfal_physics.py`, `code/qsd_sector_closed_loop.py`
 
-## Model
+## Physics
 
-\[
-C(\phi)=C_0\sin\phi,\quad
-\tau\dot F_{\mathrm{ac}}=C(\phi)-F_{\mathrm{ac}}+d(t),\quad
-r=F_{\mathrm{ac}}-Mg,\quad
-\Delta E=\log(1+|r|)
-\]
+Near-field squeeze-film radiation pressure (Lee & Wang / Chu–Apfel, micrometer-gap limit):
 
 \[
-\phi^+=\mathrm{clip}\bigl(\phi-K\,\mathrm{sat}_\alpha(r)\bigr)
+\bar p=\frac{\gamma(\gamma+1)}{8}\frac{a_{\mathrm{eff}}^{2}\,p_{0}}{h^{2}},\qquad
+a_{\mathrm{eff}}=a_{\max}\sin\phi,\qquad
+F_{\mathrm{ac}}=\bar p\,A
 \]
+
+Vertical plate dynamics:
 
 \[
-|r_t|\le\rho^{t/2}|r_0|+\frac{D}{1-\sqrt{\rho}},\quad\rho<1
+m\ddot h=F_{\mathrm{ac}}-mg-b\dot h
 \]
 
-Discrete step uses the continuous-consistent Euler form
-\(F\leftarrow F+(\Delta t/\tau)(C_0\sin\phi-F+d)\)
-(load step on \(Mg\), process noise on \(d\)). Balanced load is
-\(Mg_{\mathrm{base}}=C_0\sin\theta^\*\) with \(\theta^\*=\pi/8\).
+Design identity: \(a_{\max}\) is solved so \(F(h^\*,\theta^\*)=mg\) with \(\theta^\*=\pi/8\).
+
+Squeeze-number diagnostic \(\sigma=12\eta\omega R^{2}/(p_{0}h^{2})\) (≪1 free-flow, ≫1 trapped-film / NFAL).
+
+## Control
+
+A free plate already force-balances by changing \(h\). The controlled output is therefore **gap regulation**:
+
+\[
+e_h=\frac{h-h^\*}{h^\*},\quad
+\Delta E=\log(1+|e_h|),\quad
+\phi^{+}=\mathrm{clip}\bigl(\phi-K\,\mathrm{sat}_{\alpha}(e_h)\bigr)
+\]
+
+Open-loop negative control: φ held fixed (mass step drops the equilibrium gap).
+
+## Nominal plant (SI)
+
+| Quantity | Value |
+|---|---|
+| Drive frequency | 28 kHz |
+| Plate radius | 20 mm |
+| Payload mass | 12 g (+3 g step @ 1–2.5 s) |
+| Design gap \(h^\*\) | 80 μm |
+| Solved \(a_{\max}\) | ≈ 9.8 μm (\(a/h^\*\approx0.12\)) |
+| Ambient | \(p_0=101325\) Pa, \(\gamma=1.4\), air |
 
 ## Reproduce
 
 ```bash
 python3 code/qsd_sector_closed_loop.py --self-test
-python3 code/qsd_sector_closed_loop.py --out-dir results --phi0 0.35
+python3 code/qsd_sector_closed_loop.py --out-dir results --phi0 0.30
 ```
 
-## Seeded summary (seed=42, φ₀=0.35)
+## Seeded summary (seed=42, φ₀=0.30)
 
-| Metric | Closed loop | Open loop (φ held) |
-|---|---|---|
-| Final ΔE | 0.0004 | 0.0421 |
-| Mean ΔE (last 1 s) | 0.0024 | 0.0388 |
-| Corridor fraction (all / tail) | 0.998 / 1.000 | 0.625 / 1.000 |
-| Final φ | 23.32° | 20.05° |
-| \|r\| mean (tail) | 0.0024 | 0.0396 |
+Closed loop restores \(h\to h^\*\) through the mass step by raising φ; open loop settles to a lower gap.
 
-Outputs: `results/qsd_sector_closed_loop.csv`, `results/qsd_sector_closed_loop_summary.json`, `results/qsd_sector_closed_loop.png`.
+See `results/qsd_sector_closed_loop_summary.json` for exact numbers and full parameter dump.
