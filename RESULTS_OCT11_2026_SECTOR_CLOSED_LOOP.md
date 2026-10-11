@@ -1,51 +1,47 @@
-# QSD Sector Control on Near-Field Acoustic Levitation (Oct 11, 2026)
+# Cascaded NFAL Levitator: Outer Position + QSD Sector (Oct 11, 2026)
 
-**Scope:** Reduced-order **scientific** NFAL plant + sector-bounded φ control. Not a hardware claim.
+**Scope:** Reduced-order scientific control study. Not hardware validation.
 
 **Code:** `code/nfal_physics.py`, `code/qsd_sector_closed_loop.py`
 
-## Physics
+## Architecture
 
-Near-field squeeze-film radiation pressure (Lee & Wang / Chu–Apfel, micrometer-gap limit):
+Inner residual/phase law unchanged in structure; improvements sit around it.
 
+**Plant (gap-dependent coupling):**
 \[
-\bar p=\frac{\gamma(\gamma+1)}{8}\frac{a_{\mathrm{eff}}^{2}\,p_{0}}{h^{2}},\qquad
-a_{\mathrm{eff}}=a_{\max}\sin\phi,\qquad
-F_{\mathrm{ac}}=\bar p\,A
+C(\phi,h)=\frac{\gamma(\gamma+1)}{8}\frac{(a_{\max}\sin\phi)^{2}p_{0}}{h^{2}}A,\quad
+m\ddot h=C(\phi,h)-mg-b\dot h+d_{\mathrm{ext}}
 \]
 
-Vertical plate dynamics:
-
+**Outer position/velocity loop** (stops force-only drift):
 \[
-m\ddot h=F_{\mathrm{ac}}-mg-b\dot h
+r=( \hat F-mg)+K_p\,mg\,\frac{h-h^\*}{h^\*}+K_d\,mg\,\frac{v}{v_{\mathrm{scale}}}
 \]
 
-Design identity: \(a_{\max}\) is solved so \(F(h^\*,\theta^\*)=mg\) with \(\theta^\*=\pi/8\).
-
-Squeeze-number diagnostic \(\sigma=12\eta\omega R^{2}/(p_{0}h^{2})\) (≪1 free-flow, ≫1 trapped-film / NFAL).
-
-## Control
-
-A free plate already force-balances by changing \(h\). The controlled output is therefore **gap regulation**:
-
+**Inner QSD sector** on \(r_n=r/mg\):
 \[
-e_h=\frac{h-h^\*}{h^\*},\quad
-\Delta E=\log(1+|e_h|),\quad
-\phi^{+}=\mathrm{clip}\bigl(\phi-K\,\mathrm{sat}_{\alpha}(e_h)\bigr)
+\Delta E=\log(1+|r_n^{\mathrm{filt}}|),\quad
+\phi^{+}=\mathrm{clip}_{\mathrm{rate}}\bigl(\phi-K\,\mathrm{sat}_\alpha(r_n)\bigr)
 \]
+with back-calculation anti-windup.
 
-Open-loop negative control: φ held fixed (mass step drops the equilibrium gap).
+**Lock-in:** freeze φ when filtered ΔE and |v| are both small; unlock on corridor exit.
 
-## Nominal plant (SI)
+**Safety:** gap floor/ceiling interlocks, hard phase-rate limit.
+
+**Disturbances:** thermal phase walk, gap/force sensor noise, mass step, impulse.
+
+## Nominal plant
 
 | Quantity | Value |
 |---|---|
-| Drive frequency | 28 kHz |
+| Drive | 28 kHz |
 | Plate radius | 20 mm |
-| Payload mass | 12 g (+3 g step @ 1–2.5 s) |
-| Design gap \(h^\*\) | 80 μm |
-| Solved \(a_{\max}\) | ≈ 9.8 μm (\(a/h^\*\approx0.12\)) |
-| Ambient | \(p_0=101325\) Pa, \(\gamma=1.4\), air |
+| Mass | 12 g (+3 g @ 1–2.5 s) |
+| \(h^\*\) | 80 μm |
+| \(a_{\max}\) | ≈ 9.8 μm |
+| \(C_0/Mg\) margin | ≈ 6.8 |
 
 ## Reproduce
 
@@ -54,8 +50,8 @@ python3 code/qsd_sector_closed_loop.py --self-test
 python3 code/qsd_sector_closed_loop.py --out-dir results --phi0 0.30
 ```
 
-## Seeded summary (seed=42, φ₀=0.30)
+## Seeded metrics (seed=42, φ₀=0.30)
 
-Closed loop restores \(h\to h^\*\) through the mass step by raising φ; open loop settles to a lower gap.
+Closed loop (typical): time-to-lock ~0.2 s, hold RMS < 5 μm, step peak ~13 μm with ~10 ms recovery; open loop drifts to ~62 μm and does not lock.
 
-See `results/qsd_sector_closed_loop_summary.json` for exact numbers and full parameter dump.
+See `results/qsd_sector_closed_loop_summary.json` for the full dump.
