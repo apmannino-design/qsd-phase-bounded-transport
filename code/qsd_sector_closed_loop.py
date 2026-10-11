@@ -54,9 +54,15 @@ def signed_error(p_meas: float, p_cmd: float, p_ref: float = 1.0) -> float:
 
 
 def plant_step(u: float, d: float, state: dict[str, float]) -> float:
-    """First-order lag + additive disturbance (toy near-field plate)."""
+    """
+    First-order lag with load bias (toy near-field plate).
+
+    Disturbance enters as an equilibrium offset on the drive,
+    so a step of size D shifts the free response toward u + D
+    rather than integrating an unscaled per-sample kick.
+    """
     p = state["p"]
-    p_new = p + (DT / TAU) * (u - p) + d
+    p_new = p + (DT / TAU) * ((u + d) - p)
     state["p"] = p_new
     return p_new
 

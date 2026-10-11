@@ -22,9 +22,11 @@ python3 code/qsd_sector_closed_loop.py --out-dir results
 
 | Metric | Closed loop | Open loop |
 |---|---|---|
-| Final ΔE | 0.0082 | 0.7349 |
-| Mean ΔE (last 1 s) | 0.0470 | 0.6909 |
-| Corridor fraction (tail) | 0.921 | 0.000 |
-| Final drive u | 1.232 | 0.000 |
+| Final ΔE | 0.0004 | 0.6953 |
+| Mean ΔE (last 1 s) | 0.0024 | 0.6931 |
+| Corridor fraction (all / tail) | 0.990 / 1.000 | 0.000 / 0.000 |
+| Final drive u | 1.012 | 0.000 |
+
+Plant note: disturbance enters as an equilibrium load bias on the drive (`u + d`), so the sector loop can reject the 1.0–2.5 s step instead of integrating an unscaled per-sample kick.
 
 Outputs: `results/qsd_sector_closed_loop.csv`, `results/qsd_sector_closed_loop_summary.json`, `results/qsd_sector_closed_loop.png`.
