@@ -61,10 +61,12 @@ class NFALParams:
     kd_vel: float = 1.2  # on v / v_scale
     v_scale: float = 5e-4  # m/s normalization (~0.5 mm/s)
 
-    # Lock-in (freeze φ when filtered corridor + low velocity)
+    # Lock-in (freeze φ when filtered corridor + low velocity + low gap error)
     lock_de_gate: float = 0.05
     lock_v_gate: float = 5e-5  # m/s
+    lock_eh_gate: float = 0.03  # |e_h| must also be small
     unlock_de_gate: float = 0.12
+    unlock_eh_gate: float = 0.06
     tau_residual_s: float = 0.015  # filter for ΔE / lock (keeps corridor on fast residual)
 
     # Anti-windup (back-calculation)

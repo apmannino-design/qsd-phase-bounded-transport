@@ -121,12 +121,16 @@ def run_nfal_loop(
         delta_e = compute_delta_e(r_n_filt)
         sat_r = sat(r_n, p.alpha)
 
-        # --- lock-in (filtered ΔE + low velocity) ---
+        # --- lock-in (filtered ΔE + low velocity + low gap error) ---
         if locked:
-            if delta_e > p.unlock_de_gate:
+            if delta_e > p.unlock_de_gate or abs(e_h) > p.unlock_eh_gate:
                 locked = False
         else:
-            if delta_e < p.lock_de_gate and abs(v) < p.lock_v_gate:
+            if (
+                delta_e < p.lock_de_gate
+                and abs(v) < p.lock_v_gate
+                and abs(e_h) < p.lock_eh_gate
+            ):
                 locked = True
 
         # --- safety interlocks ---
