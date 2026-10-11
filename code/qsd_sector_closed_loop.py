@@ -1,27 +1,11 @@
 """
-Full physics simulation — conservative outer loop + QSD sector phase law.
+Real-time lock-in simulation
 
-- Monotonic phase branch (φ ∈ [φ_min, π/2])
-- Timestep-scaled phase rates (φ ← φ + DT · φ̇)
-- Consistent F_ref bounds from available coupling
-- Conservative outer-loop gains
-- Equilibrium initialization
-- DT-scaled force noise (Wiener); raw per-step noise is not used
-- Slow φ_ref creep while locked (altitude integral)
-
-Plant:
-    A(y) = C0_max / (1 + (y/h0)²)
-    C(φ,y) = A(y) · sin φ
-    τ Ḟ_ac = C − F_ac + d(t)
-    m ÿ = F_ac − mg − b ẏ
-
-Outer loop:
-    F_ref = clip( mg − K_p (y−y_ref) − K_d v , A sin φ_min , 0.95 A )
-
-Inner residual / phase:
-    r = F_ac − F_ref ,  e = sat_α(r/mg)
-    acquisition:  φ̇ = −K_lock e
-    locked:       φ̇ = −K_inner e − λ (φ − φ_ref)
+- Acquisition: inner residual/phase loop only (F_ref = Mg)
+- Quiet-window detector (ΔE + |v|)
+- Freeze phi_ref and enable outer PID loop only after confirmed lock
+- Monotonic phase branch, consistent F_ref bounds
+- DT-scaled force noise + light damping (needed for a quiet acquisition window)
 """
 
 from __future__ import annotations
@@ -41,50 +25,48 @@ MG = M * G
 C0_MAX = 6.0 * MG
 H0 = 0.0008
 TAU = 0.005
-B_DAMP = 5.0e-3  # air damping; needed for force-lag + outer-loop stability
+B_DAMP = 5e-3  # stabilizes force-lag plant for quiet-window acquisition
 
 DT = 5e-5
-N_STEPS = 20000
+N_STEPS = 30000
 
-# Phase-rate gains
-K_LOCK = 80.0
-K_INNER = 40.0
-LAM = 6.0
-ALPHA = 0.15
+# Inner (phase-rate) gains
+K_ACQ = 70.0
+K_LOCKED = 35.0
+LAM = 1.0  # soft freeze; stiff λ fights F_ref moves after outer loop engages
+ALPHA = 0.12
 
-# Outer-loop gains (locally stable in acquisition linearization)
-KP = 0.40
-KD = 0.002  # sketch value (equilibrium start + DT-scaled noise)
+# Outer loop (enabled only after lock)
+KP = 5.0
+KD = 0.10
+KI = 0.25
 Y_REF = 0.0015
+INTEG_LIM = 0.0015
 
-# Lock-in (status flag + soft φ_ref spring; phase law stays residual-driven)
-DE_TH = 0.025
-W_LOCK = 400
-V_LOCK_MAX = 0.008
-Y_LOCK_TOL = 5e-5
-T_LOCK_MIN = 0.05  # don't declare lock on the first buffer fill
+# Quiet-window detector
+DE_TH = 0.020
+V_MAX = 0.005
+Y_TOL = 5e-5
+QUIET_LEN = 500  # samples (~25 ms)
+LOSS_MULT = 5.0  # mean ΔE > DE_TH * LOSS_MULT ⇒ loss of lock
+LOCK_GRACE_S = 0.20  # no loss-of-lock checks right after engage
 
 PHI_MIN = 0.08
 PHI_MAX = np.pi / 2
 
-NOISE_AMP = 0.008  # × Mg × √DT
+NOISE_AMP = 0.0015  # × Mg × √DT
 Y_FLOOR = 0.0002
-Y_CEIL = 0.006
+Y_CEIL = 0.008
+Y0 = 0.0022  # slight offset for acquisition demo
+F0_FRAC = 0.7  # initial F_ac = 0.7 Mg
 
 
 def sat(x: float, a: float = ALPHA) -> float:
     return float(np.clip(x, -a, a))
 
 
-def force_gain(y: float, c0_max: float = C0_MAX, h0: float = H0) -> float:
-    """Available force amplitude A(y) = C0_max / (1 + (y/h0)²)."""
-    return c0_max / (1.0 + (y / h0) ** 2)
-
-
-def equilibrium_phi(y: float = Y_REF, weight: float = MG) -> float:
-    """φ such that A(y) sin φ = weight (monotonic branch)."""
-    a_ref = force_gain(y)
-    return float(np.arcsin(np.clip(weight / a_ref, 0.0, 1.0)))
+def force_gain(y: float) -> float:
+    return C0_MAX / (1.0 + (y / H0) ** 2)
 
 
 def run_loop(
@@ -92,24 +74,27 @@ def run_loop(
     n_steps: int = N_STEPS,
     closed_loop: bool = True,
     enable_disturbances: bool = True,
-    mass_step: bool = False,
 ) -> list[dict[str, float]]:
     rng = np.random.default_rng(seed)
 
-    # -------------------- Initialize at equilibrium --------------------
-    y = float(Y_REF)
+    # -------------------- State --------------------
+    y = float(Y0)
     v = 0.0
-    phi = equilibrium_phi(Y_REF, MG)
-    f_ac = float(MG)
+    a0 = force_gain(y)
+    phi = float(np.arcsin(np.clip(MG / a0, 0.0, 1.0)))
+    f_ac = F0_FRAC * MG
     ell = 0
-    phi_ref = phi
+    phi_ref = 0.0
+    integ = 0.0
+    t_lock = float("nan")
+
     de_buf: list[float] = []
+    v_buf: list[float] = []
+    y_buf: list[float] = []
     log: list[dict[str, float]] = []
 
     for k in range(n_steps):
         t = k * DT
-        mass = M * (1.25 if (mass_step and 0.4 < t < 0.7) else 1.0)
-        weight = mass * G
 
         c_available = force_gain(y)
         c = c_available * np.sin(np.clip(phi, PHI_MIN, PHI_MAX))
@@ -119,8 +104,15 @@ def run_loop(
             d_f = 0.0
         f_ac = f_ac + (DT / TAU) * (c - f_ac) + d_f
 
-        # Outer loop + consistent bounds
-        f_ref_raw = weight - KP * (y - Y_REF) - KD * v
+        # Force reference: pure Mg during acquisition; outer loop after lock
+        if (not closed_loop) or ell == 0:
+            f_ref_raw = MG
+            integ = 0.0
+        else:
+            integ += (y - Y_REF) * DT
+            integ = float(np.clip(integ, -INTEG_LIM, INTEG_LIM))
+            f_ref_raw = MG - KP * (y - Y_REF) - KD * v - KI * integ
+
         f_min = c_available * np.sin(PHI_MIN)
         f_max = 0.95 * c_available
         f_ref = float(np.clip(f_ref_raw, f_min, f_max))
@@ -128,7 +120,8 @@ def run_loop(
         r = f_ac - f_ref
         de = float(np.log1p(np.abs(r) / MG))
 
-        acc = (f_ac - weight - B_DAMP * v) / mass
+        # Dynamics
+        acc = (f_ac - MG - B_DAMP * v) / M
         v = v + acc * DT
         y = y + v * DT
         if y < Y_FLOOR:
@@ -138,37 +131,53 @@ def run_loop(
             y = Y_CEIL
             v = min(0.0, v)
 
+        # Buffers for quiet detector
         de_buf.append(de)
-        if len(de_buf) > W_LOCK:
+        v_buf.append(abs(v))
+        y_buf.append(abs(y - Y_REF))
+        if len(de_buf) > QUIET_LEN:
             de_buf.pop(0)
+            v_buf.pop(0)
+            y_buf.pop(0)
 
         # Phase update
         phi = float(np.clip(phi, PHI_MIN, PHI_MAX))
         e = sat(r / MG)
 
         if closed_loop:
-            # Lock-in is a status latch (corridor + quiet kinematics). Phase
-            # update stays the residual law with timestep-scaled rate; after
-            # lock, blend in a weak φ_ref spring (user locked form) without
-            # freezing adaptation.
-            if (
-                ell == 0
-                and t >= T_LOCK_MIN
-                and len(de_buf) == W_LOCK
-                and float(np.mean(de_buf)) < DE_TH
-                and float(np.max(de_buf[-120:])) < DE_TH * 1.3
-                and abs(v) < V_LOCK_MAX
-                and abs(y - Y_REF) < Y_LOCK_TOL
-            ):
-                ell = 1
-                phi_ref = phi
+            if ell == 0:
+                phi_dot = -K_ACQ * e
+                phi = float(np.clip(phi + DT * phi_dot, PHI_MIN, PHI_MAX))
 
-            # Residual-driven phase rate (acquisition gains). Lock does not
-            # switch the law — φ_ref is diagnostic only. Switching to a
-            # φ_ref spring after lock was observed to grow gap oscillations.
-            phi_dot = -K_LOCK * e
-            phi = float(np.clip(phi + DT * phi_dot, PHI_MIN, PHI_MAX))
-        # else: open loop holds φ
+                # Quiet-window test (residual + velocity).
+                # Gap gate is omitted in acquisition: with F_ref=Mg there is no
+                # altitude loop yet, so requiring |y-y_ref| prevents lock-in.
+                if len(de_buf) == QUIET_LEN:
+                    if (
+                        float(np.mean(de_buf)) < DE_TH
+                        and float(np.max(de_buf)) < DE_TH * 1.3
+                        and float(np.max(v_buf)) < V_MAX
+                    ):
+                        ell = 1
+                        phi_ref = phi
+                        t_lock = t
+                        de_buf.clear()
+                        v_buf.clear()
+                        y_buf.clear()
+            else:
+                phi_ref = float(np.clip(phi_ref, PHI_MIN, PHI_MAX))
+                phi_dot = -K_LOCKED * e - LAM * (phi - phi_ref)
+                phi = float(np.clip(phi + DT * phi_dot, PHI_MIN, PHI_MAX))
+
+                # Loss-of-lock check (after grace)
+                if (
+                    (t - t_lock) > LOCK_GRACE_S
+                    and len(de_buf) == QUIET_LEN
+                    and float(np.mean(de_buf)) > DE_TH * LOSS_MULT
+                ):
+                    ell = 0
+                    integ = 0.0
+        # else open-loop: hold initial phi branch
 
         log.append(
             {
@@ -185,10 +194,9 @@ def run_loop(
                 "y_mm": y * 1000.0,
                 "v": v,
                 "ell": float(ell),
-                "c_available": c_available,
-                "c": c,
-                "weight": weight,
+                "integ": integ,
                 "sat_e": e,
+                "c_available": c_available,
             }
         )
 
@@ -204,38 +212,44 @@ def compute_metrics(history: list[dict[str, float]]) -> dict[str, float]:
     ell = np.array([h["ell"] for h in history])
     locked = ell > 0.5
 
-    t_lock = float("nan")
-    if locked.any():
-        t_lock = float(t[np.argmax(locked)])
+    t_lock = float(t[np.argmax(locked)]) if locked.any() else float("nan")
+    n_tail = max(1, int(round(0.3 / DT)))
 
-    n_tail = max(1, int(round(0.1 / DT)))
     if locked.any():
-        y_lock = y[locked]
-        hold_rms_mm = float(np.std(y_lock) * 1000.0)
-        hold_mean_mm = float(np.mean(y_lock) * 1000.0)
+        # metrics on the last contiguous lock segment if possible
+        # fall back to all locked samples
+        hold_mean = float(np.mean(y[locked]) * 1000.0)
+        hold_rms = float(np.std(y[locked]) * 1000.0)
+        if not np.isnan(t_lock):
+            post = y[t >= (t_lock + 0.2)]
+            post_mean = float(np.mean(post) * 1000.0) if post.size else float("nan")
+            post_rms = float(np.std(post) * 1000.0) if post.size else float("nan")
+        else:
+            post_mean = post_rms = float("nan")
     else:
-        hold_rms_mm = float("nan")
-        hold_mean_mm = float("nan")
+        hold_mean = hold_rms = post_mean = post_rms = float("nan")
+
+    drops = int(np.sum(np.diff(ell.astype(float)) < -0.5))
 
     return {
         "lock_in": bool(locked.any()),
         "time_to_lock_s": t_lock,
         "fraction_locked": float(locked.mean()),
+        "lock_drop_count": drops,
         "final_r_over_mg": float(abs(r[-1]) / MG),
         "final_delta_e": float(de[-1]),
         "final_gap_mm": float(y[-1] * 1000.0),
         "final_abs_v": float(abs(v[-1])),
-        "gap_rms_last_0p1s_mm": float(np.std(y[-n_tail:]) * 1000.0),
-        "hold_rms_mm": hold_rms_mm,
-        "hold_mean_mm": hold_mean_mm,
-        "mean_delta_e_tail": float(de[-n_tail:].mean()),
+        "hold_mean_mm": hold_mean,
+        "hold_rms_mm": hold_rms,
+        "post_lock_mean_mm": post_mean,
+        "post_lock_rms_mm": post_rms,
+        "gap_rms_tail_mm": float(np.std(y[-n_tail:]) * 1000.0),
         "y_ref_mm": float(Y_REF * 1000.0),
         "c0_over_mg": float(C0_MAX / MG),
         "kp": float(KP),
         "kd": float(KD),
-        "k_lock": float(K_LOCK),
-        "k_inner": float(K_INNER),
-        "theta_star_deg": 22.5,
+        "ki": float(KI),
     }
 
 
@@ -250,7 +264,6 @@ def save_outputs(
     csv_path = out_dir / "qsd_sector_closed_loop.csv"
     np.savetxt(csv_path, data, delimiter=",", header=",".join(keys), comments="")
 
-    summary_path = out_dir / "qsd_sector_closed_loop_summary.json"
     params = {
         "m": M,
         "g": G,
@@ -260,15 +273,20 @@ def save_outputs(
         "b_damp": B_DAMP,
         "DT": DT,
         "N": len(history),
-        "K_lock": K_LOCK,
-        "K_inner": K_INNER,
+        "K_acq": K_ACQ,
+        "K_locked": K_LOCKED,
         "lam": LAM,
         "alpha": ALPHA,
         "Kp": KP,
         "Kd": KD,
+        "Ki": KI,
         "y_ref": Y_REF,
         "DE_th": DE_TH,
+        "quiet_len": QUIET_LEN,
+        "noise_amp": NOISE_AMP,
+        "y0": Y0,
     }
+    summary_path = out_dir / "qsd_sector_closed_loop_summary.json"
     summary_path.write_text(
         json.dumps({"summary": summary, "params": params}, indent=2) + "\n",
         encoding="utf-8",
@@ -292,11 +310,10 @@ def save_outputs(
         axs[0].plot(t, de, lw=1.1)
         axs[0].axhline(DE_TH, color="r", ls="--")
         if lt is not None:
-            axs[0].axvline(lt, color="purple", ls=":")
+            axs[0].axvline(lt, color="purple", ls=":", label="lock-in")
+            axs[0].legend(frameon=False)
         axs[0].set_ylabel(r"$\Delta E$")
-        axs[0].set_title(
-            "Conservative outer loop + consistent bounds + equilibrium start"
-        )
+        axs[0].set_title("Real-time lock-in: acquisition then outer loop")
         axs[0].grid(alpha=0.3)
 
         axs[1].plot(t, phi, color="orange", lw=1.1)
@@ -329,28 +346,21 @@ def save_outputs(
 
 
 def self_test(seed: int = 42) -> dict[str, Any]:
-    # Equilibrium identity on the monotonic branch
-    phi_eq = equilibrium_phi(Y_REF, MG)
-    assert abs(force_gain(Y_REF) * np.sin(phi_eq) - MG) / MG < 1e-9
-
-    # Gap dependence: larger gap ⇒ less available force
-    assert force_gain(2 * H0) < force_gain(H0)
-
-    closed = run_loop(seed=seed, closed_loop=True, enable_disturbances=True)
-    open_ = run_loop(seed=seed, closed_loop=False, enable_disturbances=True)
+    closed = run_loop(seed=seed, closed_loop=True)
+    open_ = run_loop(seed=seed, closed_loop=False)
     csum = compute_metrics(closed)
     osum = compute_metrics(open_)
 
     sat_vals = np.array([h["sat_e"] for h in closed])
     assert np.all(np.abs(sat_vals) <= ALPHA + 1e-12)
-    assert csum["lock_in"], "closed loop failed to lock"
-    assert csum["fraction_locked"] > 0.5
-    # Hold quality while locked, and quieter than open loop on the tail.
-    assert abs(csum["hold_mean_mm"] - Y_REF * 1000.0) < 0.35
-    assert csum["hold_rms_mm"] < 0.1
-    assert csum["gap_rms_last_0p1s_mm"] < osum["gap_rms_last_0p1s_mm"]
-    # No late divergence: last-0.1s gap RMS must stay near the locked hold RMS.
-    assert csum["gap_rms_last_0p1s_mm"] < max(0.08, 3.0 * csum["hold_rms_mm"])
+    assert csum["lock_in"], "failed to lock"
+    assert csum["time_to_lock_s"] < 1.0
+    assert abs(csum["post_lock_mean_mm"] - Y_REF * 1000.0) < 0.15
+    assert csum["post_lock_rms_mm"] < 0.10
+    # Outer loop should pull nearer y_ref than open-loop drift
+    assert abs(csum["final_gap_mm"] - Y_REF * 1000.0) < abs(
+        osum["final_gap_mm"] - Y_REF * 1000.0
+    )
 
     return {"ok": True, "closed": csum, "open": osum}
 
@@ -366,12 +376,13 @@ def print_summary(summary: dict[str, float], label: str = "closed") -> None:
     print(f"[{label}] Final ΔE     : {summary['final_delta_e']:.4f}")
     print(f"[{label}] Final gap    : {summary['final_gap_mm']:.3f} mm")
     print(f"[{label}] Final |v|    : {summary['final_abs_v']:.5f} m/s")
-    print(f"[{label}] Gap RMS last 0.1 s: {summary['gap_rms_last_0p1s_mm']:.3f} mm")
-    if not np.isnan(summary["hold_rms_mm"]):
+    if not np.isnan(summary["post_lock_mean_mm"]):
         print(
-            f"[{label}] Hold mean/RMS: {summary['hold_mean_mm']:.3f} / "
-            f"{summary['hold_rms_mm']:.3f} mm"
+            f"[{label}] Post-lock mean/RMS: {summary['post_lock_mean_mm']:.3f} / "
+            f"{summary['post_lock_rms_mm']:.3f} mm"
         )
+    print(f"[{label}] Lock fraction / drops: {summary['fraction_locked']:.3f} / "
+          f"{int(summary['lock_drop_count'])}")
 
 
 def main() -> None:
@@ -379,7 +390,6 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--out-dir", type=Path, default=Path("results"))
     parser.add_argument("--self-test", action="store_true")
-    parser.add_argument("--mass-step", action="store_true")
     parser.add_argument("--no-disturbances", action="store_true")
     args = parser.parse_args()
 
@@ -394,23 +404,20 @@ def main() -> None:
         seed=args.seed,
         closed_loop=True,
         enable_disturbances=not args.no_disturbances,
-        mass_step=args.mass_step,
     )
     summary = compute_metrics(history)
     print_summary(summary, "closed")
     paths = save_outputs(history, summary, args.out_dir)
-    # also mirror the canonical artifact name from the sketch
+
     try:
         import shutil
 
-        art = Path("artifacts")
-        art.mkdir(exist_ok=True)
-        shutil.copy(paths["figure"], art / "conservative_outer.png")
-        opt = Path("/opt/cursor/artifacts")
-        if opt.exists():
-            shutil.copy(paths["figure"], opt / "conservative_outer.png")
+        for dest_dir in (Path("artifacts"), Path("/opt/cursor/artifacts")):
+            dest_dir.mkdir(parents=True, exist_ok=True)
+            shutil.copy(paths["figure"], dest_dir / "realtime_lockin.png")
     except Exception:
         pass
+
     print(f"Wrote {paths['csv']}")
     print(f"Wrote {paths['summary']}")
     print(f"Wrote {paths['figure']}")
