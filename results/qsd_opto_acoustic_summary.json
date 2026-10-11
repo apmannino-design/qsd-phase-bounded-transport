@@ -1,28 +1,33 @@
 {
   "summary": {
-    "final_delta_e": 0.017621714191887048,
-    "mean_delta_e_tail": 0.012379900924223175,
-    "corridor_fraction": 0.9976666666666667,
-    "corridor_fraction_tail": 1.0,
-    "final_p": 0.617777892625933,
-    "final_phi": 0.5256865420566293,
-    "final_phi_deg": 30.119620206671314,
-    "abs_r_mean_tail": 0.012497996532741905,
-    "p_ref": 0.6,
-    "k_gain": 3.2,
-    "alpha": 0.25,
-    "eta": 0.9
+    "demo": "opto_acoustic",
+    "lock_in": true,
+    "time_to_lock_s": 0.006,
+    "corridor_fraction": 0.9983333333333333,
+    "hold_or_track_rms": 0.015932024205831227,
+    "open_loop_rms": 0.051470222069209835,
+    "final_delta_e": 0.008795642637335928,
+    "diverged": false,
+    "notes": "DT-scaled \u03c6 rate + sensor lag/bias/dropout",
+    "extras": {
+      "final_delta_e": 0.008795642637335928,
+      "mean_delta_e_tail": 0.012400301622777622,
+      "corridor_fraction": 0.9983333333333333,
+      "abs_r_mean_tail": 0.012525038012029466,
+      "track_rms": 0.015932024205831227,
+      "final_p": 0.6067956443851678,
+      "final_phi": 0.7446803106518364,
+      "diverged": false
+    }
   },
-  "params": {
-    "DT": 0.002,
-    "N": 3000,
-    "tau": 0.015,
-    "I": 1.0,
-    "eta": 0.9,
-    "p_ref": 0.6,
-    "K": 3.2,
-    "alpha": 0.25,
-    "corridor": 0.07,
-    "noise_std": 0.008
+  "metrics": {
+    "final_delta_e": 0.008795642637335928,
+    "mean_delta_e_tail": 0.012400301622777622,
+    "corridor_fraction": 0.9983333333333333,
+    "abs_r_mean_tail": 0.012525038012029466,
+    "track_rms": 0.015932024205831227,
+    "final_p": 0.6067956443851678,
+    "final_phi": 0.7446803106518364,
+    "diverged": false
   }
 }

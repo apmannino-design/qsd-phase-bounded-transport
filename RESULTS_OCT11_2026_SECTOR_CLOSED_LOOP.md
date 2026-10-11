@@ -2,17 +2,18 @@
 
 **Scope:** Classical real-time lock-in sketch. Not a hardware claim.
 
-**Code:** `code/qsd_sector_closed_loop.py`
+**Code:** `code/qsd_sector_closed_loop.py` (via `qsd_control_core`)
 
 ## Architecture
 
 1. **Acquisition** — inner residual/phase only, \(F_{\mathrm{ref}}=Mg\)
-2. **Quiet-window detector** — mean/max \(\Delta E\) and \(|v|\) over ~25 ms
+2. **Quiet-window detector** — mean/max \(\Delta E\) and \(|v|\) (`QuietWindowLock`)
 3. **Lock** — freeze \(\phi_{\mathrm{ref}}\), enable outer PID on gap
 4. **Locked phase law** — \(\dot\phi=-K_{\mathrm{locked}}e-\lambda(\phi-\phi_{\mathrm{ref}})\)
-5. **Loss-of-lock** — sustained high \(\Delta E\) after a short grace period
+5. **Sensing** — lag/bias/dropout on force measurement
+6. **Loss-of-lock** — sustained high \(\Delta E\) after a short grace period
 
-Also: monotonic \(\phi\) branch, consistent \(F_{\mathrm{ref}}\) bounds from \(A(y)\sin\phi\), DT-scaled force noise, light damping (required for a quiet acquisition window).
+Also: monotonic \(\phi\) branch, consistent \(F_{\mathrm{ref}}\) bounds from \(A(y)\sin\phi\), DT-scaled force noise, light damping.
 
 ## Reproduce
 
@@ -25,9 +26,9 @@ python3 code/qsd_sector_closed_loop.py --out-dir results
 
 | Metric | Value |
 |---|---|
-| Lock-in | True @ 0.269 s |
-| Post-lock mean / RMS | ≈ 1.49 / 0.08 mm |
-| Final gap | ≈ 1.52 mm |
+| Lock-in | True @ 0.292 s |
+| Post-lock mean / RMS | ≈ 1.51 / 0.08 mm |
+| Final gap | ≈ 1.53 mm |
 | \(y_{\mathrm{ref}}\) | 1.50 mm |
 
 Artifact: `artifacts/realtime_lockin.png`

@@ -1,0 +1,88 @@
+{
+  "scorecards": [
+    {
+      "demo": "opto_acoustic",
+      "lock_in": true,
+      "time_to_lock_s": 0.006,
+      "corridor_fraction": 0.9983333333333333,
+      "hold_or_track_rms": 0.015932024205831227,
+      "open_loop_rms": 0.051470222069209835,
+      "final_delta_e": 0.008795642637335928,
+      "diverged": false,
+      "notes": "DT-scaled \u03c6 rate + sensor lag/bias/dropout",
+      "extras": {
+        "final_delta_e": 0.008795642637335928,
+        "mean_delta_e_tail": 0.012400301622777622,
+        "corridor_fraction": 0.9983333333333333,
+        "abs_r_mean_tail": 0.012525038012029466,
+        "track_rms": 0.015932024205831227,
+        "final_p": 0.6067956443851678,
+        "final_phi": 0.7446803106518364,
+        "diverged": false
+      }
+    },
+    {
+      "demo": "lock_in",
+      "lock_in": true,
+      "time_to_lock_s": 0.2918,
+      "corridor_fraction": 0.8365666666666667,
+      "hold_or_track_rms": 0.08143004315377447,
+      "open_loop_rms": 0.30027984065271085,
+      "final_delta_e": 0.01469951255524867,
+      "diverged": false,
+      "notes": "quiet-window lock then outer PID; sensor lag/bias/dropout on F",
+      "extras": {
+        "lock_in": true,
+        "time_to_lock_s": 0.2918,
+        "fraction_locked": 0.5334666666666666,
+        "lock_drop_count": 4,
+        "final_r_over_mg": 0.014808081708860908,
+        "final_delta_e": 0.01469951255524867,
+        "final_gap_mm": 1.527808180328109,
+        "final_abs_v": 0.006704843805229141,
+        "hold_mean_mm": 1.5164622689275027,
+        "hold_rms_mm": 0.07891654193281833,
+        "post_lock_mean_mm": 1.5132956679779,
+        "post_lock_rms_mm": 0.08033727118247803,
+        "track_rms_mm": 0.08143004315377447,
+        "gap_rms_tail_mm": 0.06427304221021057,
+        "y_ref_mm": 1.5,
+        "c0_over_mg": 6.0,
+        "kp": 5.0,
+        "kd": 0.1,
+        "ki": 0.25,
+        "diverged": false,
+        "corridor_fraction": 0.8365666666666667,
+        "gap_err_rms_mm": 0.13960305630709133
+      }
+    },
+    {
+      "demo": "spatial_match",
+      "lock_in": true,
+      "time_to_lock_s": 0.158,
+      "corridor_fraction": 0.99425,
+      "hold_or_track_rms": 0.0029581288052963786,
+      "open_loop_rms": 0.08292935671048485,
+      "final_delta_e": 0.027838890700756767,
+      "diverged": false,
+      "notes": "unwrapped FF+FB; lock mid-node then track; sensor lag/bias/dropout",
+      "extras": {
+        "final_delta_e": 0.027838890700756767,
+        "mean_abs_err": 0.0020718034749388917,
+        "mean_abs_err_tail": 0.0016081509813268085,
+        "corridor_fraction": 0.99425,
+        "corridor_fraction_strict": 0.98075,
+        "final_phi": 2.7044984351533294,
+        "final_ratio": 1.0,
+        "target_amp": 0.12,
+        "k_phi": 40.0,
+        "ff_blend": 0.35,
+        "lock_in": true,
+        "time_to_lock_s": 0.158,
+        "fraction_locked": 0.98025,
+        "track_rms": 0.0029581288052963786,
+        "diverged": false
+      }
+    }
+  ]
+}

@@ -2,17 +2,18 @@
 
 **Scope:** Classical photoacoustic match sketch. Not a hardware claim.
 
-**Code:** `code/qsd_opto_acoustic.py`
+**Code:** `code/qsd_opto_acoustic.py` (via `qsd_control_core`)
 
 ## Model
 
 \[
 \tau\dot p = \eta I\sin\phi - p + d(t),\quad
-r=p-p_{\mathrm{ref}},\quad
+r=p_{\mathrm{meas}}-p_{\mathrm{ref}},\quad
 \Delta E=\log(1+|r|),\quad
-\phi\leftarrow\mathrm{clip}\bigl(\phi-K\,\mathrm{sat}_\alpha(r)\bigr)
+\dot\phi=-K\,\mathrm{sat}_\alpha(r)
 \]
 
+DT-scaled \(\phi\) rate and √DT plant noise; sensor lag/bias/dropout on \(p\).
 Balance: \(\phi^\*=\arcsin(p_{\mathrm{ref}}/(\eta I))\).
 
 ## Reproduce
@@ -26,8 +27,9 @@ python3 code/qsd_opto_acoustic.py --out-dir results
 
 | Metric | Closed |
 |---|---|
-| Final ΔE | ~0.003 |
+| Final ΔE | ~0.009 |
 | Corridor (ΔE < 0.07) | ~99.8% |
-| Final p | ~0.60 (target 0.60) |
+| Track RMS (closed / open) | ~0.016 / 0.051 |
+| Final p | ~0.61 (target 0.60) |
 
 Artifact: `artifacts/opto_acoustic.png`

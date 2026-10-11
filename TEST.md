@@ -46,4 +46,10 @@ Spatial node-tracking match (two-source standing field):
 python3 code/qsd_spatial_match.py --self-test
 ```
 
+Unified scorecard (all three demos via `qsd_control_core`):
+
+```bash
+python3 code/run_qsd_scorecard.py --self-test
+```
+
 **All tests should pass** after `make pipeline`.

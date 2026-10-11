@@ -1,23 +1,38 @@
 {
   "summary": {
+    "demo": "lock_in",
     "lock_in": true,
-    "time_to_lock_s": 0.26935000000000003,
-    "fraction_locked": 0.5586,
-    "lock_drop_count": 4,
-    "final_r_over_mg": 0.1667652835588895,
-    "final_delta_e": 0.154235205019666,
-    "final_gap_mm": 1.5163904516680407,
-    "final_abs_v": 0.001263723256445543,
-    "hold_mean_mm": 1.5079326747490809,
-    "hold_rms_mm": 0.07451088471861142,
-    "post_lock_mean_mm": 1.4856979974307114,
-    "post_lock_rms_mm": 0.0763178946925222,
-    "gap_rms_tail_mm": 0.07861358931995989,
-    "y_ref_mm": 1.5,
-    "c0_over_mg": 6.0,
-    "kp": 5.0,
-    "kd": 0.1,
-    "ki": 0.25
+    "time_to_lock_s": 0.2918,
+    "corridor_fraction": 0.8365666666666667,
+    "hold_or_track_rms": 0.08143004315377447,
+    "open_loop_rms": 0.30027984065271085,
+    "final_delta_e": 0.01469951255524867,
+    "diverged": false,
+    "notes": "quiet-window lock then outer PID; sensor lag/bias/dropout on F",
+    "extras": {
+      "lock_in": true,
+      "time_to_lock_s": 0.2918,
+      "fraction_locked": 0.5334666666666666,
+      "lock_drop_count": 4,
+      "final_r_over_mg": 0.014808081708860908,
+      "final_delta_e": 0.01469951255524867,
+      "final_gap_mm": 1.527808180328109,
+      "final_abs_v": 0.006704843805229141,
+      "hold_mean_mm": 1.5164622689275027,
+      "hold_rms_mm": 0.07891654193281833,
+      "post_lock_mean_mm": 1.5132956679779,
+      "post_lock_rms_mm": 0.08033727118247803,
+      "track_rms_mm": 0.08143004315377447,
+      "gap_rms_tail_mm": 0.06427304221021057,
+      "y_ref_mm": 1.5,
+      "c0_over_mg": 6.0,
+      "kp": 5.0,
+      "kd": 0.1,
+      "ki": 0.25,
+      "diverged": false,
+      "corridor_fraction": 0.8365666666666667,
+      "gap_err_rms_mm": 0.13960305630709133
+    }
   },
   "params": {
     "m": 0.0001,
@@ -39,6 +54,7 @@
     "DE_th": 0.02,
     "quiet_len": 500,
     "noise_amp": 0.0015,
-    "y0": 0.0022
+    "y0": 0.0022,
+    "uses_core": true
   }
 }
