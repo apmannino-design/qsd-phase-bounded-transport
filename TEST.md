@@ -40,4 +40,10 @@ Opto-acoustic frequency-matched residual loop:
 python3 code/qsd_opto_acoustic.py --self-test
 ```
 
+Spatial node-tracking match (two-source standing field):
+
+```bash
+python3 code/qsd_spatial_match.py --self-test
+```
+
 **All tests should pass** after `make pipeline`.

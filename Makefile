@@ -15,6 +15,8 @@ pipeline:
 	python3 code/qsd_sector_closed_loop.py --out-dir results
 	python3 code/qsd_opto_acoustic.py --self-test
 	python3 code/qsd_opto_acoustic.py --out-dir results
+	python3 code/qsd_spatial_match.py --self-test
+	python3 code/qsd_spatial_match.py --out-dir results
 
 report:
 	python3 code/build_report.py
