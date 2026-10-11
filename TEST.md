@@ -34,4 +34,10 @@ Conservative outer-loop + QSD sector phase law (gap-dependent force, lock-in):
 python3 code/qsd_sector_closed_loop.py --self-test
 ```
 
+Opto-acoustic frequency-matched residual loop:
+
+```bash
+python3 code/qsd_opto_acoustic.py --self-test
+```
+
 **All tests should pass** after `make pipeline`.

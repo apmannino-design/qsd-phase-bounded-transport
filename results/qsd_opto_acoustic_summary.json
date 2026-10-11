@@ -1,0 +1,28 @@
+{
+  "summary": {
+    "final_delta_e": 0.017621714191887048,
+    "mean_delta_e_tail": 0.012379900924223175,
+    "corridor_fraction": 0.9976666666666667,
+    "corridor_fraction_tail": 1.0,
+    "final_p": 0.617777892625933,
+    "final_phi": 0.5256865420566293,
+    "final_phi_deg": 30.119620206671314,
+    "abs_r_mean_tail": 0.012497996532741905,
+    "p_ref": 0.6,
+    "k_gain": 3.2,
+    "alpha": 0.25,
+    "eta": 0.9
+  },
+  "params": {
+    "DT": 0.002,
+    "N": 3000,
+    "tau": 0.015,
+    "I": 1.0,
+    "eta": 0.9,
+    "p_ref": 0.6,
+    "K": 3.2,
+    "alpha": 0.25,
+    "corridor": 0.07,
+    "noise_std": 0.008
+  }
+}
