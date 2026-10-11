@@ -1,0 +1,5 @@
+stage,name,K_phi,lam,Kp,Kd,Ki,F_slew_over_Mg,F_ref,gate
+0,acquire,70.0,0.0,0.0,0.0,0.0,8.0,Mg,—
+1,hold,35.0,0.4,0.0,0.0,0.0,8.0,Mg,ΔE1 + |v|
+2,armed,35.0,0.4,4.0,0.12,0.15,2.0,slew PID,ΔE2
+3,track,35.0,0.4,4.0,0.12,0.15,2.0,slew PID,|y−yref|<ε & |v|

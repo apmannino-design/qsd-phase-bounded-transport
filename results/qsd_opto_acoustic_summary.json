@@ -1,0 +1,34 @@
+{
+  "summary": {
+    "demo": "opto_acoustic",
+    "lock_in": true,
+    "time_to_lock_s": 0.006,
+    "corridor_fraction": 0.9983333333333333,
+    "hold_or_track_rms": 0.015932024205831227,
+    "open_loop_rms": 0.051470222069209835,
+    "final_delta_e": 0.008795642637335928,
+    "diverged": false,
+    "notes": "DT-scaled \u03c6 rate + sensor lag/bias/dropout",
+    "extras": {
+      "final_delta_e": 0.008795642637335928,
+      "mean_delta_e_tail": 0.012400301622777622,
+      "corridor_fraction": 0.9983333333333333,
+      "abs_r_mean_tail": 0.012525038012029466,
+      "track_rms": 0.015932024205831227,
+      "final_p": 0.6067956443851678,
+      "final_phi": 0.7446803106518364,
+      "diverged": false
+    },
+    "rms_ratio": 0.30953867236881366
+  },
+  "metrics": {
+    "final_delta_e": 0.008795642637335928,
+    "mean_delta_e_tail": 0.012400301622777622,
+    "corridor_fraction": 0.9983333333333333,
+    "abs_r_mean_tail": 0.012525038012029466,
+    "track_rms": 0.015932024205831227,
+    "final_p": 0.6067956443851678,
+    "final_phi": 0.7446803106518364,
+    "diverged": false
+  }
+}

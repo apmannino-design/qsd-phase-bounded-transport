@@ -1,0 +1,47 @@
+{
+  "summary": {
+    "demo": "spatial_match",
+    "lock_in": true,
+    "time_to_lock_s": 0.158,
+    "corridor_fraction": 0.99425,
+    "hold_or_track_rms": 0.0029581288052963786,
+    "open_loop_rms": 0.08292935671048485,
+    "final_delta_e": 0.027838890700756767,
+    "diverged": false,
+    "notes": "unwrapped FF+FB; lock mid-node then track; sensor lag/bias/dropout",
+    "extras": {
+      "final_delta_e": 0.027838890700756767,
+      "mean_abs_err": 0.0020718034749388917,
+      "mean_abs_err_tail": 0.0016081509813268085,
+      "corridor_fraction": 0.99425,
+      "corridor_fraction_strict": 0.98075,
+      "final_phi": 2.7044984351533294,
+      "final_ratio": 1.0,
+      "target_amp": 0.12,
+      "k_phi": 40.0,
+      "ff_blend": 0.35,
+      "lock_in": true,
+      "time_to_lock_s": 0.158,
+      "fraction_locked": 0.98025,
+      "track_rms": 0.0029581288052963786,
+      "diverged": false
+    },
+    "rms_ratio": 0.035670466076609265
+  },
+  "params": {
+    "DT": 0.002,
+    "N": 4000,
+    "L": 1.0,
+    "nx": 201,
+    "wavelength": 0.4,
+    "k": 15.707963267948966,
+    "K_phi": 40.0,
+    "ff_blend": 0.35,
+    "ratio": 1.0,
+    "alpha": 0.15,
+    "corridor": 0.25,
+    "noise_std": 0.22360679774997896,
+    "uses_core": true,
+    "lock_then_track": true
+  }
+}
