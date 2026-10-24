@@ -59,4 +59,10 @@ Unified scorecard (headline: `rms_ratio = closed/open`):
 python3 code/run_qsd_scorecard.py --self-test
 ```
 
+QSD × Aalyria Spacetime bridge (ΔE-gated predictive re-lock via agent extproc):
+
+```bash
+python3 qsd_spacetime/test_integration.py
+```
+
 **All tests should pass** after `make pipeline`.

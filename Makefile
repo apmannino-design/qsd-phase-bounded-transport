@@ -23,6 +23,7 @@ pipeline:
 	python3 code/run_qsd_disturbance_battery.py --out-dir results
 	python3 code/run_qsd_scorecard.py --self-test
 	python3 code/run_qsd_scorecard.py --out-dir results
+	python3 qsd_spacetime/test_integration.py
 
 report:
 	python3 code/build_report.py

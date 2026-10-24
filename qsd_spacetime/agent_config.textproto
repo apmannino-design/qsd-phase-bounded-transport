@@ -1,0 +1,52 @@
+# Spacetime SDN agent config wiring the QSD gate in via extproc.
+# Run alongside:  python3 qsd_daemon.py --dt 0.01    (the gate control loop)
+# Replace ${...} placeholders with values from your Aalyria representative.
+
+sdn_agents: {
+  id: "${AGENT_ID}"
+
+  enactment_driver: {
+    connection_params: {
+      endpoint_uri: "scheduling-v1alpha.${DOMAIN}"
+      transport_security: { system_cert_pool: {} }
+      auth_strategy: {
+        jwt: {
+          audience: "scheduling-v1alpha.${DOMAIN}"
+          email: "${AGENT_EMAIL}"
+          private_key_id: "${PRIVATE_KEY_ID}"
+          signing_strategy: { private_key_file: "/path/to/agent/private/key.pem" }
+        }
+      }
+    }
+    # Spacetime's scheduled beam changes -> QSD gate beam table
+    external_command: {
+      args: "python3"
+      args: "/opt/qsd_spacetime/qsd_enact.py"
+      proto_format: JSON
+    }
+  }
+
+  telemetry_driver: {
+    connection_params: {
+      endpoint_uri: "telemetry-v1alpha.${DOMAIN}"
+      transport_security: { system_cert_pool: {} }
+      auth_strategy: {
+        jwt: {
+          audience: "telemetry-v1alpha.${DOMAIN}"
+          email: "${AGENT_EMAIL}"
+          private_key_id: "${PRIVATE_KEY_ID}"
+          signing_strategy: { private_key_file: "/path/to/agent/private/key.pem" }
+        }
+      }
+    }
+    # Gate state -> Spacetime link health (interface state + SINR)
+    external_command: {
+      collection_period: { seconds: 1 }
+      command: {
+        args: "python3"
+        args: "/opt/qsd_spacetime/qsd_telemetry.py"
+        proto_format: JSON
+      }
+    }
+  }
+}
