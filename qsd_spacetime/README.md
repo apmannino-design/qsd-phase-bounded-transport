@@ -105,3 +105,15 @@ range protection (offload) stays active while re-validating after a glitch.
 
 **Technical brief (external summary):**
 [`docs/Technical_Brief_Link-Health_Supervisor_for_Aalyria_Spacetime.pdf`](../docs/Technical_Brief_Link-Health_Supervisor_for_Aalyria_Spacetime.pdf)
+
+## Full-suite validation harness
+
+End-to-end demo of Spacetime protobuf contracts + phase-bounded governor regimes:
+
+```bash
+python3 qsd_spacetime/validate_aalyria_qsd_suite.py
+```
+
+Uses `qsd_phase_bounded_governor.py` (facade over `qsd_stack_v2`) plus the real
+`qsd_enact.py` / `qsd_telemetry.py` extprocs. Production deploy path remains
+`qsd_daemon.py` + stack_v2 Supervisor.

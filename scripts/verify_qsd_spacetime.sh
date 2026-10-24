@@ -31,6 +31,9 @@ python3 -c "import numpy, google.protobuf, google.rpc.status_pb2, google.type.qu
 step "integration test (extproc enact + daemon + telemetry)"
 (cd "$ROOT/qsd_spacetime" && python3 test_integration.py)
 
+step "full-suite validation harness (schema + governor + telemetry)"
+(cd "$ROOT/qsd_spacetime" && python3 validate_aalyria_qsd_suite.py)
+
 step "agent config schema (textproto <-> config.proto)"
 PYTHONPATH="$ROOT/qsd_spacetime/gen" python3 - <<PY
 from google.protobuf import text_format
