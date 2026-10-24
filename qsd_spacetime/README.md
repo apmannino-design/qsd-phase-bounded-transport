@@ -88,3 +88,32 @@ python3 qsd_weather_to_nbi.py --advice state/weather_advice.json --src-node gate
 - Forecast (`--predict`) stayed OFF after bench: more offloads, no lock-time win on the sim plant.
 
 See `RESULTS_OCT24_2026_QSD_STACK_V2.md` and `RESULTS_OCT24_2026_QSD_UPGRADES.md`.
+
+## Safety fixes (Oct 24, 2026 engineering review)
+
+| ID | Before | Now |
+|---|---|---|
+| H1 | Unhandled schedule changes (e.g. `SetRoute`) returned 0: Spacetime recorded them as enacted | Return 12 UNIMPLEMENTED, or hand off to `QSD_ENACT_CHAIN` (your node's real backend) |
+| H2 | A pointing command the terminal rejected still returned 0 | Return 14 UNAVAILABLE; previous target kept so a retry re-sends it |
+| H3 | Telemetry reported UP during startup and fault recovery by default | Strict by default (DORMANT until validated); `QSD_TELEMETRY_STARTUP_UP=1` is a staging-only override and requires measured modem data |
+| H4 | `verify_qsd_spacetime.sh` failed at the telemetry step | Passes; modem metrics checked only when present |
+| M1 | Doctor printed OK when the agent dry-run was skipped | Prints WARN |
+| M2 | Modem IDs invented (`-demod`, `-remote`) | Taken only from `QSD_MODEM_MAP` (default `state/modem_map.json`); otherwise modem metrics are omitted |
+
+Supervisor synced to qsd_stack_v2 v2.1: optional `lock_loss_hold_s` coast, and
+range protection (offload) stays active while re-validating after a glitch.
+
+**Technical brief (external summary):**
+[`docs/Technical_Brief_Link-Health_Supervisor_for_Aalyria_Spacetime.pdf`](../docs/Technical_Brief_Link-Health_Supervisor_for_Aalyria_Spacetime.pdf)
+
+## Full-suite validation harness
+
+End-to-end demo of Spacetime protobuf contracts + phase-bounded governor regimes:
+
+```bash
+python3 qsd_spacetime/validate_aalyria_qsd_suite.py
+```
+
+Uses `qsd_phase_bounded_governor.py` (facade over `qsd_stack_v2`) plus the real
+`qsd_enact.py` / `qsd_telemetry.py` extprocs. Production deploy path remains
+`qsd_daemon.py` + stack_v2 Supervisor.

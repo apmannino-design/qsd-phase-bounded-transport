@@ -2,6 +2,8 @@
 
 Addresses the high/medium findings in *Engineering Review: QSD Repository × Aalyria Spacetime*.
 
+**Public technical brief:** [`docs/Technical_Brief_Link-Health_Supervisor_for_Aalyria_Spacetime.pdf`](docs/Technical_Brief_Link-Health_Supervisor_for_Aalyria_Spacetime.pdf)
+
 | ID | Fix |
 |---|---|
 | H1 | `qsd_enact.py` returns **12 UNIMPLEMENTED** for non-beam changes (e.g. `set_route`) |

@@ -105,8 +105,10 @@ def main():
                 status, max_age_s=max_age, schema=schema,
             )
             req = _camelize_export(req)
-            # Strict by default: keep DORMANT during STARTUP/recovery.
-            # Staging opt-in: QSD_TELEMETRY_STARTUP_UP=1
+            # Default: strict. A link in STARTUP / recovery (regime 0 or 5) is
+            # reported DORMANT, because the supervisor has not validated it.
+            # Staging-only override: QSD_TELEMETRY_STARTUP_UP=1 reports UP during
+            # warm-up when the sample is valid AND measured modem data exists.
             if os.environ.get("QSD_TELEMETRY_STARTUP_UP", "0") in ("1", "true", "True"):
                 now = _time.time()
                 pub = status.get("published_unix_s")
@@ -117,6 +119,8 @@ def main():
                                if s.get("interface_id") == iface), None)
                     if not st or not pub_fresh or not st.get("sample_valid"):
                         continue
+                    if st.get("sinr_db") is None and st.get("esn0_db") is None:
+                        continue                      # no measured modem data: stay DORMANT
                     if st.get("regime") in (0, 5):
                         for p in im["operationalStateDataPoints"]:
                             if p.get("value") == "IF_OPER_STATUS_DORMANT":
