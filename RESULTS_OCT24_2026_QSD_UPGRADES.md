@@ -14,12 +14,17 @@ Implements the post-stress upgrade plan against `qsd_spacetime/`.
 | Staging warm-up | `QSD_TELEMETRY_STARTUP_UP=1` maps regime 0/5 + valid → UP |
 | Staging dry-run | `agent_config.staging.textproto` + `scripts/spacetime_staging_dryrun.sh` |
 | One-shot pipeline | `scripts/qsd_terminal_pipeline.sh` |
+| Bring-up hygiene | `bringup.env.example`, `hooks/{offload,relock,point}.sh`, `scripts/qsd_doctor.sh` |
+| Weather NBI dry-run | `scripts/qsd_nbi_submit.sh` (live needs `QSD_NBI_LIVE=1` + wrapper) |
 
 ```bash
 python3 qsd_spacetime/test_upgrades.py
 python3 qsd_spacetime/test_integration.py
 scripts/qsd_terminal_pipeline.sh --sim --seconds 3
-scripts/spacetime_staging_dryrun.sh
+scripts/qsd_doctor.sh
+scripts/qsd_nbi_submit.sh --weather wx.json --src-node gateway-1
 ```
+
+**Merge order:** PR #14 then PR #15 onto `main`.
 
 **Note:** Until a real terminal fills `QSD_HW_SAMPLE_PATH` (or `--stdin`/`--udp`), the pipeline uses the dry plant. The holdout verdict is what decides whether forecast stays OFF.

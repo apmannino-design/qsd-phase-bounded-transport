@@ -19,6 +19,7 @@ spacetime-verify:
 	python3 qsd_spacetime/test_qsd_stack_v2.py
 	bash scripts/spacetime_staging_dryrun.sh
 	bash scripts/qsd_terminal_pipeline.sh --sim --seconds 2
+	bash scripts/qsd_doctor.sh
 
 pipeline:
 	python3 code/qsd_pipeline.py

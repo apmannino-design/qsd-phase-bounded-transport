@@ -34,15 +34,22 @@ Spacetime <──telemetry── agent <──ExportMetricsRequest── qsd_tel
 | `agent_config.staging.textproto` | Staging placeholders |
 | `gen/` | Python protos from vendored aalyria/api |
 
-## Verify
+## Verify / bring-up
 
 ```bash
 pip install protobuf numpy googleapis-common-protos
 python3 test_upgrades.py
 python3 test_integration.py
-python3 qsd_stack_v2.py test
+../scripts/qsd_doctor.sh                 # pre-flight
 ../scripts/spacetime_staging_dryrun.sh
 ../scripts/verify_qsd_spacetime.sh
+```
+
+**Merge order:** land PR #14 (vendor + stack_v2), then PR #15 (upgrades), then bring up staging.
+
+```bash
+set -a; source bringup.env.example; set +a   # wires QSD_HW_* hooks
+../scripts/qsd_nbi_submit.sh --weather wx.json --src-node gateway-1   # dry-run NBI fragment
 ```
 
 ## Deploy path (terminal)
