@@ -29,7 +29,9 @@ from qsd_daemon import _local_from_stack_states
 
 
 def cmd_record(a):
-    term = SimStackTerminal(seed=a.seed, vib_amp=a.vib_amp, vib_hz=a.vib_hz)
+    term = SimStackTerminal(
+        seed=a.seed, vib_amp=getattr(a, "vib_amp", 0.0), vib_hz=getattr(a, "vib_hz", 5.0)
+    )
     wrapped = RecordingTerminal(term, a.out)
     beam = stack.Beam(a.beam_id, a.interface_id)
     # Drive a short open-loop read loop so the recording has samples.
@@ -111,7 +113,7 @@ def main():
     r.add_argument("--out", required=True)
     r.add_argument("--seconds", type=float, default=2.0)
     r.add_argument("--seed", type=int, default=0)
-    r.add_argument("--vib-amp", type=float, default=0.0)
+    r.add_argument("--vib-amp", type=float, default=15.0)
     r.add_argument("--vib-hz", type=float, default=5.0)
     r.add_argument("--beam-id", default="beam-A")
     r.add_argument("--interface-id", default="ant-1")

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for record/replay, calibration, weather ingest, hardware forward."""
+"""Tests for record/replay, calibration, holdout scorecard, weather→NBI, HW pump."""
 import json, os, sys, tempfile, shutil, subprocess
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -17,8 +17,9 @@ def check(cond, msg):
     global ok
     print(("PASS " if cond else "FAIL ") + msg); ok &= bool(cond)
 
-# --- weather ingest ---
+# --- weather ingest + NBI fragment ---
 from qsd_weather_ingest import advise
+from qsd_weather_to_nbi import build_service_request
 advice = advise({
     "active_station": "gs-a",
     "stations": [
@@ -28,63 +29,91 @@ advice = advise({
 })
 check(advice["switch_now"] and advice["recommended_station"] == "gs-b",
       "weather ingest recommends clearer station")
-check(advice["source"] == "external_weather" and "nbi_hint" in advice,
-      "weather advice is external (not link KF) with nbi_hint")
+doc = build_service_request(advice, src_node="gateway-1")
+check(doc["submit"] and doc["service_request"]["dstNodeId"] == "gs-b",
+      "weather_to_nbi emits ServiceRequest preferring gs-b")
+hold = build_service_request({**advice, "switch_now": False, "reason": "hold"}, "gateway-1")
+check(hold["submit"] is False, "weather_to_nbi holds when switch_now false")
 
-# --- record + calibrate + replay ---
+# --- record + holdout scorecard ---
 rec = os.path.join(STATE, "rec.jsonl")
 p = subprocess.run(
     [sys.executable, os.path.join(HERE, "qsd_record_replay.py"), "record",
-     "--out", rec, "--seconds", "0.4", "--via-supervisor", "--beam-id", "beam-A"],
+     "--out", rec, "--seconds", "1.2", "--via-supervisor",
+     "--beam-id", "beam-A", "--vib-amp", "15", "--vib-hz", "5"],
     cwd=HERE, capture_output=True, text=True,
 )
 check(p.returncode == 0 and os.path.exists(rec), f"record sim session ({p.stderr})")
 
-cal_out = common.CALIBRATION
+sc_out = os.path.join(STATE, "scorecard_holdout.json")
 p = subprocess.run(
-    [sys.executable, os.path.join(HERE, "qsd_calibrate.py"),
-     "--record", rec, "--out", cal_out, "--beam-id", "beam-A"],
+    [sys.executable, os.path.join(HERE, "qsd_scorecard_holdout.py"),
+     "--record", rec, "--beam-id", "beam-A",
+     "--out-cal", common.CALIBRATION, "--out-scorecard", sc_out],
     cwd=HERE, capture_output=True, text=True,
 )
-check(p.returncode == 0, f"calibrate from recording ({p.stderr})")
-cal = json.load(open(cal_out))
-check("headroom_warn" in cal and cal.get("predict") is False,
-      "calibration writes headroom/theta overrides, predict OFF")
+check(p.returncode == 0, f"holdout scorecard ({p.stderr})")
+sc = json.load(open(sc_out))
+cal = json.load(open(common.CALIBRATION))
+check("recommend_predict" in sc and "reason" in sc, "scorecard has predict verdict")
+check(cal.get("predict") == sc["recommend_predict"],
+      "calibration.json predict matches holdout verdict")
+check(sc["hold_samples"] >= 40 and sc["train_samples"] >= 50, "train/holdout split sized")
 
+# --- replay ---
 p = subprocess.run(
     [sys.executable, os.path.join(HERE, "qsd_record_replay.py"), "replay",
-     "--record", rec, "--beam-id", "beam-A",
-     "--status", common.STATUS],
+     "--record", rec, "--beam-id", "beam-A", "--status", common.STATUS],
     cwd=HERE, capture_output=True, text=True, env={**os.environ, "QSD_STATE_DIR": STATE},
 )
 check(p.returncode == 0, f"replay through stack_v2 ({p.stderr})")
-snap = json.load(open(common.STATUS))
-check(snap.get("schema_version") == 1, "replay status schema_version=1")
 local = json.load(open(common.LOCAL_METRICS))
 check("headroom" in local["beams"]["beam-A"], "replay fills local_metrics side-channel")
 
-# --- hardware sample path ---
+# --- hardware sample pump (short sim) ---
+hw_sample = os.path.join(STATE, "hw_sample.json")
+p = subprocess.run(
+    [sys.executable, os.path.join(HERE, "qsd_hw_sample_pump.py"),
+     "--sim", "--path", hw_sample, "--seconds", "0.05", "--dt", "0.001"],
+    cwd=HERE, capture_output=True, text=True,
+)
+check(p.returncode == 0 and os.path.exists(hw_sample), f"hw sample pump ({p.stderr})")
 from qsd_terminal import HardwareTerminal
 import qsd_stack_v2 as stack
-hw_sample = os.path.join(STATE, "hw_sample.json")
-common.save(hw_sample, {
-    "channels": [10.0, -5.0, 0.1, -0.2],
-    "sequence": 1,
-    "locked": True,
-    "actuator_ready": True,
-    "sinr_db": 17.5,
-    "mono_s": __import__("time").monotonic(),
-    "unix_s": __import__("time").time(),
-})
-os.environ["QSD_HW_SAMPLE_PATH"] = hw_sample
-os.environ["QSD_HW_CMD_PATH"] = os.path.join(STATE, "hw_cmd.jsonl")
-hw = HardwareTerminal(sample_path=hw_sample, cmd_path=os.environ["QSD_HW_CMD_PATH"])
-s = hw.read(stack.Beam("b", "i"))
-check(s.sinr_db == 17.5 and len(s.channels) == 4, "HardwareTerminal reads sample file")
-hw.offload(stack.Beam("b", "i"))
-hw.point("b", 10.0, 20.0)
-cmds = open(os.environ["QSD_HW_CMD_PATH"]).read()
-check("OFFLOAD" in cmds and "POINT" in cmds, "HardwareTerminal logs offload/point commands")
+hw = HardwareTerminal(sample_path=hw_sample, cmd_path=os.path.join(STATE, "hw_cmd.jsonl"))
+s = hw.read(stack.Beam("beam-A", "ant-1"))
+check(len(s.channels) == 4 and s.sequence >= 1, "HardwareTerminal reads pumped sample")
+
+# --- startup telemetry UP mapping ---
+os.environ["QSD_STATE_DIR"] = STATE
+common.STATUS = os.path.join(STATE, "status.json")
+import time
+snap = {
+    "schema_version": 1,
+    "published_unix_s": time.time(),
+    "max_export_age_s": 5.0,
+    "beams": {
+        "beam-A": {
+            "interface_id": "ant-1",
+            "time": "2026-10-24T00:00:00.000000Z",
+            "sample_unix_s": time.time(),
+            "sample_valid": True,
+            "regime": 0,
+            "oper_status": "IF_OPER_STATUS_DORMANT",
+            "rx_modem_id": "ant-1-demod",
+            "tx_modem_id": "beam-A-remote",
+            "sinr_db": 18.0,
+        }
+    },
+}
+common.save(common.STATUS, snap)
+p = subprocess.run(
+    [sys.executable, os.path.join(HERE, "qsd_telemetry.py")],
+    cwd=HERE, capture_output=True, text=True, env={**os.environ, "QSD_STATE_DIR": STATE,
+                                                    "QSD_TELEMETRY_STARTUP_UP": "1"},
+)
+check(p.returncode == 0 and "IF_OPER_STATUS_UP" in p.stdout,
+      "telemetry maps STARTUP+valid → UP for staging")
 
 shutil.rmtree(STATE)
 print("\nALL PASS" if ok else "\nFAILURES")

@@ -96,12 +96,31 @@ def main():
             st.setdefault("rx_modem_id", f"{st.get('interface_id', bid)}-demod")
             st.setdefault("tx_modem_id", f"{bid}-remote")
         try:
+            # Staging-friendly freshness: default 5s (collection_period is often 1s).
+            max_age = float(status.get("max_export_age_s", 5.0))
             req = stack.build_export_request(
-                status,
-                max_age_s=float(status.get("max_export_age_s", 5.0)),
-                schema=schema,
+                status, max_age_s=max_age, schema=schema,
             )
             req = _camelize_export(req)
+            # STARTUP / recovering (regime 0 or 5): if the sample was valid and
+            # measured modem data exists, advertise UP instead of DORMANT so
+            # staging is not flapping while the supervisor finishes warm-up.
+            # Set QSD_TELEMETRY_STARTUP_UP=0 to keep strict DORMANT-during-warmup.
+            import os, time as _time
+            if os.environ.get("QSD_TELEMETRY_STARTUP_UP", "1") not in ("0", "false", "False"):
+                now = _time.time()
+                pub = status.get("published_unix_s")
+                pub_fresh = isinstance(pub, (int, float)) and 0 <= now - pub <= max_age
+                for im in req["interfaceMetrics"]:
+                    iface = im["interfaceId"]
+                    st = next((s for s in beams.values()
+                               if s.get("interface_id") == iface), None)
+                    if not st or not pub_fresh or not st.get("sample_valid"):
+                        continue
+                    if st.get("regime") in (0, 5):
+                        for p in im["operationalStateDataPoints"]:
+                            if p.get("value") == "IF_OPER_STATUS_DORMANT":
+                                p["value"] = "IF_OPER_STATUS_UP"
         except ValueError as exc:
             print(f"export build failed: {exc}", file=sys.stderr)
             return 14

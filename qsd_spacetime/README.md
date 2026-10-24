@@ -48,20 +48,20 @@ python3 qsd_stack_v2.py test
 ## Deploy path (terminal)
 
 ```bash
-# 1) Record from hardware (or --sim) then calibrate
-python3 qsd_daemon.py --sim --record /tmp/term.jsonl --seconds 30
-python3 qsd_calibrate.py --record /tmp/term.jsonl
+# One-shot: record (sim) → train/holdout calibrate → equal-offload scorecard
+../scripts/qsd_terminal_pipeline.sh --sim --seconds 30
 
-# 2) Hardware env
-export QSD_HW_SAMPLE_PATH=/path/to/latest_sample.json
-export QSD_HW_CMD_PATH=/path/to/commands.jsonl
+# Or with a real recording already on disk:
+../scripts/qsd_terminal_pipeline.sh --record /path/to/terminal.jsonl
+
+# Hardware sample pump (driver writes JSON, or use --sim / --stdin / --udp)
+QSD_HW_SAMPLE_PATH=state/hw_sample.json python3 qsd_hw_sample_pump.py --sim
+export QSD_HW_SAMPLE_PATH=state/hw_sample.json
+export QSD_HW_CMD_PATH=state/hw_commands.jsonl
 export QSD_HW_OFFLOAD_CMD=/opt/terminal/offload.sh
 export QSD_HW_RELOCK_CMD=/opt/terminal/relock.sh
 export QSD_HW_POINT_CMD=/opt/terminal/point.sh   # args: az el beam_id
-
-# 3) Daemon + agent
-python3 qsd_daemon.py --dt 0.001          # loads state/calibration.json if present
-# agent --config agent_config.textproto   # after substituting credentials
+python3 qsd_daemon.py --dt 0.001   # loads calibration.json (predict from holdout verdict)
 ```
 
 ## Weather (external only)
@@ -70,7 +70,8 @@ Link-margin KF reroute was a negative result (`qsd_reroute_sim.py`). Use:
 
 ```bash
 python3 qsd_weather_ingest.py --in weather.json
-# → state/weather_advice.json  (switch_now, nbi_hint) for operators / NBI client
+python3 qsd_weather_to_nbi.py --advice state/weather_advice.json --src-node gateway-1
+# → state/nbi_service_request.json  (submit via NBI / nbictl; not SBI)
 ```
 
 ## Design notes
