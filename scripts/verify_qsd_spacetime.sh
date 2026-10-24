@@ -131,6 +131,7 @@ if [[ -n "$BZL" ]]; then
       -e "s|\${AGENT_EMAIL}|agent@example.invalid|g" \
       -e "s|\${PRIVATE_KEY_ID}|DEADBEEF|g" \
       -e "s|/opt/qsd_spacetime/|$ROOT/qsd_spacetime/|g" \
+      -e "s|/opt/qsd_spacetime/keys/agent_priv_key.pem|$TMP/dummy.pem|g" \
       -e "s|/path/to/agent/private/key.pem|$TMP/dummy.pem|g" \
       "$CFG" > "$DRY_CFG"
   openssl genrsa -out "$TMP/dummy.pem" 2048 2>/dev/null
