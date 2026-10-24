@@ -82,7 +82,8 @@ print("OK enact CreateEntryRequest -> beams.json")
 # H1: unhandled SetRoute must be UNIMPLEMENTED (12), not success
 sr = sched.CreateEntryRequest(schedule_manipulation_token="tok", seqno=2, id="e2")
 sr.time.GetCurrentTime()
-_ = sr.set_route  # touch submessage to select the oneof
+sr.set_route.dev = "eth0"
+sr.set_route.to = "0.0.0.0/0"
 assert sr.WhichOneof("configuration_change") == "set_route"
 p = enact(sr)
 assert p.returncode == 12, (p.returncode, p.stderr)
