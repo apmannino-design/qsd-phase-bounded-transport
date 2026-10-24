@@ -72,13 +72,19 @@ for f in status.json local_metrics.json; do
   fi
 done
 
-# Agent staging dry-run
+# Agent staging dry-run (SKIP is a warning, not OK — review M1)
 if [[ -x "$ROOT/scripts/spacetime_staging_dryrun.sh" ]]; then
   if "$ROOT/scripts/spacetime_staging_dryrun.sh" >/tmp/qsd_doctor_staging.log 2>&1; then
-    ok "staging agent --dry-run"
+    if grep -q '^SKIP' /tmp/qsd_doctor_staging.log; then
+      warn "staging agent dry-run SKIPPED (see /tmp/qsd_doctor_staging.log)"
+    else
+      ok "staging agent --dry-run"
+    fi
   else
     bad "staging dry-run failed (see /tmp/qsd_doctor_staging.log)"
   fi
+else
+  warn "spacetime_staging_dryrun.sh missing"
 fi
 
 echo

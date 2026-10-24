@@ -38,11 +38,19 @@ scripts/verify_qsd_spacetime.sh
 | `agent --dry-run` on QSD `agent_config.textproto` | `config is valid` |
 | `extproc` / `extprocs` / `protofmt` / `agentcli` unit tests | 4/4 PASS |
 
-## Seeded result (20 trials × 2000 steps)
+## Seeded result (20 trials × 2000 steps) — unequal re-lock counts
+
+> **Caveat (review M4):** the table below is *not* an equal-budget comparison
+> (predictive fires more often: ~39 vs ~32 re-locks). Prefer the equal-budget
+> sweeps in `qsd_stress_*.py`, `bench_qsd_stack_v2.py`, and
+> `qsd_scorecard_holdout.py`.
 
 | Mode | Re-locks / 2000 | Time outside corridor |
 |---|---|---|
 | reactive | ~32 | ~2.7% |
 | predictive | ~39 | ~0.05% |
 
-Predictive spends less time outside the corridor through the agent path **on the ideal random-walk plant**. Under vibration / mismatch, see `RESULTS_OCT24_2026_QSD_STACK_V2.md` — deploy `qsd_stack_v2.py` (forecast OFF by default), not bare `qsd_gate.py`.
+On the ideal random-walk plant, predictive spends less time outside the corridor
+**at a higher re-lock rate**. Under vibration / mismatch, see
+`RESULTS_OCT24_2026_QSD_STACK_V2.md` — deploy `qsd_stack_v2.py` (forecast OFF),
+not bare `qsd_gate.py`.

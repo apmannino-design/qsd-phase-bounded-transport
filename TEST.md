@@ -7,9 +7,14 @@
    pip install -r requirements.txt
    ```
 
-2. Run smoke tests:
+2. Run control-core self-tests (no `tests/` directory on this branch):
    ```bash
-   python -m pytest tests/ -q --tb=short
+   python3 code/qsd_sector_closed_loop.py --self-test
+   python3 code/qsd_opto_acoustic.py --self-test
+   python3 code/qsd_spatial_match.py --self-test
+   python3 code/qsd_cascaded_plant.py --self-test
+   python3 code/run_qsd_disturbance_battery.py --self-test
+   python3 code/run_qsd_scorecard.py --self-test
    ```
 
 3. Run full pipeline:
@@ -17,52 +22,18 @@
    make pipeline
    ```
 
-4. (Optional) Run GitHub Actions locally with `act` if installed.
-
-## Smoke Tests
-
-The `tests/smoke_test.py` verifies:
-- All core module imports
-- Key helper functions (`robust_delta_e`, rolling stats)
-- Pipeline initialization readiness
-
-Full reproducibility checks are in `code/ligo_validation.py` and `code/validation_suite.py`.
-
-Conservative outer-loop + QSD sector phase law (tri-ΔE 3-stage lock-in):
+## QSD × Aalyria Spacetime
 
 ```bash
-python3 code/qsd_sector_closed_loop.py --self-test
-```
-
-Opto-acoustic frequency-matched residual loop:
-
-```bash
-python3 code/qsd_opto_acoustic.py --self-test
-```
-
-Spatial node-tracking match (two-source standing field):
-
-```bash
-python3 code/qsd_spatial_match.py --self-test
-```
-
-Cascaded plant (gap + phase + spatial) and disturbance battery:
-
-```bash
-python3 code/qsd_cascaded_plant.py --self-test
-python3 code/run_qsd_disturbance_battery.py --self-test
-```
-
-Unified scorecard (headline: `rms_ratio = closed/open`):
-
-```bash
-python3 code/run_qsd_scorecard.py --self-test
-```
-
-QSD × Aalyria Spacetime bridge (ΔE-gated predictive re-lock via agent extproc):
-
-```bash
+python3 qsd_spacetime/test_upgrades.py
 python3 qsd_spacetime/test_integration.py
+python3 qsd_spacetime/qsd_stack_v2.py test
+python3 qsd_spacetime/test_qsd_stack_v2.py          # asserting unit tests
+# python3 qsd_spacetime/bench_qsd_stack_v2.py       # long equal-budget benchmark (not CI)
+scripts/verify_qsd_spacetime.sh
+scripts/qsd_doctor.sh
 ```
 
-**All tests should pass** after `make pipeline`.
+**Merge order:** PR #14 then PR #15 onto `main`.
+
+**All listed self-tests / spacetime suites should pass** after `make pipeline` / `make spacetime-verify`.

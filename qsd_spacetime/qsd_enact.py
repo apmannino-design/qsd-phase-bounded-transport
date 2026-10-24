@@ -8,7 +8,9 @@ forwards az/el retargets to the terminal pointing controller:
   update_beam -> store/refresh the beam (new beam => supervisor resets)
                -> append enact_forward.jsonl + optional QSD_HW_POINT_CMD
   delete_beam -> remove it
-Other change types are accepted and ignored (exit 0).
+Unhandled configuration_change types (set_route, …) return UNIMPLEMENTED (12).
+A rejected pointing hook returns UNAVAILABLE (14) and does not claim success.
+
 Exit codes follow gRPC status codes, per the agent's extproc contract.
 """
 import sys, json, time
@@ -16,10 +18,18 @@ from common import BEAMS, ENACT_FORWARD, append_jsonl, load, save, g
 from qsd_terminal import HardwareTerminal
 
 INVALID_ARGUMENT = 3
+UNIMPLEMENTED = 12
+UNAVAILABLE = 14
+
+# CreateEntryRequest metadata — not configuration_change oneof members.
+_META = {
+    "scheduleManipulationToken", "schedule_manipulation_token",
+    "seqno", "id", "time", "@type",
+}
 
 
 def forward_point(beam_id, az, el):
-    """Notify the terminal of a new Spacetime az/el command."""
+    """Notify the terminal of a new Spacetime az/el command. Raises on hook failure."""
     rec = {
         "t": time.time(),
         "cmd": "POINT",
@@ -29,12 +39,7 @@ def forward_point(beam_id, az, el):
         "source": "spacetime_update_beam",
     }
     append_jsonl(ENACT_FORWARD, rec)
-    # Also via HardwareTerminal hooks when configured.
-    try:
-        HardwareTerminal().point(beam_id, az, el)
-    except Exception as exc:
-        # Pointing hook failure must not drop the schedule update.
-        print(f"point forward warning: {exc}", file=sys.stderr)
+    HardwareTerminal().point(beam_id, az, el)
 
 
 def main():
@@ -43,9 +48,22 @@ def main():
     except json.JSONDecodeError as e:
         print(f"bad CreateEntryRequest JSON: {e}", file=sys.stderr)
         return INVALID_ARGUMENT
-    beams = load(BEAMS, {})
+    if not isinstance(req, dict):
+        print("CreateEntryRequest must be a JSON object", file=sys.stderr)
+        return INVALID_ARGUMENT
+
     ub = g(req, "updateBeam", "update_beam")
     db = g(req, "deleteBeam", "delete_beam")
+    if not ub and not db:
+        other = [k for k in req if k not in _META]
+        if other:
+            print(f"unhandled configuration_change: {other} (UNIMPLEMENTED)",
+                  file=sys.stderr)
+            return UNIMPLEMENTED
+        print("CreateEntryRequest missing configuration_change", file=sys.stderr)
+        return INVALID_ARGUMENT
+
+    beams = load(BEAMS, {})
     if ub:
         b = g(ub, "beam", default={})
         bid = g(b, "id")
@@ -62,6 +80,14 @@ def main():
             entry_id=g(req, "id"),
             time=g(req, "time"),
         )
+        # Optional modem IDs from the schedule payload or prior state — never invented.
+        for src, dst in (
+            (("rxModemId", "rx_modem_id"), "rx_modem_id"),
+            (("txModemId", "tx_modem_id"), "tx_modem_id"),
+        ):
+            val = g(b, *src, default=prev.get(dst))
+            if val:
+                entry[dst] = val
         if azel is not None:
             entry["cmd_az"] = float(g(azel, "azDeg", "az_deg", default=0.0))
             entry["cmd_el"] = float(g(azel, "elDeg", "el_deg", default=0.0))
@@ -70,15 +96,22 @@ def main():
         entry["generation"] = prev.get("generation", 0) + (
             0 if prev and prev.get("cmd_az") == entry.get("cmd_az")
             and prev.get("cmd_el") == entry.get("cmd_el") else 1)
-        beams[bid] = entry
-        if azel is not None and (
+
+        need_point = azel is not None and (
             not prev
-            or prev.get("cmd_az") != entry["cmd_az"]
-            or prev.get("cmd_el") != entry["cmd_el"]
-        ):
-            forward_point(bid, entry["cmd_az"], entry["cmd_el"])
+            or prev.get("cmd_az") != entry.get("cmd_az")
+            or prev.get("cmd_el") != entry.get("cmd_el")
+        )
+        if need_point:
+            try:
+                forward_point(bid, entry["cmd_az"], entry["cmd_el"])
+            except Exception as exc:
+                print(f"point forward failed: {exc}", file=sys.stderr)
+                return UNAVAILABLE
+        beams[bid] = entry
     elif db:
         beams.pop(g(db, "id"), None)
+
     save(BEAMS, beams)
     return 0
 

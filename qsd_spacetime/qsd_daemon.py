@@ -159,11 +159,12 @@ def _beams_from_state():
     beams = []
     for bid, b in raw.items():
         iface = b.get("antenna_id", bid)
+        # Modem IDs must match Spacetime's model when set; never invent them.
         beams.append(stack.Beam(
             beam_id=bid,
             interface_id=iface,
-            rx_modem_id=b.get("rx_modem_id") or f"{iface}-demod",
-            tx_modem_id=b.get("tx_modem_id") or f"{bid}-remote",
+            rx_modem_id=b.get("rx_modem_id"),
+            tx_modem_id=b.get("tx_modem_id"),
         ))
     return beams, raw
 

@@ -14,6 +14,7 @@ from agent.internal.configpb import config_pb2
 
 STATE = tempfile.mkdtemp(prefix="qsd_state_")
 os.environ["QSD_STATE_DIR"] = STATE
+os.environ["QSD_TELEMETRY_STARTUP_UP"] = "0"  # H3 strict default
 sys.path.insert(0, HERE)
 import common
 common.STATE_DIR = STATE
@@ -40,7 +41,7 @@ def enact(req):
                        input=js, text=True, capture_output=True, env=os.environ)
     return p.returncode, p.stderr
 
-def update_beam(seq, bid, ant, az, el):
+def update_beam(seq, bid, ant, az, el, rx=None, tx=None):
     r = sched.CreateEntryRequest(schedule_manipulation_token="tok", seqno=seq, id=f"e{seq}")
     r.time.GetCurrentTime()
     r.update_beam.beam.id = bid
@@ -71,6 +72,25 @@ check(rc == 3, "malformed request -> exit 3 (INVALID_ARGUMENT)")
 fwd = open(common.ENACT_FORWARD).read() if os.path.exists(common.ENACT_FORWARD) else ""
 check("POINT" in fwd and "120.0" in fwd, "enact forwards POINT to enact_forward.jsonl")
 
+# H1: SetRoute must not be acknowledged as success
+sr = sched.CreateEntryRequest(schedule_manipulation_token="tok", seqno=99, id="e99")
+sr.time.GetCurrentTime()
+sr.set_route.dev = "eth0"
+sr.set_route.to = "0.0.0.0/0"
+check(enact(sr)[0] == 12, "H1 set_route -> exit 12 (UNIMPLEMENTED)")
+
+# H2: rejected pointing hook -> UNAVAILABLE (14), beam not updated
+os.environ["QSD_HW_POINT_CMD"] = "/bin/false"
+os.environ["QSD_HW_CMD_PATH"] = os.path.join(STATE, "hw_cmd.jsonl")
+gen_before = common.load(common.BEAMS, {})["beam-A"]["generation"]
+rc, err = enact(update_beam(5, "beam-A", "ant-1", 130.0, 36.0))
+check(rc == 14, f"H2 point hook failure -> exit 14 ({err.strip()})")
+check(common.load(common.BEAMS, {})["beam-A"]["cmd_az"] == 120.0,
+      "H2 failed point does not update beam table")
+check(common.load(common.BEAMS, {})["beam-A"]["generation"] == gen_before,
+      "H2 failed point does not bump generation")
+del os.environ["QSD_HW_POINT_CMD"]
+
 # 3. stack_v2 daemon (default production path)
 snap = qsd_daemon.run_stack(SimStackTerminal(seed=1), steps=80, dt=0.0, predict=False)
 check(snap.get("schema_version") == 1 and "beam-A" in snap.get("beams", {}),
@@ -82,13 +102,13 @@ check(
     "local_metrics side-channel has dE / regime (not for Spacetime)",
 )
 
-# 4. retarget resets supervisor generation
-gen0 = common.load(common.BEAMS, {})["beam-A"]["generation"]
+# 4. retarget resets supervisor generation (point hook OK)
 enact(update_beam(4, "beam-A", "ant-1", 121.5, 35.2))
-check(common.load(common.BEAMS, {})["beam-A"]["generation"] == gen0 + 1,
+check(common.load(common.BEAMS, {})["beam-A"]["generation"] == gen_before + 1,
       "retarget bumps generation -> supervisor reset")
 
-# 5. telemetry: measured SINR only, valid ExportMetricsRequest
+# 5. telemetry: no invented modem IDs; with configured IDs + measured SINR, export OK
+# Without modem IDs: interface only
 qsd_daemon.run_stack(SimStackTerminal(seed=99), steps=40, dt=0.0)
 p = subprocess.run([sys.executable, os.path.join(HERE, "qsd_telemetry.py")],
                    capture_output=True, text=True, env=os.environ)
@@ -96,10 +116,39 @@ check(p.returncode == 0, f"telemetry extproc exit 0 ({p.stderr.strip()})")
 msg = json_format.Parse(p.stdout, tele.ExportMetricsRequest())
 check(msg.interface_metrics[0].interface_id == "ant-1",
       "stdout parses as telemetry.v1alpha.ExportMetricsRequest")
+check(len(msg.modem_metrics) == 0, "M2 no invented modem IDs -> no modem metrics")
+
+# Configure modem IDs on the beam and re-run
+beams = common.load(common.BEAMS, {})
+beams["beam-A"]["rx_modem_id"] = "ant-1-demod"
+beams["beam-A"]["tx_modem_id"] = "beam-A-remote"
+common.save(common.BEAMS, beams)
+qsd_daemon.run_stack(SimStackTerminal(seed=7), steps=40, dt=0.0)
+p = subprocess.run([sys.executable, os.path.join(HERE, "qsd_telemetry.py")],
+                   capture_output=True, text=True, env=os.environ)
+msg = json_format.Parse(p.stdout, tele.ExportMetricsRequest())
 check(len(msg.modem_metrics) >= 1
       and msg.modem_metrics[0].sinr_data_points[0].HasField("sinr_db"),
-      "measured SINR exported (SimStackTerminal)")
+      "configured modem IDs + measured SINR export")
 print("     sample:", p.stdout[:220], "...")
+
+# H3: strict default keeps DORMANT for regime 0 (no STARTUP_UP)
+import time
+common.save(common.STATUS, {
+    "schema_version": 1,
+    "published_unix_s": time.time(),
+    "max_export_age_s": 5.0,
+    "beams": {"beam-A": {
+        "interface_id": "ant-1", "time": "2026-10-24T00:00:00.000000Z",
+        "sample_unix_s": time.time(), "sample_valid": True, "regime": 0,
+        "oper_status": "IF_OPER_STATUS_DORMANT",
+        "rx_modem_id": "ant-1-demod", "tx_modem_id": "beam-A-remote", "sinr_db": 18.0,
+    }},
+})
+p = subprocess.run([sys.executable, os.path.join(HERE, "qsd_telemetry.py")],
+                   capture_output=True, text=True, env=os.environ)
+check("IF_OPER_STATUS_DORMANT" in p.stdout and "IF_OPER_STATUS_UP" not in p.stdout,
+      "H3 strict default keeps STARTUP as DORMANT")
 
 # 6. legacy gate ideal-plant regression (not the deploy path)
 def trial(mode, seed, steps=2000):

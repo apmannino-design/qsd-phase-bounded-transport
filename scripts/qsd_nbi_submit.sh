@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
-# Build (and optionally submit) the weather→NBI ServiceRequest fragment.
+# EXPERIMENTAL (review M5): weather→NBI emits a ServiceRequest fragment.
+# A traffic-flow request is not the same as a ground-station preference; keep
+# dry-run unless you have confirmed NBI semantics with Aalyria.
 #
 # Default is dry-run: writes state/nbi_service_request.json and prints it.
 # Live submit requires nbictl configured with Aalyria credentials:
 #   QSD_NBI_LIVE=1 scripts/qsd_nbi_submit.sh --weather weather.json --src-node NODE
 set -euo pipefail
+echo "NOTE: weather→NBI path is experimental (ServiceRequest ≠ station preference)." >&2
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 QS="$ROOT/qsd_spacetime"
 STATE="${QSD_STATE_DIR:-$QS/state}"

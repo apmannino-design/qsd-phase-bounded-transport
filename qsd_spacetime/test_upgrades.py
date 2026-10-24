@@ -84,7 +84,7 @@ hw = HardwareTerminal(sample_path=hw_sample, cmd_path=os.path.join(STATE, "hw_cm
 s = hw.read(stack.Beam("beam-A", "ant-1"))
 check(len(s.channels) == 4 and s.sequence >= 1, "HardwareTerminal reads pumped sample")
 
-# --- startup telemetry UP mapping ---
+# --- startup telemetry: strict default DORMANT; opt-in UP for staging (H3) ---
 os.environ["QSD_STATE_DIR"] = STATE
 common.STATUS = os.path.join(STATE, "status.json")
 import time
@@ -109,11 +109,18 @@ snap = {
 common.save(common.STATUS, snap)
 p = subprocess.run(
     [sys.executable, os.path.join(HERE, "qsd_telemetry.py")],
-    cwd=HERE, capture_output=True, text=True, env={**os.environ, "QSD_STATE_DIR": STATE,
-                                                    "QSD_TELEMETRY_STARTUP_UP": "1"},
+    cwd=HERE, capture_output=True, text=True,
+    env={**os.environ, "QSD_STATE_DIR": STATE, "QSD_TELEMETRY_STARTUP_UP": "0"},
+)
+check(p.returncode == 0 and "IF_OPER_STATUS_DORMANT" in p.stdout,
+      "H3 strict default keeps STARTUP as DORMANT")
+p = subprocess.run(
+    [sys.executable, os.path.join(HERE, "qsd_telemetry.py")],
+    cwd=HERE, capture_output=True, text=True,
+    env={**os.environ, "QSD_STATE_DIR": STATE, "QSD_TELEMETRY_STARTUP_UP": "1"},
 )
 check(p.returncode == 0 and "IF_OPER_STATUS_UP" in p.stdout,
-      "telemetry maps STARTUP+valid → UP for staging")
+      "staging opt-in QSD_TELEMETRY_STARTUP_UP=1 maps STARTUP→UP")
 
 shutil.rmtree(STATE)
 print("\nALL PASS" if ok else "\nFAILURES")

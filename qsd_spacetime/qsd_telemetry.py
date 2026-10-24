@@ -7,10 +7,13 @@ to stdout. Honesty rules:
   - Only measured SINR / EsN0 from the terminal enter ModemMetrics.
   - Synthetic / model SINR stays in local_metrics.json, never here.
   - ΔE / θ / headroom / p_exit stay in local_metrics.json.
+  - Modem IDs are never invented; without configured IDs, omit modem metrics.
+  - Default: keep supervisor DORMANT during STARTUP/recovery (strict).
+    Opt in to staging UP mapping with QSD_TELEMETRY_STARTUP_UP=1.
 
 Supports status.json schema_version=1 (stack_v2) and the legacy flat map.
 """
-import sys, json
+import os, sys, json, time as _time
 from common import STATUS, LOCAL_METRICS, load
 import qsd_stack_v2 as stack
 
@@ -31,13 +34,17 @@ def from_legacy(status):
             "interfaceId": iface,
             "operationalStateDataPoints": [{"time": s["time"], "value": oper_state_legacy(s)}],
         })
-        # Only export if explicitly measured (never synthetic).
-        if s.get("sinr_source") == "measured" and s.get("sinr_db") is not None:
+        if (
+            s.get("sinr_source") == "measured"
+            and s.get("sinr_db") is not None
+            and s.get("rx_modem_id")
+            and s.get("tx_modem_id")
+        ):
             req["modemMetrics"].append({
-                "demodulatorId": f"{iface}-demod",
+                "demodulatorId": s["rx_modem_id"],
                 "sinrDataPoints": [{
                     "time": s["time"],
-                    "modulatorId": f"{bid}-remote",
+                    "modulatorId": s["tx_modem_id"],
                     "sinrDb": round(float(s["sinr_db"]), 3),
                 }],
             })
@@ -76,7 +83,6 @@ def _camelize_export(req):
                 } for p in es]
             out["modemMetrics"].append(entry)
         else:
-            # legacy_docs schema
             pts = mm.get("link_metrics_data_points",
                          mm.get("linkMetricsDataPoints", []))
             out["modemMetrics"].append({
@@ -90,24 +96,18 @@ def main():
     status = load(STATUS, {})
     if isinstance(status, dict) and status.get("schema_version") == 1:
         schema = status.get("telemetry_schema") or "repo_v1alpha"
-        # Ensure modem IDs exist so measured SINR can export.
         beams = status.get("beams") or {}
-        for bid, st in beams.items():
-            st.setdefault("rx_modem_id", f"{st.get('interface_id', bid)}-demod")
-            st.setdefault("tx_modem_id", f"{bid}-remote")
+        # Do NOT invent modem IDs. build_export_request skips modem metrics
+        # when rx/tx are missing — that is intentional.
         try:
-            # Staging-friendly freshness: default 5s (collection_period is often 1s).
             max_age = float(status.get("max_export_age_s", 5.0))
             req = stack.build_export_request(
                 status, max_age_s=max_age, schema=schema,
             )
             req = _camelize_export(req)
-            # STARTUP / recovering (regime 0 or 5): if the sample was valid and
-            # measured modem data exists, advertise UP instead of DORMANT so
-            # staging is not flapping while the supervisor finishes warm-up.
-            # Set QSD_TELEMETRY_STARTUP_UP=0 to keep strict DORMANT-during-warmup.
-            import os, time as _time
-            if os.environ.get("QSD_TELEMETRY_STARTUP_UP", "1") not in ("0", "false", "False"):
+            # Strict by default: keep DORMANT during STARTUP/recovery.
+            # Staging opt-in: QSD_TELEMETRY_STARTUP_UP=1
+            if os.environ.get("QSD_TELEMETRY_STARTUP_UP", "0") in ("1", "true", "True"):
                 now = _time.time()
                 pub = status.get("published_unix_s")
                 pub_fresh = isinstance(pub, (int, float)) and 0 <= now - pub <= max_age
