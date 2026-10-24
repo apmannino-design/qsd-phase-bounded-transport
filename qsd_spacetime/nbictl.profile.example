@@ -1,0 +1,13 @@
+# Example nbictl profile for QSD operators (NBI / Model API — not SBI agent).
+# Copy values after Aalyria returns USER_ID + KEY_ID for your public cert.
+#
+#   nbictl config set \
+#     --user_id "$STAGING_AGENT_EMAIL" \
+#     --key_id "$STAGING_PRIVATE_KEY_ID" \
+#     --priv_key "$STAGING_PRIVATE_KEY_PEM" \
+#     --url "$STAGING_DOMAIN" \
+#     --transport_security system_cert_pool \
+#     --auth_strategy jwt
+#
+# Then dry-run NBI fragments with:
+#   scripts/qsd_nbi_submit.sh --weather weather.json --src-node gateway-1

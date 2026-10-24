@@ -4,6 +4,10 @@ Bridges QSD pointing control into Aalyria's open SDN agent
 ([github.com/aalyria/api](https://github.com/aalyria/api), Apache-2.0) via `extproc`.
 No changes to Aalyria's code.
 
+**Spacetime access (keys + enrollment):** see [`SPACETIME_ACCESS.md`](SPACETIME_ACCESS.md).
+Generate the JWT keypair with `../scripts/generate_spacetime_keys.sh`, then share
+only `keys/agent_pub_key.cer` with Aalyria.
+
 **Default controller: `qsd_stack_v2` (forecast OFF).** Bare `qsd_gate.py` is
 `--legacy-gate` only (ideal random-walk demo). Do not deploy it on vibrating platforms.
 

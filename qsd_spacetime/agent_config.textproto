@@ -15,7 +15,7 @@ sdn_agents: {
           audience: "scheduling-v1alpha.${DOMAIN}"
           email: "${AGENT_EMAIL}"
           private_key_id: "${PRIVATE_KEY_ID}"
-          signing_strategy: { private_key_file: "/path/to/agent/private/key.pem" }
+          signing_strategy: { private_key_file: "/opt/qsd_spacetime/keys/agent_priv_key.pem" }
         }
       }
     }
@@ -36,7 +36,7 @@ sdn_agents: {
           audience: "telemetry-v1alpha.${DOMAIN}"
           email: "${AGENT_EMAIL}"
           private_key_id: "${PRIVATE_KEY_ID}"
-          signing_strategy: { private_key_file: "/path/to/agent/private/key.pem" }
+          signing_strategy: { private_key_file: "/opt/qsd_spacetime/keys/agent_priv_key.pem" }
         }
       }
     }
