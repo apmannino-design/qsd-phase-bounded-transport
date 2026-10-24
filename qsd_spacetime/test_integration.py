@@ -23,11 +23,16 @@ common.STATUS = os.path.join(STATE, "status.json")
 common.LOCAL_METRICS = os.path.join(STATE, "local_metrics.json")
 common.ENACT_FORWARD = os.path.join(STATE, "enact_forward.jsonl")
 common.CALIBRATION = os.path.join(STATE, "calibration.json")
+common.MODEM_MAP = os.path.join(STATE, "modem_map.json")
 import qsd_daemon
+# Provisioned modem IDs (must match Spacetime's model); telemetry never invents them.
+common.save(common.MODEM_MAP,
+            {"beam-A": {"rx_modem_id": "ant-1-demod", "tx_modem_id": "beam-A-remote"}})
 qsd_daemon.BEAMS = common.BEAMS
 qsd_daemon.STATUS = common.STATUS
 qsd_daemon.LOCAL_METRICS = common.LOCAL_METRICS
 qsd_daemon.CALIBRATION = common.CALIBRATION
+qsd_daemon.MODEM_MAP = common.MODEM_MAP
 from qsd_terminal import SimStackTerminal
 
 ok = True
@@ -79,7 +84,7 @@ sr.set_route.dev = "eth0"
 sr.set_route.to = "0.0.0.0/0"
 check(enact(sr)[0] == 12, "H1 set_route -> exit 12 (UNIMPLEMENTED)")
 
-# H2: rejected pointing hook -> UNAVAILABLE (14), beam not updated
+# H2: rejected pointing hook -> UNAVAILABLE (14), previous target kept; retry re-sends
 os.environ["QSD_HW_POINT_CMD"] = "/bin/false"
 os.environ["QSD_HW_CMD_PATH"] = os.path.join(STATE, "hw_cmd.jsonl")
 gen_before = common.load(common.BEAMS, {})["beam-A"]["generation"]
@@ -90,6 +95,10 @@ check(common.load(common.BEAMS, {})["beam-A"]["cmd_az"] == 120.0,
 check(common.load(common.BEAMS, {})["beam-A"]["generation"] == gen_before,
       "H2 failed point does not bump generation")
 del os.environ["QSD_HW_POINT_CMD"]
+check(enact(update_beam(12, "beam-A", "ant-1", 130.0, 35.0))[0] == 0
+      and "130.0" in open(common.ENACT_FORWARD).read(),
+      "retry after rejection re-forwards POINT and succeeds")
+gen_before = common.load(common.BEAMS, {})["beam-A"]["generation"]
 
 # 3. stack_v2 daemon (default production path)
 snap = qsd_daemon.run_stack(SimStackTerminal(seed=1), steps=80, dt=0.0, predict=False)
@@ -107,8 +116,13 @@ enact(update_beam(4, "beam-A", "ant-1", 121.5, 35.2))
 check(common.load(common.BEAMS, {})["beam-A"]["generation"] == gen_before + 1,
       "retarget bumps generation -> supervisor reset")
 
-# 5. telemetry: no invented modem IDs; with configured IDs + measured SINR, export OK
-# Without modem IDs: interface only
+# 5. telemetry: modem IDs from QSD_MODEM_MAP (or beam table); never invented
+# Clear modem map + beam IDs -> interface only
+common.save(common.MODEM_MAP, {})
+beams = common.load(common.BEAMS, {})
+beams["beam-A"].pop("rx_modem_id", None)
+beams["beam-A"].pop("tx_modem_id", None)
+common.save(common.BEAMS, beams)
 qsd_daemon.run_stack(SimStackTerminal(seed=99), steps=40, dt=0.0)
 p = subprocess.run([sys.executable, os.path.join(HERE, "qsd_telemetry.py")],
                    capture_output=True, text=True, env=os.environ)
@@ -118,18 +132,16 @@ check(msg.interface_metrics[0].interface_id == "ant-1",
       "stdout parses as telemetry.v1alpha.ExportMetricsRequest")
 check(len(msg.modem_metrics) == 0, "M2 no invented modem IDs -> no modem metrics")
 
-# Configure modem IDs on the beam and re-run
-beams = common.load(common.BEAMS, {})
-beams["beam-A"]["rx_modem_id"] = "ant-1-demod"
-beams["beam-A"]["tx_modem_id"] = "beam-A-remote"
-common.save(common.BEAMS, beams)
+# Restore modem map and re-run
+common.save(common.MODEM_MAP,
+            {"beam-A": {"rx_modem_id": "ant-1-demod", "tx_modem_id": "beam-A-remote"}})
 qsd_daemon.run_stack(SimStackTerminal(seed=7), steps=40, dt=0.0)
 p = subprocess.run([sys.executable, os.path.join(HERE, "qsd_telemetry.py")],
                    capture_output=True, text=True, env=os.environ)
 msg = json_format.Parse(p.stdout, tele.ExportMetricsRequest())
 check(len(msg.modem_metrics) >= 1
       and msg.modem_metrics[0].sinr_data_points[0].HasField("sinr_db"),
-      "configured modem IDs + measured SINR export")
+      "QSD_MODEM_MAP + measured SINR export")
 print("     sample:", p.stdout[:220], "...")
 
 # H3: strict default keeps DORMANT for regime 0 (no STARTUP_UP)

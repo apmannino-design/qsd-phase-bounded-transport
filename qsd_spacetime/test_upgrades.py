@@ -120,7 +120,20 @@ p = subprocess.run(
     env={**os.environ, "QSD_STATE_DIR": STATE, "QSD_TELEMETRY_STARTUP_UP": "1"},
 )
 check(p.returncode == 0 and "IF_OPER_STATUS_UP" in p.stdout,
-      "staging opt-in QSD_TELEMETRY_STARTUP_UP=1 maps STARTUP→UP")
+      "staging override: STARTUP+valid+measured → UP only when QSD_TELEMETRY_STARTUP_UP=1")
+p = subprocess.run([sys.executable, os.path.join(HERE, "qsd_telemetry.py")], cwd=HERE,
+                   capture_output=True, text=True,
+                   env={k: v for k, v in {**os.environ, "QSD_STATE_DIR": STATE}.items()
+                        if k != "QSD_TELEMETRY_STARTUP_UP"})
+check(p.returncode == 0 and "IF_OPER_STATUS_DORMANT" in p.stdout and "IF_OPER_STATUS_UP" not in p.stdout,
+      "default is strict: unvalidated STARTUP link reported DORMANT")
+snap["beams"]["beam-A"]["sinr_db"] = None
+common.save(common.STATUS, snap)
+p = subprocess.run([sys.executable, os.path.join(HERE, "qsd_telemetry.py")], cwd=HERE,
+                   capture_output=True, text=True,
+                   env={**os.environ, "QSD_STATE_DIR": STATE, "QSD_TELEMETRY_STARTUP_UP": "1"})
+check(p.returncode == 0 and "IF_OPER_STATUS_UP" not in p.stdout,
+      "override still DORMANT without measured modem data")
 
 shutil.rmtree(STATE)
 print("\nALL PASS" if ok else "\nFAILURES")
