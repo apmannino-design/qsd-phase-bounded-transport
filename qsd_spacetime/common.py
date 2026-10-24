@@ -6,6 +6,9 @@ STATE_DIR = os.environ.get("QSD_STATE_DIR", os.path.join(os.path.dirname(__file_
 BEAMS = os.path.join(STATE_DIR, "beams.json")          # written by qsd_enact.py
 STATUS = os.path.join(STATE_DIR, "status.json")        # written by qsd_daemon.py (Spacetime-facing)
 LOCAL_METRICS = os.path.join(STATE_DIR, "local_metrics.json")  # side-channel; never sent to Spacetime
+# Provisioned modem IDs per beam or interface: {"<beam_id|interface_id>": {"rx_modem_id": ..., "tx_modem_id": ...}}
+# They must match Spacetime's network model. Without an entry, modem metrics are omitted (never invented).
+MODEM_MAP = os.environ.get("QSD_MODEM_MAP", os.path.join(STATE_DIR, "modem_map.json"))
 WEATHER_ADVICE = os.path.join(STATE_DIR, "weather_advice.json")
 ENACT_FORWARD = os.path.join(STATE_DIR, "enact_forward.jsonl")  # beam cmds for terminal controller
 CALIBRATION = os.path.join(STATE_DIR, "calibration.json")       # fitted Config overrides

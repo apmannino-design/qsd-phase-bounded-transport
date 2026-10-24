@@ -21,6 +21,7 @@ import numpy as np
 
 from common import (
     BEAMS,
+    MODEM_MAP,
     CALIBRATION,
     LOCAL_METRICS,
     STATUS,
@@ -156,15 +157,17 @@ def _config_from_calibration(predict: bool) -> stack.Config:
 
 def _beams_from_state():
     raw = load(BEAMS, {})
+    modem_map = load(MODEM_MAP, {})
     beams = []
     for bid, b in raw.items():
         iface = b.get("antenna_id", bid)
-        # Modem IDs must match Spacetime's model when set; never invent them.
+        m = modem_map.get(bid) or modem_map.get(iface) or {}
+        # Modem IDs only from schedule payload or QSD_MODEM_MAP; never invented.
         beams.append(stack.Beam(
             beam_id=bid,
             interface_id=iface,
-            rx_modem_id=b.get("rx_modem_id"),
-            tx_modem_id=b.get("tx_modem_id"),
+            rx_modem_id=b.get("rx_modem_id") or m.get("rx_modem_id"),
+            tx_modem_id=b.get("tx_modem_id") or m.get("tx_modem_id"),
         ))
     return beams, raw
 

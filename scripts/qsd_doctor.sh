@@ -76,7 +76,7 @@ done
 if [[ -x "$ROOT/scripts/spacetime_staging_dryrun.sh" ]]; then
   if "$ROOT/scripts/spacetime_staging_dryrun.sh" >/tmp/qsd_doctor_staging.log 2>&1; then
     if grep -q '^SKIP' /tmp/qsd_doctor_staging.log; then
-      warn "staging agent dry-run SKIPPED (see /tmp/qsd_doctor_staging.log)"
+      warn "staging agent --dry-run SKIPPED (no bazelisk); Go agent not exercised"
     else
       ok "staging agent --dry-run"
     fi
