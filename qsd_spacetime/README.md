@@ -1,83 +1,82 @@
-# QSD gate × Aalyria Spacetime
+# QSD × Aalyria Spacetime
 
-Plugs the QSD ΔE-gated predictive re-lock into Aalyria's open-source SDN agent
-([github.com/aalyria/api](https://github.com/aalyria/api), Apache-2.0) using the agent's built-in `extproc`
-hooks. No changes to Aalyria's code.
+Bridges QSD pointing control into Aalyria's open SDN agent
+([github.com/aalyria/api](https://github.com/aalyria/api), Apache-2.0) via `extproc`.
+No changes to Aalyria's code.
 
-The full Spacetime API + Go SBI agent are vendored under `../third_party/aalyria-api`
-(pinned in `../third_party/AALYRIA_API_PIN.txt`). Python bindings in `gen/` are
-regenerated from that tree.
+**Default controller: `qsd_stack_v2` (forecast OFF).** Bare `qsd_gate.py` is
+`--legacy-gate` only (ideal random-walk demo). Do not deploy it on vibrating platforms.
+
+Vendored API + Go agent: `../third_party/aalyria-api/` (pin `AALYRIA_API_PIN.txt`).
 
 ```
-Spacetime ──Scheduling API──> agent ──stdin (CreateEntryRequest)──> qsd_enact.py ──> state/beams.json
-                                                                                         │
-                                       terminal <── re-lock ── qsd_daemon.py (QSD gate) ─┤
-                                                                                         ▼
-Spacetime <──Telemetry API── agent <──stdout (ExportMetricsRequest)── qsd_telemetry.py <── state/status.json
+Spacetime ──schedule──> agent ──CreateEntryRequest──> qsd_enact.py ──> beams.json
+                              └── POINT forward ──> enact_forward.jsonl / QSD_HW_POINT_CMD
+                                                              │
+         terminal <── offload/relock ── qsd_daemon.py (stack_v2) ─┤
+                                                              ├─> status.json      (Spacetime-facing)
+                                                              └─> local_metrics.json (ΔE/θ/headroom; local only)
+Spacetime <──telemetry── agent <──ExportMetricsRequest── qsd_telemetry.py <── status.json
 ```
 
 | File | Role |
 |---|---|
-| `qsd_gate.py` | ΔE corridor + 2-state Kalman predictive trigger (pure NumPy) |
-| `qsd_enact.py` | extproc enactment: records `update_beam` / `delete_beam` targets |
-| `qsd_daemon.py` | runs the gate at terminal rate; `SimTerminal` for tests, `HardwareTerminal` stub for real I/O |
-| `qsd_telemetry.py` | extproc telemetry: interface state (UP / DORMANT / DOWN) + SINR to Spacetime |
-| `qsd_stack_v2.py` | Covariance supervisor + Spacetime telemetry adapter (recoverable faults; optional forecast OFF by default) |
-| `agent_config.textproto` | agent config wiring both extprocs |
-| `gen/` | Python protos from vendored `aalyria/api` + NMTS |
-| `test_integration.py` | end-to-end test against regenerated protos |
-| `test_qsd_stack_v2.py` | supervisor robustness / equal-budget FSM plant tests |
-| `qsd_stress_*.py` | model-mismatch stress (vibration / vib-aware / fair) |
-| `qsd_reroute_sim.py` | weather ground-station reroute sim (negative result) |
+| `qsd_stack_v2.py` | **Production** covariance supervisor (recoverable DEGRADED; forecast OFF) |
+| `qsd_daemon.py` | Control loop; default stack_v2; `--legacy-gate` for demo |
+| `qsd_terminal.py` | `HardwareTerminal` / `RecordingTerminal` / `ReplayTerminal` / `SimStackTerminal` |
+| `qsd_enact.py` | extproc enactment + POINT forward to terminal |
+| `qsd_telemetry.py` | extproc telemetry; **measured SINR only** |
+| `qsd_calibrate.py` | Fit headroom/θ from a recording → `calibration.json` |
+| `qsd_record_replay.py` | Record / replay terminal sessions through stack_v2 |
+| `qsd_weather_ingest.py` | External weather → `weather_advice.json` + NBI hint |
+| `qsd_gate.py` | Legacy Kalman gate (ideal plant) |
+| `agent_config.textproto` | Production placeholders |
+| `agent_config.staging.textproto` | Staging placeholders |
+| `gen/` | Python protos from vendored aalyria/api |
 
 ## Verify
 
 ```bash
 pip install protobuf numpy googleapis-common-protos
-../scripts/verify_qsd_spacetime.sh          # protos + bridge + Go agent dry-run
+python3 test_upgrades.py
 python3 test_integration.py
 python3 qsd_stack_v2.py test
-python3 test_qsd_stack_v2.py
+../scripts/spacetime_staging_dryrun.sh
+../scripts/verify_qsd_spacetime.sh
 ```
 
-Refresh upstream + regenerate:
+## Deploy path (terminal)
 
 ```bash
-../scripts/fetch_aalyria_spacetime.sh
-../scripts/regen_qsd_spacetime_protos.sh
+# 1) Record from hardware (or --sim) then calibrate
+python3 qsd_daemon.py --sim --record /tmp/term.jsonl --seconds 30
+python3 qsd_calibrate.py --record /tmp/term.jsonl
+
+# 2) Hardware env
+export QSD_HW_SAMPLE_PATH=/path/to/latest_sample.json
+export QSD_HW_CMD_PATH=/path/to/commands.jsonl
+export QSD_HW_OFFLOAD_CMD=/opt/terminal/offload.sh
+export QSD_HW_RELOCK_CMD=/opt/terminal/relock.sh
+export QSD_HW_POINT_CMD=/opt/terminal/point.sh   # args: az el beam_id
+
+# 3) Daemon + agent
+python3 qsd_daemon.py --dt 0.001          # loads state/calibration.json if present
+# agent --config agent_config.textproto   # after substituting credentials
+```
+
+## Weather (external only)
+
+Link-margin KF reroute was a negative result (`qsd_reroute_sim.py`). Use:
+
+```bash
+python3 qsd_weather_ingest.py --in weather.json
+# → state/weather_advice.json  (switch_now, nbi_hint) for operators / NBI client
 ```
 
 ## Design notes
-- The gate runs in a separate daemon because pointing control (ms) is far faster
-  than Spacetime's telemetry period (s); extprocs only exchange state.
-- Spacetime's v1alpha telemetry has no pointing or custom fields, so gate state
-  maps to interface operational state and SINR. Raw ΔE / p_exit stay local.
-- A retargeted or new beam resets the gate (fresh acquisition).
-- Only `az_el` beam targets are handled directly; state-vector / Chebyshev targets
-  need the residual from the terminal's own tracker.
+- Pointing (ms) is faster than Spacetime telemetry (s); extprocs only exchange state.
+- Spacetime v1alpha has no custom pointing fields → interface oper state + measured SINR.
+- ΔE / θ / headroom / p_exit stay in `local_metrics.json`.
+- Forecast (`--predict`) stayed OFF after bench: more offloads, no lock-time win on the sim plant.
 
-## Stress / mismatch results (do not skip)
-Model-mismatch stress (`qsd_stress_test.py`, `qsd_stress_vibaware.py`,
-`qsd_stress_fair.py`): the basic Kalman gate is 2–5× **worse** than reactive under slow
-vibration; a vibration-aware filter wins only if the vibration frequency is known
-(15% too high reverses it). Do not deploy `qsd_gate.py` as-is on a vibrating platform.
-The upgraded `qsd_stack_v2.py` supervisor uses a frequency-free, fail-safe forecast instead
-(`predict=True`; OFF by default). Bench (`bench_v2.py`): no lock-time benefit on the
-simulated plant; forecast cost 5–170% more offloads — keep for real terminal data only.
-
-## Weather rerouting (`qsd_reroute_sim.py`) — negative result
-Predictive (Kalman trend) vs reactive (filtered margin + safety buffer) ground-station
-switching under simulated cloud fades and scintillation, compared at equal handovers/hour.
-
-- Heavy weather: both policies sit at the floor (all stations clouded + switching time). Gain ≤ 2%.
-- Light weather: the best reactive policy's outage equals its handover time exactly
-  (e.g. 2.9 HO/h × 3 s = 0.24%), i.e. it already avoids every fade. Nothing left to predict.
-- With 15 s reacquisition, an 18 s horizon is too uncertain; the predictive gate thrashes.
-
-Conclusion: cloud fades ramp over tens of seconds, so a reactive switch with a few dB of
-buffer already gets out in time. Link-telemetry trends add no useful warning. Real early
-warning would have to come from outside the link (weather radar, all-sky cameras, cloud imagery).
-
-## Not yet done
-- Not run against a live Spacetime instance (needs Aalyria credentials).
-- `HardwareTerminal` is a stub: needs a real terminal's pointing readout and re-lock command.
+See `RESULTS_OCT24_2026_QSD_STACK_V2.md` and `RESULTS_OCT24_2026_QSD_UPGRADES.md`.

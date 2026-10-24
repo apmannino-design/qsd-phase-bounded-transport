@@ -1,0 +1,54 @@
+# Staging Spacetime SDN agent config for the QSD stack_v2 bridge.
+# Fill STAGING_* from your Aalyria representative, then:
+#   scripts/spacetime_staging_dryrun.sh
+#
+# Run alongside:
+#   QSD_STATE_DIR=... python3 qsd_daemon.py --dt 0.001
+#   (HardwareTerminal via QSD_HW_* env, or --sim for a dry plant)
+
+sdn_agents: {
+  id: "${STAGING_AGENT_ID}"
+
+  enactment_driver: {
+    connection_params: {
+      endpoint_uri: "scheduling-v1alpha.${STAGING_DOMAIN}"
+      transport_security: { system_cert_pool: {} }
+      auth_strategy: {
+        jwt: {
+          audience: "scheduling-v1alpha.${STAGING_DOMAIN}"
+          email: "${STAGING_AGENT_EMAIL}"
+          private_key_id: "${STAGING_PRIVATE_KEY_ID}"
+          signing_strategy: { private_key_file: "${STAGING_PRIVATE_KEY_PEM}" }
+        }
+      }
+    }
+    external_command: {
+      args: "python3"
+      args: "${QSD_SPACETIME_ROOT}/qsd_enact.py"
+      proto_format: JSON
+    }
+  }
+
+  telemetry_driver: {
+    connection_params: {
+      endpoint_uri: "telemetry-v1alpha.${STAGING_DOMAIN}"
+      transport_security: { system_cert_pool: {} }
+      auth_strategy: {
+        jwt: {
+          audience: "telemetry-v1alpha.${STAGING_DOMAIN}"
+          email: "${STAGING_AGENT_EMAIL}"
+          private_key_id: "${STAGING_PRIVATE_KEY_ID}"
+          signing_strategy: { private_key_file: "${STAGING_PRIVATE_KEY_PEM}" }
+        }
+      }
+    }
+    external_command: {
+      collection_period: { seconds: 1 }
+      command: {
+        args: "python3"
+        args: "${QSD_SPACETIME_ROOT}/qsd_telemetry.py"
+        proto_format: JSON
+      }
+    }
+  }
+}

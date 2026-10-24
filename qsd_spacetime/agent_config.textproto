@@ -1,5 +1,6 @@
-# Spacetime SDN agent config wiring the QSD gate in via extproc.
-# Run alongside:  python3 qsd_daemon.py --dt 0.01    (the gate control loop)
+# Spacetime SDN agent config wiring QSD stack_v2 via extproc.
+# Run alongside:  python3 qsd_daemon.py --dt 0.001   (stack_v2; forecast OFF)
+# Staging variant: agent_config.staging.textproto + scripts/spacetime_staging_dryrun.sh
 # Replace ${...} placeholders with values from your Aalyria representative.
 
 sdn_agents: {
