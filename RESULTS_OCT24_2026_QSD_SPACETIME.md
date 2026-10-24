@@ -45,4 +45,4 @@ scripts/verify_qsd_spacetime.sh
 | reactive | ~32 | ~2.7% |
 | predictive | ~39 | ~0.05% |
 
-Predictive spends less time outside the corridor through the agent path.
+Predictive spends less time outside the corridor through the agent path **on the ideal random-walk plant**. Under vibration / mismatch, see `RESULTS_OCT24_2026_QSD_STACK_V2.md` — deploy `qsd_stack_v2.py` (forecast OFF by default), not bare `qsd_gate.py`.

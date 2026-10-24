@@ -22,18 +22,22 @@ Spacetime <──Telemetry API── agent <──stdout (ExportMetricsRequest)�
 | `qsd_enact.py` | extproc enactment: records `update_beam` / `delete_beam` targets |
 | `qsd_daemon.py` | runs the gate at terminal rate; `SimTerminal` for tests, `HardwareTerminal` stub for real I/O |
 | `qsd_telemetry.py` | extproc telemetry: interface state (UP / DORMANT / DOWN) + SINR to Spacetime |
+| `qsd_stack_v2.py` | Covariance supervisor + Spacetime telemetry adapter (recoverable faults; optional forecast OFF by default) |
 | `agent_config.textproto` | agent config wiring both extprocs |
 | `gen/` | Python protos from vendored `aalyria/api` + NMTS |
 | `test_integration.py` | end-to-end test against regenerated protos |
+| `test_qsd_stack_v2.py` | supervisor robustness / equal-budget FSM plant tests |
+| `qsd_stress_*.py` | model-mismatch stress (vibration / vib-aware / fair) |
+| `qsd_reroute_sim.py` | weather ground-station reroute sim (negative result) |
 
 ## Verify
 
 ```bash
 pip install protobuf numpy googleapis-common-protos
-# Full path: refresh vendor tree, regen protos, integration + Go agent dry-run
-../scripts/verify_qsd_spacetime.sh
-# Or just the Python bridge:
+../scripts/verify_qsd_spacetime.sh          # protos + bridge + Go agent dry-run
 python3 test_integration.py
+python3 qsd_stack_v2.py test
+python3 test_qsd_stack_v2.py
 ```
 
 Refresh upstream + regenerate:
@@ -41,15 +45,6 @@ Refresh upstream + regenerate:
 ```bash
 ../scripts/fetch_aalyria_spacetime.sh
 ../scripts/regen_qsd_spacetime_protos.sh
-```
-
-Build / dry-run the real Go agent against this config:
-
-```bash
-cd ../third_party/aalyria-api
-bazelisk build //agent/cmd/agent
-# substitute ${AGENT_ID}/${DOMAIN}/... then:
-./bazel-bin/agent/cmd/agent/agent_/agent --config ../../qsd_spacetime/agent_config.textproto --dry-run
 ```
 
 ## Design notes
@@ -61,7 +56,28 @@ bazelisk build //agent/cmd/agent
 - Only `az_el` beam targets are handled directly; state-vector / Chebyshev targets
   need the residual from the terminal's own tracker.
 
+## Stress / mismatch results (do not skip)
+Model-mismatch stress (`qsd_stress_test.py`, `qsd_stress_vibaware.py`,
+`qsd_stress_fair.py`): the basic Kalman gate is 2–5× **worse** than reactive under slow
+vibration; a vibration-aware filter wins only if the vibration frequency is known
+(15% too high reverses it). Do not deploy `qsd_gate.py` as-is on a vibrating platform.
+The upgraded `qsd_stack_v2.py` supervisor uses a frequency-free, fail-safe forecast instead
+(`predict=True`; OFF by default). Bench (`bench_v2.py`): no lock-time benefit on the
+simulated plant; forecast cost 5–170% more offloads — keep for real terminal data only.
+
+## Weather rerouting (`qsd_reroute_sim.py`) — negative result
+Predictive (Kalman trend) vs reactive (filtered margin + safety buffer) ground-station
+switching under simulated cloud fades and scintillation, compared at equal handovers/hour.
+
+- Heavy weather: both policies sit at the floor (all stations clouded + switching time). Gain ≤ 2%.
+- Light weather: the best reactive policy's outage equals its handover time exactly
+  (e.g. 2.9 HO/h × 3 s = 0.24%), i.e. it already avoids every fade. Nothing left to predict.
+- With 15 s reacquisition, an 18 s horizon is too uncertain; the predictive gate thrashes.
+
+Conclusion: cloud fades ramp over tens of seconds, so a reactive switch with a few dB of
+buffer already gets out in time. Link-telemetry trends add no useful warning. Real early
+warning would have to come from outside the link (weather radar, all-sky cameras, cloud imagery).
+
 ## Not yet done
 - Not run against a live Spacetime instance (needs Aalyria credentials).
 - `HardwareTerminal` is a stub: needs a real terminal's pointing readout and re-lock command.
-- Plant model is the ideal random-walk case; model-mismatch stress test still pending.

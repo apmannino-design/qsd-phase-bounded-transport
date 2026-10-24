@@ -1,0 +1,28 @@
+
+[fast slews only]
+  headroom_warn | reactive: offl/min  no-lock% | forecast: offl/min  no-lock% | reactive no-lock% @ same offloads
+     0.15       |     85.0     0.000      |     99.0     0.000      |  0.000
+     0.25       |     94.0     0.000      |    106.0     0.000      |  0.000
+     0.35       |    107.0     0.000      |    118.0     0.000      |  0.000
+     0.50       |    138.0     0.000      |    145.0     0.000      |  out of range
+
+[slews + slow vibration 40 urad 2 Hz]
+  headroom_warn | reactive: offl/min  no-lock% | forecast: offl/min  no-lock% | reactive no-lock% @ same offloads
+     0.15       |     43.0     0.000      |    116.0     0.000      |  0.000
+     0.25       |     86.0     0.000      |    116.0     0.000      |  0.000
+     0.35       |    107.0     0.000      |    123.0     0.000      |  0.000
+     0.50       |    150.0     0.000      |    156.0     0.000      |  out of range
+
+[slews + fast vibration 15 urad 8 Hz]
+  headroom_warn | reactive: offl/min  no-lock% | forecast: offl/min  no-lock% | reactive no-lock% @ same offloads
+     0.15       |     45.0     0.000      |     77.0     0.000      |  0.000
+     0.25       |     75.0     0.000      |     92.0     0.000      |  0.000
+     0.35       |     92.0     0.000      |    106.0     0.000      |  0.000
+     0.50       |    123.0     0.000      |    131.0     0.000      |  out of range
+
+[slews + steps 20-40 urad, 0.5/s]
+  headroom_warn | reactive: offl/min  no-lock% | forecast: offl/min  no-lock% | reactive no-lock% @ same offloads
+     0.15       |     58.0     0.250      |     76.0     0.000      |  0.019
+     0.25       |     64.0     0.250      |     82.0     0.000      |  0.000
+     0.35       |     77.0     0.000      |     93.0     0.250      |  0.000
+     0.50       |    100.0     0.000      |    117.0     0.000      |  out of range

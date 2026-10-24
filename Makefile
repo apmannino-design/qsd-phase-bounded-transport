@@ -8,9 +8,13 @@ spacetime-fetch:
 spacetime:
 	bash scripts/regen_qsd_spacetime_protos.sh
 	python3 qsd_spacetime/test_integration.py
+	python3 qsd_spacetime/qsd_stack_v2.py test
+	python3 qsd_spacetime/test_qsd_stack_v2.py
 
 spacetime-verify:
 	bash scripts/verify_qsd_spacetime.sh
+	python3 qsd_spacetime/qsd_stack_v2.py test
+	python3 qsd_spacetime/test_qsd_stack_v2.py
 
 pipeline:
 	python3 code/qsd_pipeline.py
@@ -34,6 +38,8 @@ pipeline:
 	python3 code/run_qsd_scorecard.py --self-test
 	python3 code/run_qsd_scorecard.py --out-dir results
 	python3 qsd_spacetime/test_integration.py
+	python3 qsd_spacetime/qsd_stack_v2.py test
+	python3 qsd_spacetime/test_qsd_stack_v2.py
 
 report:
 	python3 code/build_report.py
