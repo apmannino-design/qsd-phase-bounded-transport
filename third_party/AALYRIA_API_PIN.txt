@@ -1,0 +1,6 @@
+repo=https://github.com/aalyria/api
+ref=main
+commit=ee3f0ea4cf3d8e37abe3e68df47d8d4dbfd5750f
+date=2026-10-24 00:08:21 +0000
+nmts=https://github.com/outernetcouncil/nmts/archive/refs/tags/v1.21.0.tar.gz
+googleapis=https://github.com/googleapis/googleapis.git

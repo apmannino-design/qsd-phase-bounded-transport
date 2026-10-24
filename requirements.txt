@@ -2,3 +2,6 @@ numpy
 pandas
 matplotlib
 requests
+protobuf>=5
+googleapis-common-protos>=1.63
+grpcio-tools

@@ -65,7 +65,9 @@ Poor fits, stated explicitly: Ising/TFIM ground-state energy (bare Trotter won),
 
 - `code/` — consolidated reference implementation of the paper's mathematical objects, with self-tests (29 passing).
 - `aurora_qsd/` (feature branches) — experiment package: Willow/cirq modules, IBM/Qiskit cell protocols, CLI tooling.
-- `notebooks/`, `scripts/` — analysis and pipeline runners.
+- `qsd_spacetime/` — QSD ΔE gate bridged into Aalyria Spacetime’s open SDN agent via `extproc` (see `RESULTS_OCT24_2026_QSD_SPACETIME.md`).
+- `third_party/aalyria-api/` — vendored [aalyria/api](https://github.com/aalyria/api) (full Spacetime API + Go SBI agent).
+- `notebooks/`, `scripts/` — analysis and pipeline runners (`scripts/verify_qsd_spacetime.sh` for the Spacetime bridge).
 - `data/` — instrument datasets used in early exploratory signal-processing pilots (GOES-16, DSCOVR, LIGO). These pilots are exploratory only and make no validated physical claims.
 - `paper/` — LaTeX sources.
 - `RESULTS_*.md` — dated, immutable result logs including NULL and failed runs.

@@ -1,0 +1,349 @@
+// Copyright (c) Outernet Council and Contributors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// This file contains messages used to model a chain of signal processors, such
+// as amplifiers, filters, and mixers.
+
+syntax = "proto3";
+
+package nmts.v2alpha.ek.physical;
+
+import "google/protobuf/duration.proto";
+
+option java_package = "org.outernetcouncil.nmts.v2alpha.proto.ek.physical";
+option go_package = "outernetcouncil.org/nmts/v2alpha/proto/ek/physical";
+
+/******************************************************************************/
+/* Amplifiers                                                                 */
+/******************************************************************************/
+// TODO: Add comments to describe how gain and noise are computed from
+// the fields in these messages.
+message ConstantGainAmplifier {
+  // Required.
+  double gain_db = 1;
+
+  // Either Antenna.g_over_t_db_per_k must be specified, or both the receive
+  // antenna pattern and sources of noise (in the antenna noise temperature
+  // and/or these fields) must be specified. See
+  // https://docs.spacetime.aalyria.com/data_model/sources_of_noise for details.
+  //
+  // Required.
+  double noise_factor = 2;
+  // Required.
+  double reference_temperature_k = 3;
+}
+
+message LowNoiseAmplifier {
+  // Required.
+  double pre_lna_gain_db = 1;
+  // Required.
+  double lna_gain_db = 2;
+  // Required.
+  double post_lna_gain_db = 3;
+
+  // Either Antenna.g_over_t_db_per_k must be specified, or both the receive
+  // antenna pattern and sources of noise (in the antenna noise temperature
+  // and/or these fields) must be specified. See
+  // https://docs.spacetime.aalyria.com/data_model/sources_of_noise for details.
+  //
+  // Required.
+  double noise_factor = 4;
+  // Required.
+  double reference_temperature_k = 5;
+}
+
+// Models a high power amplifier (HPA), the transmit-side counterpart to the
+// LowNoiseAmplifier.
+message HighPowerAmplifier {
+  // Noise power ratio (NPR) characterizing in-band intermodulation noise from
+  // amplifier nonlinearity (e.g., intermodulation products near saturation).
+  message NoisePowerRatio {
+    // A control point on a piecewise-linear NPR adjustment curve. Within a
+    // curve, the adjustment is linearly interpolated between control points;
+    // below the smallest input the first control point's adjustment applies,
+    // and above the largest input the last control point's applies. A curve
+    // MUST have at least two control points, ordered by strictly increasing
+    // input.
+    message ControlPoint {
+      // The operating-parameter value. Units are defined by the field that
+      // holds this control point.
+      double input = 1;
+
+      // The value added to reference_noise_power_ratio_db at this input. A
+      // positive value improves (raises) NPR.
+      double npr_delta_db = 2;
+    }
+
+    // Required. NPR at the reference operating point, in dB. A higher value
+    // indicates less intermodulation noise. When both curves below are empty,
+    // this is applied directly as a static NPR.
+    double reference_noise_power_ratio_db = 1;
+
+    // NPR adjustment as a function of amplifier output power, in dBW. If empty,
+    // output power has no effect on NPR.
+    repeated ControlPoint output_power_dbw_control_points = 2;
+
+    // NPR adjustment as a function of carrier center frequency, in dB-Hz. If
+    // empty, center frequency has no effect on NPR.
+    repeated ControlPoint center_frequency_db_hz_control_points = 3;
+  }
+  // Noise power ratio characteristics of this amplifier. The effective NPR is
+  // reference_noise_power_ratio_db plus the interpolated adjustment from each
+  // populated curve. If unset, the amplifier contributes no intermodulation
+  // noise.
+  NoisePowerRatio noise_power_ratio = 1;
+}
+
+// A miscellaneous gain or loss that can be used to model any other effects
+// in the signal processing chain.
+message MiscGainOrLoss {
+  // A name that describes the gain or loss.
+  string name = 1;
+
+  // The gain (positive values) or loss (negative values), in dB.
+  // Required.
+  double gain_or_loss_db = 2;
+}
+
+/******************************************************************************/
+/* Filters                                                                    */
+/******************************************************************************/
+// TODO: Add comments to describe how the noise and gain are computed
+// from the fields in these messages.
+message RectangularFilter {
+  // Set this only if the filter's frequency is static.
+  // If the field is not set, it will be configured dynamically according to the
+  // center frequency of the channel in use.
+  double frequency_hz = 1;
+
+  // The offset to the lower bandwidth limit, in Hz.
+  // If the field is not set, it will be configured dynamically according to the
+  // bandwidth of the channel in use.
+  double lower_bandwidth_limit_hz = 2;
+
+  // The offset to the upper bandwidth limit, in Hz.
+  // If the field is not set, it will be configured dynamically according to the
+  // bandwidth of the channel in use.
+  double upper_bandwidth_limit_hz = 3;
+
+  // The thermal noise temperature of the filter, in Kelvin.
+  //
+  // Either Antenna.g_over_t_db_per_k must be specified, or both the receive
+  // antenna pattern and sources of noise (in the antenna noise temperature
+  // and/or these fields) must be specified. See
+  // https://docs.spacetime.aalyria.com/data_model/sources_of_noise for details.
+  //
+  // Required.
+  double noise_temperature_k = 4;
+}
+
+message LinearFilter {
+  // The amount of attentunation (rejection) of the output signal, in
+  // Decibels, per Hz of difference between the input signal frequency and the
+  // filter's configured / design frequency. This should be a positive value.
+  // Required.
+  double rejection_db_per_hz = 1;
+
+  // Set this only if the filter's frequency is static.
+  // If the field is not set, it will be configured dynamically according to the
+  // center frequency of the channel in use.
+  double frequency_hz = 2;
+
+  // The offset to the lower bandwidth limit, in Hz.
+  // If the field is not set, it will be configured dynamically according to the
+  // bandwidth of the channel in use.
+  double lower_bandwidth_limit_hz = 3;
+
+  // The offset to the upper bandwidth limit, in Hz.
+  // If the field is not set, it will be configured dynamically according to the
+  // bandwidth of the channel in use.
+  double upper_bandwidth_limit_hz = 4;
+
+  // The thermal noise temperature of the filter, in Kelvin.
+  //
+  // Either Antenna.g_over_t_db_per_k must be specified, or both the receive
+  // antenna pattern and sources of noise (in the antenna noise temperature
+  // and/or these fields) must be specified. See
+  // https://docs.spacetime.aalyria.com/data_model/sources_of_noise for details.
+  //
+  // Required.
+  double noise_temperature_k = 5;
+}
+
+/*
+ * Models of photodetectors used in free-space optical communications.
+ */
+message AvalanchePhotodiode {
+  // Required.
+  double field_of_view_rad = 1;
+  // Required.
+  double bandwidth_hz = 2;
+  // Required.
+  double noise_temperature_k = 3;
+  // Required.
+  double efficiency_percent = 4;
+  // Required.
+  double dark_current_amp = 5;
+  // Required.
+  double load_impedance_ohm = 6;
+  // Required.
+  double noise_factor = 7;
+  // Required.
+  double gain_db = 8;
+  // Required.
+  double optical_bandpass_filter_bandwidth_hz = 9;
+
+  // Units for radiance: W * m^-2 * sr^-1 * Hz^-1
+  // Required.
+  double sky_spectral_radiance = 10;
+
+  // Units for emittance: W * m^-2 * Hz^-1
+  // Required.
+  double sun_spectral_radiant_emittance = 11;
+
+  // Must be greater than or equal to 2.99792458E-9 meters and less than
+  // or equal to 9.993081933333333E-5 meters to model an optical wavelength.
+  // Required.
+  double wavelength_m = 12;
+}
+
+message PinPhotodiode {
+  // Required.
+  double field_of_view_rad = 1;
+  // Required.
+  double bandwidth_hz = 2;
+  // Required.
+  double noise_temperature_k = 3;
+  // Required.
+  double efficiency_percent = 4;
+  // Required.
+  double dark_current_amp = 5;
+  // Required.
+  double load_impedance_ohm = 6;
+  // Required.
+  double optical_bandpass_filter_bandwidth_hz = 7;
+
+  // Units for radiance: W * m^-2 * sr^-1 * Hz^-1
+  // Required.
+  double sky_spectral_radiance = 8;
+
+  // Units for emittance: W * m^-2 * Hz^-1
+  // Required.
+  double sun_spectral_radiant_emittance = 9;
+
+  // Must be greater than or equal to 2.99792458E-9 meters and less than
+  // or equal to 9.993081933333333E-5 meters to model an optical wavelength.
+  // Required.
+  double wavelength_m = 10;
+}
+
+/******************************************************************************/
+/* Mixers                                                                     */
+/******************************************************************************/
+// TODO: Complete these.
+message VariableFrequencyMixer {
+}
+
+message ConstantFrequencyMixer {
+  // A simple (ideal) constant frequency mixer.
+  // 
+  // This type represents an ideal mixer which takes an input signal and a
+  // 'signal' based on a given reference frequency and multiplies the two
+  // waveforms together.
+  //   
+  // Normally, a non-linear mixer would produce at least two signals mirrored
+  // on either side of the frequency of the incoming carrier. However, this
+  // simple ideal mixer treats all but the additive signal as being "filtered
+  // out" and also ignores any power loss due to the multiple output signals.
+  // So, while the real case involves the sinusoidal behavior of the reference
+  // signal with respect to the input signals, this mixer simply adds the 
+  // reference frequency onto each incoming signal.
+  // 
+  // For frequency conversion, positive values refer to up-conversion, while
+  // negative values refer to down-conversion.
+
+  // The additive frequency in hertz.
+  int64 additive_frequency_hz = 1;
+
+  // The noise temperature of this mixer, measured in degrees Kelvin.
+  // This can be ignored in the ideal mixer (or if unknown) and should default
+  // to 0K noise temperature.
+  //
+  // Either Antenna.g_over_t_db_per_k must be specified, or both the receive
+  // antenna pattern and sources of noise (in the antenna noise temperature
+  // and/or these fields) must be specified. See
+  // https://docs.spacetime.aalyria.com/data_model/sources_of_noise for details.
+  double noise_temperature_k = 2;
+}
+
+// A constraint on channel assignment introduced by an element of the signal
+// processing chain.
+//
+// This element models architectures in which a set of transmitters or receivers
+// may support channels of many sizes, but they need to be configured in one 
+// of a predetermined set of profiles that allows only a subset of those 
+// bandwidths to be processed simultaneously.
+message ChannelBandwidthProfileConfiguration {
+  // Defines the bandwidth profiles supported by the set of transmitters or 
+  // receivers to which this signal processing chain is connected in the model. 
+  // The bandwidths of the carriers that are assigned to the connected 
+  // transmitters or receivers should always be less than or equal to the 
+  // bandwidths specified by one of the entries of this list. 
+  message BandwidthProfile {
+    repeated int64 bandwidths_hz = 1;
+
+    // For hardware supporting beams of a given bandwidth bundled into
+    // slots, the number of such beams of the lowest bandwidth in this
+    // profile that may be packed together. If larger bandwidth beams
+    // are selected they consume proportionally more "beams". The number
+    // and order of bundle slots should be assumed to be meaningful.
+    //
+    // A set of beam bundles may require selecting only specific subsets
+    // frequency shifts.  These should be expressed in any accompanying
+    // EK_CARRIER_CONFIGURATION entity.
+    //
+    // TODO: expand documentation with examples and clarifying text.
+    //
+    repeated int32 max_beams_per_bundle = 4;
+  }
+  repeated BandwidthProfile bandwidth_profiles = 1;
+
+  // The time required to switch between bandwidth profiles.
+  // During this period, this element is inactive, so no beams that transit 
+  // this element can be formed.
+  google.protobuf.Duration reconfiguration_duration = 2;
+}
+  
+// Models a chain of signal processors. These processors modify the signal in
+// the analysis of its wireless propagation.
+message SignalProcessingChain {
+  message Element {
+    oneof type {
+      ConstantGainAmplifier constant_gain_amplifier = 1;
+      LowNoiseAmplifier low_noise_amplifier = 2;
+      MiscGainOrLoss misc_gain_or_loss = 3;
+      RectangularFilter rectangular_filter = 4;
+      LinearFilter linear_filter = 5;
+      AvalanchePhotodiode avalanche_photodiode = 6;
+      PinPhotodiode pin_photodiode = 7;
+      VariableFrequencyMixer variable_frequency_mixer = 8;
+      ConstantFrequencyMixer constant_frequency_mixer = 9;
+      ChannelBandwidthProfileConfiguration
+        channel_bandwidth_profile_configuration = 10;
+      HighPowerAmplifier high_power_amplifier = 11;
+    }
+  }
+  // Required.
+  repeated Element elements = 1;
+}

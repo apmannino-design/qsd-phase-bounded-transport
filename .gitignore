@@ -4,3 +4,8 @@ __pycache__/
 .pytest_cache/
 
 artifacts/
+
+# Bazel outputs from third_party/aalyria-api builds
+third_party/aalyria-api/bazel-*
+third_party/aalyria-api/MODULE.bazel.lock
+

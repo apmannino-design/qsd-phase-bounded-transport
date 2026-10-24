@@ -1,0 +1,373 @@
+// Copyright (c) Outernet Council and Contributors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// This file contains messages used to model RF antennas and optical apertures.
+
+syntax = "proto3";
+
+package nmts.v2alpha.ek.physical;
+
+import "google/protobuf/duration.proto";
+import "google/protobuf/empty.proto";
+
+import "nmts/v2alpha/proto/types/geophys/azimuth_elevation_mask.proto";
+import "nmts/v2alpha/proto/types/geophys/coordinates.proto";
+import "nmts/v2alpha/proto/types/physical/antenna_pattern.proto";
+import "nmts/v2alpha/proto/types/physical/emissions.proto";
+
+option java_package = "org.outernetcouncil.nmts.v2alpha.proto.ek.physical";
+option go_package = "outernetcouncil.org/nmts/v2alpha/proto/ek/physical";
+
+message ChebyshevCoefficients {
+  nmts.v2alpha.types.geophys.CoordinateFrame reference_frame = 1;
+
+  // The minimum desired polynomial order, assumed to be required
+  // for accurate pointing of this aperture.
+  int32 min_order = 2;
+
+  // The shortest desired time any set of coefficients should span.
+  google.protobuf.Duration min_interval = 3;
+
+  // The longest desirable time between updates of coefficients.
+  //
+  // Choosing a max_update_period shorter than min_interval can
+  // allow for a system to provide overlap information according
+  // to a desired strategy.  For example:
+  //
+  //     * max_update_period = 10 minutes
+  //     * min_interval = 12 minutes
+  //
+  // would allow a system to allocate 2 minutes of overlap of
+  // coefficients.
+  google.protobuf.Duration max_update_period = 4;
+}
+
+// Models an RF antenna or optical aperture.
+//
+// There should be an RK_CONTAINS relationship between the Antenna and the
+// nmts.ek.physical.Platform to which the antenna is attached, in the following
+// direction: nmts.ek.physical.Platform --RK_CONTAINS--> Antenna.
+// The Platform determines the base position and orientation axes of the
+// Antenna, and a translational or rotational offset from the Platform's center
+// can be defined in this message.
+message Antenna {
+  reserved 2;
+
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    RF = 1;
+    OPTICAL = 2;
+  }
+  // Required.
+  Type type = 1;
+
+  /****************************************************************************/
+  /* Physical Parameters                                                      */
+  /****************************************************************************/
+  // Indicates whether the antenna supports multiple, independently targetable
+  // beams.
+  //
+  // When true, each carrier routed across this antenna is considered to be
+  // transmitted or received in a separate beam. When false, all carriers are
+  // considered to share a single beam.
+  // The ability for multiple carriers to be routed across an antenna can be
+  // modeled through graphs such as:
+  //
+  // EK_MODULATOR --> EK_SIGNAL_PROCESSING_CHAIN --> EK_TRANSMITTER ---|
+  //                                                                   v
+  //                                                                EK_ANTENNA
+  //                                                                   ^
+  // EK_MODULATOR --> EK_SIGNAL_PROCESSING_CHAIN --> EK_TRANSMITTER ---|
+  //
+  // (All edges are RK_SIGNAL_TRANSITS relationships.)
+  //
+  // In this example, each modulator may generate one or more carriers, so the
+  // graph structure allows a model observer to determine that these carriers
+  // are transmitted through the same antenna.
+  bool supports_multiple_beams = 18;
+
+  // The aggregate maximum transmit power across all beams formed by this
+  // antenna, in watts.
+  //
+  // Deprecated: use EirpLimits.max_aggregate_boresight_aligned_eirp_dbw
+  // instead.
+  double max_transmit_power_w = 3 [deprecated = true];
+
+  // Effective Isotropic Radiating Power (EIRP) limits.
+  nmts.v2alpha.types.physical.EirpLimits eirp_limits = 19;
+
+  // Set to true if the antenna is mechanically-steerable. If an antenna is
+  // only electronically-steerable, this will be false. Note that an
+  // antenna's electronic-steerability is implicitly determined based on the
+  // type of antenna pattern in that any antennas with scan-angle-dependent
+  // gain patterns (such as CustomGainPatternPerAngle) will be assumed to
+  // be electronically-steerable.
+  //
+  // If enabled, the boresight direction of the antenna is oriented along the
+  // link vector when evaluating the wireless propagation of the signal.
+  // WARNING: If the gain pattern of an electronically steerable antenna varies
+  // based on the scan angle, define a full 3D gain pattern at every scan
+  // angle as an nmts.ek.physical.CustomAntennaPatternPerAngle and do *not* set
+  // this field. The scan angle relative to the antenna's axes determines which
+  // 3D gain pattern is referenced to look up the gain in the direction of the
+  // link, so the antenna's axes should not be oriented along the link vector.
+  // However, if the gain pattern does not vary based on scan angle, define the
+  // 3D gain pattern as any pattern besides
+  // nmts.ek.physical.CustomAntennaPatternPerAngle and *set* this field. When
+  // the boresight direction of this antenna is oriented along the link vector,
+  // the gain in the link direction will be the gain defined at phi = 0 and
+  // theta = 0.
+  //
+  // If enabled, all beams that can be formed by this antenna are considered to
+  // be steerable.
+  //
+  // Required.
+  bool is_steerable = 4;
+
+  message PointingFormat {
+    oneof type {
+      CartesianParameters cartesian = 1;
+      StateVectorParameters state_vector = 2;
+      ChebyshevCoefficients chebyshev_coefficients = 3;
+
+      // Indicates that the antenna needs only the target `EK_ANTENNA`
+      // identifier and is presumed to have an alternate mechanism to
+      // determine relevant pointing information from this alone.
+      google.protobuf.Empty target_antenna_id = 4;
+    }
+
+    message CartesianParameters {
+      nmts.v2alpha.types.geophys.CoordinateFrame reference_frame = 1;
+    }
+
+    message StateVectorParameters {
+      nmts.v2alpha.types.geophys.CoordinateFrame reference_frame = 1;
+    }
+  }
+
+  // A specification of the format that beam pointing information delivered to
+  // the antenna should take.
+  //
+  // If unset, the antenna is assumed to not need any explicit pointing
+  // information from the model consumer.
+  PointingFormat pointing_format = 17;
+
+  message OriginFormat {
+    oneof type {
+      ChebyshevCoefficients chebyshev_coefficients = 1;
+    }
+  }
+  // A specification of the format that beam origin information delivered to
+  // the antenna should take.
+  //
+  // If unset, the antenna is assumed to not need any explicit
+  // information from the model consumer.
+  OriginFormat origin_format = 23;
+
+  // A fixed translational or rotational offset from the
+  // nmts.ek.physical.Platform that has an RK_CONTAINS relationship with this
+  // Antenna. If this field is not used, the antenna is considered to share the
+  // position and orientation axes of the nmts.ek.physical.Platform.
+  nmts.v2alpha.types.geophys.PointAxes offset_from_platform_coordinates = 5;
+
+  /****************************************************************************/
+  /* Antenna Pattern                                                          */
+  /****************************************************************************/
+  // Models the transmit antenna pattern that characterizes this antenna.
+  //
+  // When they are present, the limits in eirp_limits constrain the maximum EIRP
+  // of a link. If the transmit antenna pattern in this field and the
+  // per-carrier maximum transmit power (in
+  // CarrierConfiguration.TransmitCarrier.max_power_w) are also set, the gain in
+  // the link direction plus the maximum transmit power (in dBW) may further
+  // constrain the EIRP of the link.
+  //
+  // If eirp_limits is not set, both the transmit antenna pattern and the
+  // per-carrier maximum transmit power must be set in order for the antenna to
+  // be used to transmit.
+  //
+  // For more detail, see nmts.v2alpha.types.physical.EirpLimits.
+  nmts.v2alpha.types.physical.AntennaPattern transmit_antenna_pattern = 22;
+
+  message ReceiveAntennaPatternAndNoiseTemperature {
+    // Models the receive antenna pattern that characterizes this antenna.
+    nmts.v2alpha.types.physical.AntennaPattern receive_antenna_pattern = 23;
+
+    // The noise temperature of the antenna, in kelvin
+    // (https://en.wikipedia.org/wiki/Noise_temperature_(antenna)).
+    //
+    // This field represents the noise temperature for the antenna's nominal
+    // pointing direction. For example, for ground antennas or spacecraft-zenith
+    // antennas that nominally point at empty space, this field could represent
+    // the cosmic background noise. For downward-pointing satellite
+    // antennas that nominally point at the Earth, this field could
+    // represent a fixed value for the effective noise temperature of
+    // the environmental effects that contribute noise.
+    //
+    // This field does not take into account the noise of pointing through a
+    // galactic noise source that differs from the background or past the field
+    // from any other strong interference source. These noise sources need to be
+    // dynamically evaluated by the model consumer.
+    //
+    // See https://docs.spacetime.aalyria.com/data_model/sources_of_noise
+    // for details.
+    double antenna_noise_temperature_k = 8;
+  }
+
+  // Either g_over_t_db_per_k must be specified, or both the receive antenna
+  // pattern and sources of noise (in antenna_noise_temperature_k and/or the
+  // signal processing chain) must be specified. See
+  // https://docs.spacetime.aalyria.com/data_model/antennas#g-over-t and
+  // https://docs.spacetime.aalyria.com/data_model/sources_of_noise for details.
+  oneof receive_performance {
+    ReceiveAntennaPatternAndNoiseTemperature
+            receive_antenna_pattern_and_noise_temperature = 24;
+    // The G/T of the receive chain, in dB/K.
+    float g_over_t_db_per_k = 25;
+  }
+
+  /****************************************************************************/
+  /* Field of regard constraints                                              */
+  /****************************************************************************/
+  // The field of regard defines the total range that can be accessed when
+  // considering the steering capabilities of the antenna.
+  // In constrast, the field of view is the range within which the antenna can
+  // transmit or receive a signal without any steering. The antenna pattern
+  // describes the antenna's field of view.
+  // For steerable antennas, this field specifies the total field of regard.
+  // For non-steerable antennas, this field constrains the field of view defined
+  // by the antenna pattern.
+  nmts.v2alpha.types.geophys.Projection field_of_regard = 9;
+
+  // Obstructions that subtract from the field of regard.
+  repeated nmts.v2alpha.types.geophys.Projection obstructions = 10;
+
+  // An Azimuth-Elevation Mask that describes how the horizon looks to an
+  // antenna.
+  nmts.v2alpha.types.geophys.AzimuthElevationMask azimuth_elevation_mask = 11;
+
+  /****************************************************************************/
+  /* Physical constraints                                                     */
+  /****************************************************************************/
+  message LinkRangeConstraint {
+    double minimum_range_m = 1;
+    double maximum_range_m = 2;
+  }
+  LinkRangeConstraint link_range = 12;
+
+  // AzimuthAngleRateConstraint is relative to the plane tangent to the
+  // surface of the central body (Earth).  This is appropriate for ground
+  // stations or other vehicles on the surface of the central body; but, for
+  // aerospace platforms, it's usually better to use the
+  // TotalAngularRateConstraint.
+  message AzimuthAngleRateConstraint {
+    double minimum_rate_deg_per_sec = 1;
+    double maximum_rate_deg_per_sec = 2;
+  }
+  // To estimate the Duration required for a course-grained repointing
+  // maneuver.
+  AzimuthAngleRateConstraint azimuth_angle_rate = 13;
+
+  message ElevationAngleRateConstraint {
+    double minimum_rate_deg_per_sec = 1;
+    double maximum_rate_deg_per_sec = 2;
+  }
+  // To estimate the Duration required for a course-grained repointing
+  // maneuver.
+  ElevationAngleRateConstraint elevation_angle_rate = 14;
+
+  message TotalAngularRateConstraint {
+    double minimum_rate_deg_per_sec = 1;
+    double maximum_rate_deg_per_sec = 2;
+  }
+  // To estimate the Duration required for a course-grained repointing
+  // maneuver.
+  TotalAngularRateConstraint total_angular_rate = 15;
+
+  // Additional Duration required for a steerable aperture to complete
+  // link acquisition after course-grained (re)pointing has completed.
+  // This might include, for example, time reserved for a fine-grained
+  // search pattern.
+  google.protobuf.Duration additional_acquisition_time = 20;
+
+  // Link accessibility will be constrained when the angle between the sun's
+  // center of mass and a receiving antenna's boresight is less than this
+  // threshold (in degrees).
+  // The sun is ~32 arcminutes in diameter when viewed from the Earth's surface,
+  // and margin for that should be built into the configured value, if it is
+  // significant to the user.
+  double minimum_sun_angle_deg = 16;
+
+  // Constraint that prevents this antenna from pointing within a specified
+  // angular distance of the geostationary arc.
+  //
+  // This is useful for modeling regulatory constraints (e.g., ITU Article 22,
+  // FCC Part 25) that require non-geostationary systems to avoid pointing near
+  // the GEO arc. For more detailed interference analysis involving power flux
+  // density limits or specific victim receivers, use InterferenceConstraint
+  // resources instead.
+  message GeoArcSeparationAngleConstraint {
+    // The minimum angular separation, in degrees, between the antenna's
+    // beam direction and the nearest point on the geostationary arc.
+    //
+    // Typical regulatory values range from about 2° to 10° depending on
+    // the frequency band and regulatory regime.
+    //
+    // Required.
+    double minimum_angle_deg = 1;
+
+    // If set, the constraint applies only to operations within the
+    // specified frequency range. This allows modeling band-specific
+    // regulatory requirements (e.g., a tighter constraint in Ka-band
+    // than in Ku-band).
+    //
+    // If unset, the constraint applies to all frequencies.
+    message FrequencyRange {
+      double min_frequency_hz = 1;
+      double max_frequency_hz = 2;
+    }
+    FrequencyRange frequency_range = 2;
+  }
+
+  // GEO arc avoidance constraints for this antenna. When specified, the
+  // SDN Controller will not establish links whose beam direction falls
+  // within the specified angular distance of the geostationary arc.
+  //
+  // Multiple constraints can be specified to model different exclusion
+  // angles for different frequency bands.
+  repeated GeoArcSeparationAngleConstraint geo_arc_separation_angles = 21;
+
+  // The pointing error of the antenna, in degrees. This represents the
+  // statistical accuracy with which the antenna can point at its intended
+  // target.
+  double pointing_error_deg = 26;
+
+  // Characterizes this antenna's emissions for interference analysis.
+  //
+  // For antennas on external-system platforms (platforms with field
+  // is_external_system), this describes the worst-case emission envelope used
+  // to compute the interference contribution of this emitter at victim
+  // receivers.
+  //
+  // For antennas on first-party platforms, this field is optional and can be
+  // used for self-interference analysis.
+  //
+  // This field is independent of eirp_limits, which constrains per-beam EIRP
+  // for scheduling purposes.
+  nmts.v2alpha.types.physical.EmissionEnvelope emission_envelope = 27;
+
+  // TODO: Add beam hopping parameters.
+
+  reserved 6;
+}

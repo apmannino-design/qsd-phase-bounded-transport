@@ -1,0 +1,231 @@
+# Copyright (c) Outernet Council and Contributors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+module(name = "org_outernetcouncil_nmts")
+
+bazel_dep(name = "gazelle", version = "0.51.3")
+bazel_dep(name = "googleapis", version = "0.0.0-20251003-2193a2bf")
+bazel_dep(name = "googleapis-python", version = "1.0.0")
+bazel_dep(name = "googleapis-java", version = "1.0.0")
+bazel_dep(name = "googleapis-cc", version = "1.0.0")
+bazel_dep(name = "platforms", version = "1.1.0")
+bazel_dep(name = "protobuf", version = "31.1")
+bazel_dep(name = "rules_foreign_cc", version = "0.15.1")
+bazel_dep(name = "rules_go", version = "0.63.0")
+bazel_dep(name = "grpc", version = "1.74.1")
+bazel_dep(name = "grpc-java", version = "1.75.0")
+bazel_dep(name = "rules_proto_grpc_cpp", version = "5.6.0")
+bazel_dep(name = "rules_proto_grpc_java", version = "5.6.0")
+bazel_dep(name = "rules_proto_grpc_python", version = "5.6.0")
+
+bazel_dep(name = "rules_rs", version = "0.0.108")
+bazel_dep(name = "toolchains_protoc", version = "0.4.3")
+bazel_dep(name = "toolchains_llvm", version = "1.4.0")
+
+# Patch protobuf v31.1 to fix constinit issue with zig-based hermetic toolchain.
+# The issue: protobuf's GlobalEmptyStringConstexpr uses constinit with heap allocation,
+# which is incompatible with zig's libc++ (similar to MSVC). This patch restores the
+# MSVC guard that was present in earlier versions and extends it to cover zig toolchains.
+# See: https://github.com/protocolbuffers/protobuf/issues/22065
+single_version_override(
+    module_name = "protobuf",
+    patch_strip = 1,
+    patches = ["//patches:protobuf_v31_1_zig_constinit_fix.patch"],
+    version = "31.1",
+)
+
+# Patch c-ares v1.19.1 to fix RBE build with strict header checking.
+# The issue: c-ares BUILD.bazel is missing include/ares_build.h in hdrs list,
+# which causes undeclared inclusion errors when building with RBE without
+# --remote_download_minimal flag.
+single_version_override(
+    module_name = "c-ares",
+    patch_strip = 0,
+    patches = ["//patches:c-ares_1_19_1_rbe_headers.patch"],
+    version = "1.19.1",
+)
+
+# grpc is a direct dep here and is also pulled in by rules_proto_grpc_*. Patch it
+# to match the monorepo. The upb-gen include-shadowing patch drops grpc's
+# committed upb-gen include dirs, which otherwise shadow protobuf's generated upb
+# headers and cause "undeclared inclusion" failures under strict header checking
+# (e.g. when compiling cygrpc). The rbe_xds patch supplies header deps needed for
+# RBE + xDS builds.
+single_version_override(
+    module_name = "grpc",
+    patch_strip = 0,
+    patches = [
+        "//patches:grpc_1_74_1_rbe_xds_headers.patch",
+        "//patches:grpc_1_74_1_upb_gen_include_shadowing.patch",
+    ],
+    version = "1.74.1",
+)
+
+# Configure the protoc toolchain used by rules_proto_grpc to use protoc v28.0.
+# This ensures that the version agrees with the protobuf dependency version,
+# which is necessary because Protobuf C++ requires an exact match between its
+# generated code version and its runtime version.
+# (https://protobuf.dev/support/cross-version-runtime-guarantee/#cpp)
+protoc = use_extension("@toolchains_protoc//protoc:extensions.bzl", "protoc")
+protoc.toolchain(
+    google_protobuf = "com_google_protobuf",
+    version = "v29.1",
+)
+
+go_sdk = use_extension("@rules_go//go:extensions.bzl", "go_sdk")
+go_sdk.download(
+    version = "1.27.2",
+)
+
+go_deps = use_extension("@gazelle//:extensions.bzl", "go_deps")
+go_deps.from_file(go_mod = "//:go.mod")
+use_repo(
+    go_deps,
+    "com_github_deckarep_golang_set_v2",
+    "com_github_google_go_cmp",
+    "com_github_ichiban_prolog",
+    "com_github_samber_lo",
+    "com_github_urfave_cli_v2",
+    "org_golang_google_genproto",
+    "org_golang_google_protobuf",
+    "org_golang_x_text",
+)
+
+switched_rules = use_extension("@googleapis//:extensions.bzl", "switched_rules")
+switched_rules.use_languages(
+    cc = True,
+    java = True,
+    python = True,
+)
+
+# For TypeScript targets.
+bazel_dep(name = "aspect_rules_js", version = "3.0.3")
+bazel_dep(name = "rules_nodejs", version = "6.7.7")
+
+node = use_extension("@rules_nodejs//nodejs:extensions.bzl", "node")
+
+# Pinned, not left to the rules_nodejs default: Node before 22.23.4 embeds
+# eMudhra roots.
+node.toolchain(node_version = "22.23.4")
+
+npm = use_extension("@aspect_rules_js//npm:extensions.bzl", "npm")
+npm.npm_translate_lock(
+    name = "npm_nmts",
+    npmrc = "//:.npmrc",
+    pnpm_lock = "//:pnpm-lock.yaml",
+)
+use_repo(npm, "npm_nmts")
+
+bazel_dep(name = "aspect_rules_ts", version = "3.7.0")
+
+rules_ts_ext = use_extension("@aspect_rules_ts//ts:extensions.bzl", "ext", dev_dependency = True)
+rules_ts_ext.deps(
+    # The integrity value will need to be updated along with typescript version changes in package.json.
+    # `curl --silent https://registry.npmjs.org/typescript/5.4.5 | jq -r '.dist.integrity'`
+    ts_integrity = "sha512-vcI4UpRgg81oIRUFwR0WSIHKt11nJ7SAVlYNIu+QpqeyXP+gpQJy/Z4+F0aGxSE4MqwjyXvW/TzgkLAx2AGHwQ==",
+    ts_version_from = "//:package.json",
+)
+use_repo(rules_ts_ext, "npm_typescript")
+
+##
+# TODO: extract Rust config to separate location for cleanliness.
+##
+
+# Hermetic C/C++ toolchain. Marked dev_dependency so it only takes effect
+# when this module is built as the root module: under Bazel 8 a resolvable cc
+# toolchain is needed for protobuf's cc selects (the auto-detected host
+# toolchain may be absent in CI), and toolchains_llvm's 'llvm' extension may
+# only be used by the root module. When this module is consumed as a
+# dependency of another module, dev dependencies are ignored, so that
+# module's own cc toolchain is used and the 'llvm' extension is never
+# evaluated.
+#
+# LLVM versions and platforms:
+# https://github.com/bazel-contrib/toolchains_llvm/blob/master/toolchain/internal/llvm_distributions.bzl
+llvm = use_extension("@toolchains_llvm//toolchain/extensions:llvm.bzl", "llvm", dev_dependency = True)
+llvm.toolchain(
+    name = "llvm_toolchain",
+    llvm_version = "20.1.2",
+)
+use_repo(llvm, "llvm_toolchain", "llvm_toolchain_llvm")
+
+register_toolchains(
+    "@llvm_toolchain//:all",
+    dev_dependency = True,
+)
+
+RUST_EDITION = "2024"
+
+RUST_VERSION = "1.94.1"
+
+# rules_rs toolchains. When this module is consumed by the Spacetime monorepo,
+# the toolchains extension is shared across the module graph and errors on
+# conflicting same-name tags, so this configuration (edition, version,
+# extra_rustc_flags) MUST match the consuming root module's exactly.
+rs_toolchains = use_extension("@rules_rs//rs/toolchains:module_extension.bzl", "toolchains")
+rs_toolchains.toolchain(
+    edition = RUST_EDITION,
+    # -Clink-self-contained=no: link with the registered cc toolchain's linker.
+    # rules_rs's rustc does not ship the self-contained linker (rust-lld). Must
+    # match the consuming root module's toolchain tag exactly.
+    # Keep this x86_64-only, and out of extra_rustc_flags: the aarch64 rustc
+    # rejects the option outright ("option `-C link-self-contained` is not
+    # supported on this target") whatever --target it is given, so an aarch64
+    # executor must never see it. The aarch64 link works without it.
+    extra_exec_rustc_flags = {
+        "x86_64-unknown-linux-gnu": ["-Clink-self-contained=no"],
+    },
+    extra_rustc_flags = {
+        "aarch64-unknown-linux-gnu": ["-Ctarget-cpu=neoverse-n1"],
+        "x86_64-unknown-linux-gnu": ["-Ctarget-cpu=x86-64-v3"],
+    },
+    version = RUST_VERSION,
+)
+use_repo(rs_toolchains, "default_rust_toolchains")
+
+# Re-export the pinned, patched @rules_rust so existing @rules_rust// loads keep
+# working. rules_rs bundles the prost extension under @rules_rust//extensions/prost.
+rules_rust = use_extension("@rules_rs//rs:rules_rust.bzl", "rules_rust")
+use_repo(rules_rust, "rules_rust")
+
+register_toolchains("@default_rust_toolchains//...")
+
+# Custom Prost toolchain
+register_toolchains(
+    "//build_tools/prost_toolchain",
+)
+
+# Rust crate dependencies via rules_rs crate_universe (from_cargo). rules_rs
+# supports only from_cargo, so the former from_specs "crates" hub is folded in:
+# protoc-gen-tonic is now a Cargo.toml dependency and everything resolves in the
+# single "crates_io" hub.
+crate = use_extension("@rules_rs//rs:extensions.bzl", "crate")
+crate.annotation(
+    crate = "protoc-gen-prost",
+    gen_binaries = ["protoc-gen-prost"],
+)
+crate.annotation(
+    crate = "protoc-gen-tonic",
+    gen_binaries = ["protoc-gen-tonic"],
+)
+crate.from_cargo(
+    name = "crates_io",
+    cargo_lock = "//:Cargo.lock",
+    cargo_toml = "//:Cargo.toml",
+    platform_triples = [
+        "aarch64-unknown-linux-gnu",
+        "x86_64-unknown-linux-gnu",
+    ],
+)
+use_repo(crate, "crates_io")

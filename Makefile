@@ -1,6 +1,16 @@
-.PHONY: all pipeline report paper clean help
+.PHONY: all pipeline report paper clean help spacetime spacetime-fetch spacetime-verify
 
 all: pipeline report paper
+
+spacetime-fetch:
+	bash scripts/fetch_aalyria_spacetime.sh
+
+spacetime:
+	bash scripts/regen_qsd_spacetime_protos.sh
+	python3 qsd_spacetime/test_integration.py
+
+spacetime-verify:
+	bash scripts/verify_qsd_spacetime.sh
 
 pipeline:
 	python3 code/qsd_pipeline.py
@@ -39,8 +49,11 @@ clean:
 
 help:
 	@echo "Available commands:"
-	@echo "make all       - run full pipeline and build report + PDF"
-	@echo "make pipeline  - run analysis only"
-	@echo "make report    - generate markdown report only"
-	@echo "make paper     - generate PDF report only"
-	@echo "make clean     - remove generated outputs"
+	@echo "make all              - run full pipeline and build report + PDF"
+	@echo "make pipeline         - run analysis only"
+	@echo "make spacetime        - regen Aalyria protos + run qsd_spacetime tests"
+	@echo "make spacetime-fetch  - re-clone aalyria/api + nmts + googleapis"
+	@echo "make spacetime-verify - full verify (protos, bridge, Go agent dry-run)"
+	@echo "make report           - generate markdown report only"
+	@echo "make paper            - generate PDF report only"
+	@echo "make clean            - remove generated outputs"

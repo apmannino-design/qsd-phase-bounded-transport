@@ -1,0 +1,24 @@
+# Specify where to look for JS packages when running `pnpm install`
+# (which is required to generate the `pnpm-lock.yaml` used by both
+# pnpm and bazel).
+# A JS package is a subdirectory that contains a `package.json` file.
+packages:
+  - 'v1/proto'
+  - 'v2alpha/proto'
+
+# Packages with install/postinstall scripts that pnpm 10+ should run.
+# Required by aspect_rules_js v3+; see
+# https://pnpm.io/10.x/settings#onlybuiltdependencies
+onlyBuiltDependencies: []
+
+# Supply-chain hardening for `pnpm install`.
+# Wait at least seven days (10080 minutes) before installing a newly published
+# package version, giving malicious/compromised releases time to be caught and
+# unpublished before they reach us.
+minimumReleaseAge: 10080
+# Never let a package update silently weaken the settings above; a downgrade of
+# these protections must be an explicit, reviewed change.
+trustPolicy: no-downgrade
+# Refuse transitive dependencies pulled from non-registry ("exotic") sources
+# such as arbitrary git URLs or tarballs.
+blockExoticSubdeps: true

@@ -1,8 +1,12 @@
 # QSD gate × Aalyria Spacetime
 
 Plugs the QSD ΔE-gated predictive re-lock into Aalyria's open-source SDN agent
-(github.com/aalyria/api, Apache-2.0) using the agent's built-in `extproc`
+([github.com/aalyria/api](https://github.com/aalyria/api), Apache-2.0) using the agent's built-in `extproc`
 hooks. No changes to Aalyria's code.
+
+The full Spacetime API + Go SBI agent are vendored under `../third_party/aalyria-api`
+(pinned in `../third_party/AALYRIA_API_PIN.txt`). Python bindings in `gen/` are
+regenerated from that tree.
 
 ```
 Spacetime ──Scheduling API──> agent ──stdin (CreateEntryRequest)──> qsd_enact.py ──> state/beams.json
@@ -19,9 +23,34 @@ Spacetime <──Telemetry API── agent <──stdout (ExportMetricsRequest)�
 | `qsd_daemon.py` | runs the gate at terminal rate; `SimTerminal` for tests, `HardwareTerminal` stub for real I/O |
 | `qsd_telemetry.py` | extproc telemetry: interface state (UP / DORMANT / DOWN) + SINR to Spacetime |
 | `agent_config.textproto` | agent config wiring both extprocs |
-| `test_integration.py` | end-to-end test against protos generated from aalyria/api (`gen/`) |
+| `gen/` | Python protos from vendored `aalyria/api` + NMTS |
+| `test_integration.py` | end-to-end test against regenerated protos |
 
-Run the test: `pip install protobuf numpy && python3 test_integration.py`
+## Verify
+
+```bash
+pip install protobuf numpy googleapis-common-protos
+# Full path: refresh vendor tree, regen protos, integration + Go agent dry-run
+../scripts/verify_qsd_spacetime.sh
+# Or just the Python bridge:
+python3 test_integration.py
+```
+
+Refresh upstream + regenerate:
+
+```bash
+../scripts/fetch_aalyria_spacetime.sh
+../scripts/regen_qsd_spacetime_protos.sh
+```
+
+Build / dry-run the real Go agent against this config:
+
+```bash
+cd ../third_party/aalyria-api
+bazelisk build //agent/cmd/agent
+# substitute ${AGENT_ID}/${DOMAIN}/... then:
+./bazel-bin/agent/cmd/agent/agent_/agent --config ../../qsd_spacetime/agent_config.textproto --dry-run
+```
 
 ## Design notes
 - The gate runs in a separate daemon because pointing control (ms) is far faster
@@ -33,6 +62,6 @@ Run the test: `pip install protobuf numpy && python3 test_integration.py`
   need the residual from the terminal's own tracker.
 
 ## Not yet done
-- Not run against the real Go agent binary or a live Spacetime instance (needs Aalyria credentials).
+- Not run against a live Spacetime instance (needs Aalyria credentials).
 - `HardwareTerminal` is a stub: needs a real terminal's pointing readout and re-lock command.
 - Plant model is the ideal random-walk case; model-mismatch stress test still pending.

@@ -1,0 +1,75 @@
+// Copyright (c) Outernet Council and Contributors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// This file contains messages that are referenced throughout the
+// nmts.ek.physical package.
+
+syntax = "proto3";
+
+package nmts.v1.ek.physical;
+
+import "nmts/v1/proto/types/physical/polarization.proto";
+
+option java_package = "org.outernetcouncil.nmts.v1.proto.ek.physical";
+option go_package = "outernetcouncil.org/nmts/v1/proto/ek/physical";
+
+// Models a signal and its properties, such as its center frequency, bandwidth,
+// and polarization.
+//
+// This message has been deprecated. The Carrier message should be used instead.
+message Signal {
+  // Required.
+  int64 center_frequency_hz = 1 [deprecated = true];
+  // Required. Represents the total, pre-filter bandwidth of the carrier,
+  // including any roll-off.
+  int64 bandwidth_hz = 2 [deprecated = true];
+  nmts.v1.types.physical.Polarization polarization = 3 [deprecated = true];
+  // The symbol rate (baud rate), in symbols per second.
+  int64 symbol_rate_symbols_per_second = 4 [deprecated = true];
+  string waveform = 5 [deprecated = true];
+}
+
+// Models properties of a carrier signal, which is a modulated waveform at a 
+// specific center frequency and with a specific bandwidth. 
+message Carrier {
+  // Required.
+  int64 center_frequency_hz = 1;
+  // Required. Represents the total, pre-filter bandwidth of the carrier,
+  // including any roll-off.
+  int64 bandwidth_hz = 2;
+  // The roll-off factor, which is a measure of the excess bandwidth of a
+  // carrier's pulse-shaping filter, as a decimal value.
+  //
+  // If this field is not set, model observers must not make any assumptions
+  // about how the roll-off is computed. Although the bandwidth, symbol rate,
+  // and roll-off are related by the standard relationship of
+  // bandwidth_hz = symbol_rate_symbols_per_second * (1 + roll_off_factor),
+  // in practice, the configured filter passband may need to include an
+  // additional margin beyond the intended occupied carrier bandwidth to account
+  // for efficiency losses. Because of this margin, this standard equation does
+  // not hold for certain filters, so the roll-off must be explicitly defined.
+  float roll_off_factor = 7;
+
+  nmts.v1.types.physical.Polarization polarization = 3;
+  // The symbol rate (baud rate), in symbols per second.
+  int64 symbol_rate_symbols_per_second = 4;
+  // The waveform of the carrier. Use identical string values to refer to the
+  // same waveform across all fields that reference a waveform, including
+  // AdaptiveCodingAndModulationForChannelBandwidth.waveform and
+  // WaveformToChannelBandwidthAllocation.waveform.
+  string waveform = 5;
+
+  // If applicable, defines an ID for this carrier. 
+  string config_id = 6;
+}

@@ -1,0 +1,132 @@
+// Copyright (c) Outernet Council and Contributors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// This file contains messages used to model transmitters and receivers.
+
+syntax = "proto3";
+
+package nmts.v1.ek.physical;
+
+import "nmts/v1/proto/ek/physical/common.proto";
+import "nmts/v1/proto/types/physical/emissions.proto";
+
+option java_package = "org.outernetcouncil.nmts.v1.proto.ek.physical";
+option go_package = "outernetcouncil.org/nmts/v1/proto/ek/physical";
+
+// Models a transmitter.
+//
+// Transmitters should have an RK_SIGNAL_TRANSITS relationship with the
+// nmts.ek.physical.Antenna to which they are connected, in the following
+// direction: Transmitter --RK_SIGNAL_TRANSITS--> nmts.ek.physical.Antenna.
+// No references to Adaptive Coding and Modulation configurations exist in
+// this message since this transmitter is used in both transparent and
+// regenerative architectures. The Adaptive Coding and Modulation configuration
+// is defined by nmts.ek.physical.Modulator.
+message Transmitter {
+  string display_name = 2;
+
+  // A signal that can be transmitted by a wireless device.
+  // This message also conceptually represents a carrier wave.
+  message TransmitSignal {
+    // Required.
+    Signal signal = 1;
+    // The maximum transmit power, in watts.
+    // This value further constrains the max_transmit_power_w in the
+    // nmts.ek.physical.Antenna to which this transmitter is attached, in order
+    // to model transmitters whose maximum transmit power varies with frequency.
+    double max_power_w = 2;
+  }
+  // The carriers that this transmitter supports should be defined in a 
+  // CarrierConfiguration and related to the transmitter by:
+  // Transmitter --RK_SUPPORTS--> CarrierConfiguration. 
+  repeated TransmitSignal signals = 1 [deprecated = true];
+
+  // The maximum aggregate bandwidth, in Hz, of all carriers assigned to be 
+  // routed through this transmitter.
+  //
+  // If a SignalProcessingChain is connected to this transmitter
+  // (nmts.v1.ek.physical.SignalProcessingChain --RK_SIGNAL_TRANSITS--> 
+  // Transmitter) and that chain contains an 
+  // nmts.v1.ek.physical.ChannelBandwidthProfileConfiguration, this field limits
+  // (number of carriers) * (the bandwidth value(s) in 
+  // ChannelBandwidthProfileConfiguration.bandwidth_profiles).
+  // This is not the same as constraining the aggregate carrier bandwidth 
+  // since assigned carriers may have smaller bandwidths than those defined in 
+  // the bandwidth profile.
+  int64 maximum_aggregate_bandwidth_hz = 3;
+
+  // The maximum number of RF carriers that can simultaneously be routed through
+  // this transmitter.
+  //
+  // If this field is unset or contains the proto3-default zero value, a model
+  // consumer MAY derive a value from other context in the model.
+  int32 max_carrier_count = 4;
+}
+
+// Models a receiver.
+//
+// Receivers should have an RK_SIGNAL_TRANSITS relationship with the
+// nmts.ek.physical.Antenna to which they are connected, in the following
+// direction: nmts.ek.physical.Antenna --RK_SIGNAL_TRANSITS--> Receiver.
+// No references to Adaptive Coding and Modulation configurations exist in
+// this message since this receiver is used in both transparent and
+// regenerative architectures. The Adaptive Coding and Modulation configuration
+// is defined by nmts.ek.physical.Demodulator.
+message Receiver {
+  string display_name = 3;
+
+  // The carriers that this receiver supports should be defined in a 
+  // CarrierConfiguration entity and related to the receiver by:
+  // Receiver --RK_SUPPORTS--> CarrierConfiguration. 
+  repeated Signal signals = 1 [deprecated = true];
+
+  // Reference Saturation Flux Density (SFD), measured in dBW/m^2.
+  // This is the minimum SFD at the receiver with 0 dB/K G/T.
+  float reference_saturation_flux_density_dbw_m2 = 2;
+
+  // The maximum aggregate bandwidth, in Hz, of all carriers assigned to be 
+  // routed through this receiver.
+  //
+  // If a SignalProcessingChain is connected to this receiver
+  // (Receiver --RK_SIGNAL_TRANSITS-->  
+  // nmts.v1.ek.physical.SignalProcessingChain) and that chain contains an 
+  // nmts.v1.ek.physical.ChannelBandwidthProfileConfiguration, this field limits
+  // (number of carriers) * (the bandwidth value(s) in 
+  // ChannelBandwidthProfileConfiguration.bandwidth_profiles).
+  // This is not the same as constraining the aggregate carrier bandwidth 
+  // since assigned carriers may have smaller bandwidths than those defined in 
+  // the bandwidth profile. 
+  int64 maximum_aggregate_bandwidth_hz = 4;
+
+  // The maximum number of RF carriers that can simultaneously be routed through
+  // this receiver.
+  //
+  // If this field is unset or contains the proto3-default zero value, a model 
+  // consumer MAY derive a value from other context in the model.
+  int32 max_carrier_count = 5;
+
+  // Equivalent Power Flux Density (EPFD).
+  //
+  // The PFD as experienced by this antenna receiver from a given transmitter, 
+  // including antenna RX gain in the peak direction.
+  message EquivalentPFD {
+    // The desired input power flux density received by this antenna.
+    nmts.v1.types.physical.PowerFluxDensity target_power_flux_density = 1;
+  }
+  // The equivalent power flux density that applies per link.
+  //
+  // The intended usage of this field is for setting the power of a transmitter
+  // such that the receiver can receive the EquivalentPFD.
+  EquivalentPFD per_link_epfd = 6;
+}
