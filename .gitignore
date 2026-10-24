@@ -9,3 +9,4 @@ artifacts/
 third_party/aalyria-api/bazel-*
 third_party/aalyria-api/MODULE.bazel.lock
 
+state/

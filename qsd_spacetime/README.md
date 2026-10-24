@@ -102,3 +102,6 @@ See `RESULTS_OCT24_2026_QSD_STACK_V2.md` and `RESULTS_OCT24_2026_QSD_UPGRADES.md
 
 Supervisor synced to qsd_stack_v2 v2.1: optional `lock_loss_hold_s` coast, and
 range protection (offload) stays active while re-validating after a glitch.
+
+**Technical brief (external summary):**
+[`docs/Technical_Brief_Link-Health_Supervisor_for_Aalyria_Spacetime.pdf`](../docs/Technical_Brief_Link-Health_Supervisor_for_Aalyria_Spacetime.pdf)
