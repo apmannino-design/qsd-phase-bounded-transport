@@ -135,6 +135,9 @@ class Config:
     envelope_margin: float = 1.0           # multiplier on observed vibration envelope
     jump_sigma: float = 6.0                # residual / envelope ratio that flags a step
 
+    # --- v2.1: coast through brief lock loss (occlusion, slewing mirror) ---
+    lock_loss_hold_s: float = 0.0          # 0 = relock immediately (original behavior)
+
     # --- v2: telemetry schema ---
     telemetry_schema: str = "repo_v1alpha"  # or "legacy_docs"
 
@@ -174,6 +177,8 @@ class Config:
                        self.predict_horizon_s, self.envelope_margin, self.jump_sigma)
         if not all(math.isfinite(x) and x > 0 for x in v2_positive) or self.predict_every < 1:
             raise ValueError("v2 parameters must be positive.")
+        if not (math.isfinite(self.lock_loss_hold_s) and self.lock_loss_hold_s >= 0):
+            raise ValueError("lock_loss_hold_s must be >= 0.")
         if self.telemetry_schema not in ("repo_v1alpha", "legacy_docs"):
             raise ValueError("telemetry_schema must be 'repo_v1alpha' or 'legacy_docs'.")
 
@@ -364,6 +369,8 @@ class TriLockGovernor:
         self.clear_since = None
         self.relock_started = None
         self.last_offload = -math.inf
+        self.loss_since = None
+        self.coasting = False
 
     @staticmethod
     def _hold(condition, since, now, duration):
@@ -428,13 +435,28 @@ class TriLockGovernor:
                 self.fault("RELOCK_TIMEOUT")
             return commands
 
+        # v2.1: brief lock loss / busy actuator -> coast (no commands, report
+        # DORMANT) for up to lock_loss_hold_s before declaring breakout.
+        lost = (not sample.locked) or (not sample.actuator_ready)
+        if lost:
+            self.loss_since = now if self.loss_since is None else self.loss_since
+        else:
+            self.loss_since = None
+        lost_long = lost and now - self.loss_since >= cfg.lock_loss_hold_s
+        self.coasting = lost and not lost_long
+
         # Mechanical and lock-loss protection applies even during warm-up.
-        if trip or not sample.locked or not sample.actuator_ready:
+        if trip or lost_long:
             self.regime = 3
             self.reason = "LIMIT_OR_LOCK_LOSS"
             self.relock_started = now
             self.warn_since = self.clear_since = None
+            self.loss_since = None
+            self.coasting = False
             return ["RELOCK"]
+
+        if self.coasting:
+            return commands
 
         if self.regime == 0:
             self.clear_since, done = self._hold(
@@ -444,6 +466,15 @@ class TriLockGovernor:
                 self.regime = 1
                 self.reason = "STARTUP_VALIDATED"
                 self.clear_since = None
+            # v2.1: range protection stays active while (re)validating: a
+            # persistent headroom warning still offloads (rate-limited), so a
+            # recovery from a data glitch cannot let the mirror drift to its stop.
+            self.warn_since, held = self._hold(
+                c.ready and early <= cfg.headroom_warn, self.warn_since, now,
+                cfg.warn_hold_s)
+            if held and now - self.last_offload >= cfg.offload_interval_s:
+                commands.append("OFFLOAD")
+                self.last_offload = now
             return commands
 
         if self.regime == 1:
@@ -473,7 +504,7 @@ class TriLockGovernor:
 
     @property
     def oper_status(self):
-        if self.regime in (1, 2):
+        if self.regime in (1, 2) and not self.coasting:
             return "IF_OPER_STATUS_UP"
         return "IF_OPER_STATUS_DORMANT"
 
@@ -1115,6 +1146,35 @@ class Tests(unittest.TestCase):
             p.update(k * 0.001, (10.0, 0.0))
         p.update(0.6, (60.0, 0.0))
         self.assertEqual(p.jumps, 1)
+
+    def test_coast_through_brief_lock_loss(self):
+        cfg = Config(lock_loss_hold_s=0.5)
+        g = TriLockGovernor(cfg); g.regime = 1
+        lost = Sample(0.0, 0.0, 1, (0, 0, 0, 0), False, True)
+        ok = Sample(0.0, 0.0, 1, (0, 0, 0, 0), True, True)
+        c = self.coords(dE=0.0)
+        self.assertEqual(g.step(c, lost, 0.0), [])
+        self.assertEqual(g.oper_status, "IF_OPER_STATUS_DORMANT")   # dark: not UP
+        self.assertEqual(g.step(c, lost, 0.4), [])                  # still coasting
+        self.assertEqual(g.step(c, ok, 0.45), [])                   # light back: no relock
+        self.assertEqual(g.regime, 1)
+        self.assertEqual(g.oper_status, "IF_OPER_STATUS_UP")
+        g.step(c, lost, 1.0)
+        self.assertEqual(g.step(c, lost, 1.6), ["RELOCK"])          # > 0.5 s: breakout
+
+    def test_default_relocks_immediately(self):
+        g = TriLockGovernor(self.cfg); g.regime = 1
+        lost = Sample(0.0, 0.0, 1, (0, 0, 0, 0), False, True)
+        self.assertEqual(g.step(self.coords(dE=0.0), lost, 0.0), ["RELOCK"])
+
+    def test_startup_still_offloads_on_low_headroom(self):
+        g = TriLockGovernor(self.cfg)                      # regime 0
+        smp = Sample(0.0, 0.0, 1, (0, 0, 0, 0), True, True)
+        c = self.coords(headroom=0.1, dE=0.0)
+        g.step(c, smp, 0.0)
+        self.assertEqual(g.step(c, smp, 0.02), ["OFFLOAD"])
+        self.assertEqual(g.regime, 0)                      # still validating, not UP
+        self.assertEqual(g.oper_status, "IF_OPER_STATUS_DORMANT")
 
     def test_both_telemetry_schemas(self):
         snap = {"published_unix_s": 10, "beams": {"b": {
