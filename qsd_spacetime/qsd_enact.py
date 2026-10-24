@@ -8,12 +8,18 @@ forwards az/el retargets to the terminal pointing controller:
   update_beam -> store/refresh the beam (new beam => supervisor resets)
                -> append enact_forward.jsonl + optional QSD_HW_POINT_CMD
   delete_beam -> remove it
-Unhandled configuration_change types (set_route, …) return UNIMPLEMENTED (12).
-A rejected pointing hook returns UNAVAILABLE (14) and does not claim success.
+Other change types (routes, BP entries, ...) are NOT handled here: they return
+UNIMPLEMENTED (12) so Spacetime never records them as enacted. Configure this
+backend only on agents whose node is a QSD-managed optical terminal, or set
+QSD_ENACT_CHAIN to a command that enacts everything else (it receives the same
+JSON on stdin and its exit code is returned).
+A pointing command the terminal rejects returns UNAVAILABLE (14): the beam is
+recorded but Spacetime is told the change did not take effect; previous target
+is kept so a retry re-sends it.
 
 Exit codes follow gRPC status codes, per the agent's extproc contract.
 """
-import sys, json, time
+import os, subprocess, sys, json, time
 from common import BEAMS, ENACT_FORWARD, append_jsonl, load, save, g
 from qsd_terminal import HardwareTerminal
 
@@ -29,7 +35,7 @@ _META = {
 
 
 def forward_point(beam_id, az, el):
-    """Notify the terminal of a new Spacetime az/el command. Raises on hook failure."""
+    """Notify the terminal of a new Spacetime az/el command. Returns False on hook failure."""
     rec = {
         "t": time.time(),
         "cmd": "POINT",
@@ -39,12 +45,31 @@ def forward_point(beam_id, az, el):
         "source": "spacetime_update_beam",
     }
     append_jsonl(ENACT_FORWARD, rec)
-    HardwareTerminal().point(beam_id, az, el)
+    # A failure is reported to the caller: telling Spacetime "enacted" when the
+    # terminal rejected the pointing command would make the network plan around
+    # a beam that isn't there.
+    try:
+        HardwareTerminal().point(beam_id, az, el)
+        return True
+    except Exception as exc:
+        print(f"point forward FAILED: {exc}", file=sys.stderr)
+        return False
+
+
+def chain(raw):
+    """Hand an unhandled change type to the node's real enactment backend."""
+    cmd = os.environ.get("QSD_ENACT_CHAIN")
+    if not cmd:
+        print("change type not handled by QSD enactment (no QSD_ENACT_CHAIN)",
+              file=sys.stderr)
+        return UNIMPLEMENTED
+    return subprocess.run(cmd, shell=True, input=raw, text=True).returncode
 
 
 def main():
+    raw = sys.stdin.read()
     try:
-        req = json.load(sys.stdin)
+        req = json.loads(raw)
     except json.JSONDecodeError as e:
         print(f"bad CreateEntryRequest JSON: {e}", file=sys.stderr)
         return INVALID_ARGUMENT
@@ -57,9 +82,7 @@ def main():
     if not ub and not db:
         other = [k for k in req if k not in _META]
         if other:
-            print(f"unhandled configuration_change: {other} (UNIMPLEMENTED)",
-                  file=sys.stderr)
-            return UNIMPLEMENTED
+            return chain(raw)
         print("CreateEntryRequest missing configuration_change", file=sys.stderr)
         return INVALID_ARGUMENT
 
@@ -102,13 +125,15 @@ def main():
             or prev.get("cmd_az") != entry.get("cmd_az")
             or prev.get("cmd_el") != entry.get("cmd_el")
         )
-        if need_point:
-            try:
-                forward_point(bid, entry["cmd_az"], entry["cmd_el"])
-            except Exception as exc:
-                print(f"point forward failed: {exc}", file=sys.stderr)
-                return UNAVAILABLE
         beams[bid] = entry
+        if need_point and not forward_point(bid, entry["cmd_az"], entry["cmd_el"]):
+            # Keep the previous target so a retry forwards the command again.
+            if prev:
+                beams[bid] = prev
+            else:
+                beams.pop(bid, None)
+            save(BEAMS, beams)
+            return UNAVAILABLE
     elif db:
         beams.pop(g(db, "id"), None)
 
