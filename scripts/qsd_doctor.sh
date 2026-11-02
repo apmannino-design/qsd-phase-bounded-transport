@@ -12,7 +12,7 @@ bad() { echo "FAIL  $*"; FAIL=1; }
 echo "==> QSD doctor (state=$STATE)"
 
 # Merge order reminder
-ok "merge order: PR #14 (vendor/stack) then PR #15 (upgrades) onto main"
+ok "safety + stack_v2 on main; next: local bringup then staging keys"
 
 # Paths / hooks
 for v in QSD_HW_SAMPLE_PATH QSD_HW_CMD_PATH QSD_HW_OFFLOAD_CMD QSD_HW_RELOCK_CMD QSD_HW_POINT_CMD; do
@@ -25,6 +25,26 @@ for v in QSD_HW_SAMPLE_PATH QSD_HW_CMD_PATH QSD_HW_OFFLOAD_CMD QSD_HW_RELOCK_CMD
     ok "$v=$val"
   fi
 done
+
+# Modem map (M2): without it, telemetry omits modem metrics
+MODEM_MAP_PATH="${QSD_MODEM_MAP:-$STATE/modem_map.json}"
+if [[ -f "$MODEM_MAP_PATH" ]]; then
+  python3 - <<PY
+import json, sys
+p = "$MODEM_MAP_PATH"
+try:
+    m = json.load(open(p))
+except Exception as e:
+    print(f"FAIL  modem_map unreadable: {e}"); sys.exit(1)
+if not isinstance(m, dict) or not m:
+    print("WARN  modem_map empty — modem metrics will be omitted")
+else:
+    n = sum(1 for v in m.values() if isinstance(v, dict) and (v.get("rx_modem_id") or v.get("tx_modem_id")))
+    print(f"OK    modem_map entries={len(m)} with_ids={n} ({p})")
+PY
+else
+  warn "no modem_map at $MODEM_MAP_PATH — copy modem_map.json.example (modem metrics omitted)"
+fi
 
 # Sample freshness
 SAMPLE="${QSD_HW_SAMPLE_PATH:-$STATE/hw_sample.json}"
