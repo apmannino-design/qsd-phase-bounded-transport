@@ -40,21 +40,27 @@ Spacetime <──telemetry── agent <──ExportMetricsRequest── qsd_tel
 pip install protobuf numpy googleapis-common-protos
 python3 test_upgrades.py
 python3 test_integration.py
-../scripts/qsd_doctor.sh                 # pre-flight
+python3 test_local_bringup.py            # production I/O path, no Aalyria creds
+../scripts/qsd_local_bringup.sh          # same path as a multi-process rehearsal
+../scripts/qsd_doctor.sh                 # pre-flight (hooks + modem_map)
 ../scripts/spacetime_staging_dryrun.sh
 ../scripts/verify_qsd_spacetime.sh
 ```
 
-**Merge order:** land PR #14 (vendor + stack_v2), then PR #15 (upgrades), then bring up staging.
+**Order:** safety + stack_v2 on `main` → local bringup (this section) → staging JWT keys → live agent.
 
 ```bash
-set -a; source bringup.env.example; set +a   # wires QSD_HW_* hooks
+set -a; source bringup.env.example; set +a   # wires QSD_HW_* hooks + QSD_MODEM_MAP
+cp modem_map.json.example state/modem_map.json   # provision Spacetime modem IDs
 ../scripts/qsd_nbi_submit.sh --weather wx.json --src-node gateway-1   # dry-run NBI fragment
 ```
 
 ## Deploy path (terminal)
 
 ```bash
+# Credential-free rehearsal of the full local contract (pump → daemon → enact → telemetry)
+../scripts/qsd_local_bringup.sh
+
 # One-shot: record (sim) → train/holdout calibrate → equal-offload scorecard
 ../scripts/qsd_terminal_pipeline.sh --sim --seconds 30
 
@@ -98,7 +104,7 @@ See `RESULTS_OCT24_2026_QSD_STACK_V2.md` and `RESULTS_OCT24_2026_QSD_UPGRADES.md
 | H3 | Telemetry reported UP during startup and fault recovery by default | Strict by default (DORMANT until validated); `QSD_TELEMETRY_STARTUP_UP=1` is a staging-only override and requires measured modem data |
 | H4 | `verify_qsd_spacetime.sh` failed at the telemetry step | Passes; modem metrics checked only when present |
 | M1 | Doctor printed OK when the agent dry-run was skipped | Prints WARN |
-| M2 | Modem IDs invented (`-demod`, `-remote`) | Taken only from `QSD_MODEM_MAP` (default `state/modem_map.json`); otherwise modem metrics are omitted |
+| M2 | Modem IDs invented (`-demod`, `-remote`) | Taken only from `QSD_MODEM_MAP` (default `state/modem_map.json`; see `modem_map.json.example`); otherwise modem metrics are omitted |
 
 Supervisor synced to qsd_stack_v2 v2.1: optional `lock_loss_hold_s` coast, and
 range protection (offload) stays active while re-validating after a glitch.

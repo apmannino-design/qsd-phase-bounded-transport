@@ -1,0 +1,10 @@
+{
+  "beam-A": {
+    "rx_modem_id": "ant-1-demod",
+    "tx_modem_id": "beam-A-remote"
+  },
+  "ant-1": {
+    "rx_modem_id": "ant-1-demod",
+    "tx_modem_id": "beam-A-remote"
+  }
+}
